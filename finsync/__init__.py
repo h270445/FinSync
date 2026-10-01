@@ -1,0 +1,1 @@
+"""FinSync minimal MVP package."""
