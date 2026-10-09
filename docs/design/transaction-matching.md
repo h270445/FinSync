@@ -8,7 +8,7 @@
 
 FinSync keeps every incoming record untouched and links records that describe the same purchase to one shared **event**, using a transparent rule-based score with two thresholds: link automatically, send to review, or keep separate.
 
-The core rule that stops false merges: an event may hold at most one record per **channel**, meaning a source type plus the member who submitted it. Two notifications on the same phone with the same amount five minutes apart are always two purchases; a notification and a manual entry, or two members' manual entries, can be linked. Every decision is written to an append-only log, so it can be explained, confirmed or undone.
+The core rule that stops false merges: an event may hold at most one original record per **channel**, meaning a source type plus the member who submitted it. Exact re-deliveries of a record are kept for traceability but attached to the record they repeat, so they never count as a second record (step 2). Two notifications on the same phone with the same amount five minutes apart are always two purchases; a notification and a manual entry, or two members' manual entries, can be linked. Every decision is written to an append-only log, so it can be explained, confirmed or undone.
 
 - **In scope:** exact re-import detection, cross-source matching, the review queue, undo, the data model, tests and the evaluation dataset.
 - **Out of scope:** foreign-currency matching, split payments, LLM-assisted matching, authentication (see [Open questions](#open-questions)).
@@ -44,7 +44,7 @@ Each new record goes through five steps inside one database transaction. Matchin
 
 ### 2. Exact re-delivery
 
-A fingerprint is the SHA-256 of group, channel and the raw payload (notification text, or the canonical JSON of a manual row plus an optional client `row_ref`). The same notification text from the same phone is a re-delivery: the record is kept and linked to the existing event with outcome `exact_duplicate`. An identical manual row goes to review instead, because a person may buy two identical bus tickets.
+A fingerprint is the SHA-256 of group, channel and the raw payload (notification text, or the canonical JSON of a manual row plus an optional client `row_ref`). The same notification text from the same phone is a re-delivery: the new record is stored with `duplicate_of_id` set to the original record, joins the original's event, and gets outcome `exact_duplicate`. A re-delivery is not an original record: it is ignored by the one-record-per-channel rule, by scoring and by the event's display values, and it always moves together with its original. An identical manual row goes to review instead, because a person may buy two identical bus tickets.
 
 ### 3. Candidates (blocking)
 
@@ -54,7 +54,7 @@ Only events that pass every gate are scored:
 - same currency and same direction;
 - equal amount, or equal after rounding to a whole currency unit (HUF entries are often typed as 1235 for 1234.56);
 - time difference within the window: 48 hours, or 3 calendar days when either side is day-precision;
-- the event does not already hold a record from the new record's channel.
+- the event does not already hold an original record (`duplicate_of_id` is null) from the new record's channel.
 
 ### 4. Score
 
@@ -91,6 +91,7 @@ Weights, window and thresholds are starting values, tuned on a development split
 | `happened_at_precision` | TEXT `minute`/`day` | Stops a date-only entry reading as midnight |
 | `merchant_key` | TEXT | Normalised merchant tokens |
 | `fingerprint` | TEXT, indexed | SHA-256 for exact re-delivery |
+| `duplicate_of_id` | INTEGER FK `transactions.id`, nullable | Set on an exact re-delivery; points to the original record |
 | `raw_payload` | TEXT | Original notification text or row JSON |
 | `source_ref` | TEXT, nullable | Client reference such as a spreadsheet row id |
 | `import_batch_id` | TEXT, nullable | Groups the rows of one bulk import |
@@ -115,7 +116,7 @@ Matching runs synchronously on every insert. Members see one event per real purc
 | GET | `/v1/matches/review` | New: open `needs_review` decisions with both records, score and features |
 | POST | `/v1/matches/{decision_id}/confirm` | New: link, write `confirmed` |
 | POST | `/v1/matches/{decision_id}/reject` | New: keep separate, write `rejected`; never proposed again |
-| POST | `/v1/events/{event_id}/split` | New: move one record to a new event, write `split` (the undo) |
+| POST | `/v1/events/{event_id}/split` | New: body `{"transaction_id": …}` names an original record in the event; that record and its re-deliveries move to a new event and a `split` decision is written (the undo for a wrong link). Naming a re-delivery returns 400. |
 
 Every endpoint keeps `ensure_authorized(user_id, group_id)`; every lookup by id also filters on `group_id`, so an id from another group returns 404.
 
