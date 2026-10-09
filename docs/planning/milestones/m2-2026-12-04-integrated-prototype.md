@@ -13,7 +13,7 @@ The core flows committed for the semester work together, with proper data handli
 
 - [ ] All sources go through the same matching pipeline: Android notifications, Google Sheets rows, spreadsheet-export files and manual entries.
 - [ ] Demo: a notification on the phone and the same purchase entered in the sheet appear as one event.
-- [ ] Uncertain matches can be listed, confirmed and rejected; a wrong link can be split; every action is logged and supersedes the previous decision.
+- [ ] Uncertain matches can be listed, confirmed and rejected in the web app; a wrong link can be split; every action is logged and supersedes the previous decision.
 - [ ] Requests are authenticated with per-user tokens; client-supplied identity headers are no longer trusted.
 - [ ] Every endpoint has a cross-group access test (403/404, nothing written).
 - [ ] Malformed input, oversized bodies and failing bulk imports leave the database unchanged and return a clear 400.
@@ -23,6 +23,7 @@ The core flows committed for the semester work together, with proper data handli
 
 - [ ] Authentication and request size limits.
 - [ ] Review and correction endpoints with tests.
+- [ ] Web app: event list, event detail with split, review queue, manual entry, file import, token management.
 - [ ] Android app (notification listener, token setup, sending, retry) with its README.
 - [ ] Sheets script and file import with `import_batch_id` and `source_ref`.
 - [ ] LLM categorizer and labelled categorization dataset.

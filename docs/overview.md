@@ -41,6 +41,7 @@ The repository currently contains a minimal backend flow:
 * **Duplicate detection:** Identification of likely duplicates while avoiding false merges of separate transactions.
 * **Match review and correction:** Handling of uncertain matches, user confirmation, and correction of incorrect decisions.
 * **Source traceability:** Recording where a transaction originated and how matching decisions were made.
+* **Web app:** Browser-based interface for reviewing events and matches, correcting decisions, manual entry and file import.
 * **Android integration:** Collection of supported banking notification data on an Android device.
 * **Google Sheets integration:** Direct integration for convenient manual and bulk data entry.
 * **LLM-based categorization:** Comparison of language-model categorization against the existing rule-based baseline.

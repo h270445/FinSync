@@ -8,6 +8,7 @@ The course requires documenting significant use of AI tools and how their result
 - Generated code is merged only after the author has read it and the tests pass; behaviour-changing code gets new tests.
 - Generated designs and documents are reviewed against the code before they are marked Accepted.
 - No real personal or financial data is shared with AI tools.
+- AI-generated UI designs (Figma Make, First Draft) are logged with the prompt used ([figma-prompts.md](design/figma-prompts.md)) and reviewed against the [UI design](design/user-interface.md) before export; generated code is not used.
 
 ## Log
 
@@ -17,4 +18,5 @@ The course requires documenting significant use of AI tools and how their result
 | 2026-10-09 | Claude Code | Matching and duplicate detection design (proposed) | Under review by the author | – |
 | 2026-10-09 | Claude Code | Whole-word categorization fix | Unit tests; awaiting author review | #2 |
 | 2026-10-09 | Claude Code | Atomic bulk import, amount validation | Unit and HTTP tests; awaiting author review | #3 |
-| 2026-10-09 | Claude Code | Documentation structure, package layout, roadmap | Existing tests pass after the move; awaiting author review | this PR |
+| 2026-10-09 | Claude Code | Documentation structure, package layout, roadmap | Existing tests pass after the move; reviewed and merged by the author | #4 |
+| 2026-10-09 | Claude Code | UI plan, Figma prompt plan, ADR 0005 (proposed) | Awaiting author review | this PR |

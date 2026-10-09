@@ -38,17 +38,18 @@ The professional core of the thesis is **transaction matching across sources**; 
 1. **Transaction matching and duplicate detection** with the event model, exact re-delivery detection, scored candidate matching and an append-only decision log ([design](../design/transaction-matching.md)).
 2. **Match review and correction:** list uncertain matches, confirm, reject, split.
 3. **Source traceability:** raw payload, source reference, import batch and decision history for every record.
-4. **Android integration:** a minimal Android app that reads supported banking notifications and sends them to the ingest endpoint.
-5. **Google Sheets integration:** a sheet-side script that sends new rows to the bulk endpoint, plus file import of spreadsheet exports.
-6. **LLM-based categorization** behind the same interface as the rule-based categorizer, compared with it on one labelled dataset.
-7. **Authentication and stronger access control:** server-issued per-user API tokens replace client-supplied identity headers.
-8. **Security and privacy evaluation:** group isolation, input validation, atomicity, traceability and AI-boundary tests, plus a data-minimization review.
-9. **Measurement:** labelled synthetic datasets and an evaluation runner for matching and categorization.
-10. **Documentation and setup guide** that let someone else run the system and the evaluation from the repository.
+4. **Web app:** the main user interface for events, match review and correction, manual entry, file import and token management, built as plain HTML/CSS/JS served by the backend ([design](../design/user-interface.md), [ADR 0005](../architecture/decisions/0005-web-client-first.md)).
+5. **Android integration:** a minimal Android app that reads supported banking notifications and sends them to the ingest endpoint.
+6. **Google Sheets integration:** a sheet-side script that sends new rows to the bulk endpoint, plus file import of spreadsheet exports.
+7. **LLM-based categorization** behind the same interface as the rule-based categorizer, compared with it on one labelled dataset.
+8. **Authentication and stronger access control:** server-issued per-user API tokens replace client-supplied identity headers.
+9. **Security and privacy evaluation:** group isolation, input validation, atomicity, traceability and AI-boundary tests, plus a data-minimization review.
+10. **Measurement:** labelled synthetic datasets and an evaluation runner for matching and categorization.
+11. **Documentation and setup guide** that let someone else run the system and the evaluation from the repository.
 
 ### Priority if time runs short
 
-The order above is the priority order. Items 1–3 and 7 are never cut. If a later item slips, it is delivered in a reduced but working form (for example, the Android app supports one bank's format) rather than dropped, and the reduction is recorded in the change log below.
+The order above is the priority order. Items 1–3 and 8 are never cut; the web app (4) may shrink to the event list and review screens. If a later item slips, it is delivered in a reduced but working form (for example, the Android app supports one bank's format) rather than dropped, and the reduction is recorded in the change log below.
 
 ### How it is verified
 
@@ -57,7 +58,7 @@ The order above is the priority order. Items 1–3 and 7 are never cut. If a lat
 | Flows work end to end | Service and HTTP tests per scenario (`python -m unittest discover -s tests`) |
 | Matching is correct | Labelled dataset, metrics from `python -m finsync.evaluation`, results in [evaluation/](../evaluation/README.md) |
 | LLM vs rules | Accuracy and error patterns of both categorizers on the same labelled dataset |
-| Clients work | Demo: a notification on the phone and a new sheet row both appear as one matched event |
+| Clients work | Demo: a notification on the phone and a new sheet row both appear as one matched event in the web app, where an uncertain match is reviewed |
 | Groups are isolated | Cross-group access tests for every endpoint |
 | Others can run it | [Getting started](../guides/getting-started.md) tried on a clean machine before M3 |
 
@@ -78,9 +79,9 @@ Goal: the main technical risk, telling duplicates from look-alike purchases, has
 
 | Week | Main track | Side track |
 | --- | --- | --- |
-| Oct 12–18 | Schema versioning and migration: `events`, `match_decisions`, traceability columns. Time-zone decision (ADR). Matching normalization and fingerprint. | Synthetic matching dataset generator. |
+| Oct 12–18 | Schema versioning and migration: `events`, `match_decisions`, traceability columns. Time-zone decision (ADR). Matching normalization and fingerprint. | Synthetic matching dataset generator. Figma wireframes for the event list, review queue and Android setup. |
 | Oct 19–25 | Blocking, scoring and decision; matching wired into all ingest paths in one transaction; `event_id`, `match_outcome`; `GET /v1/events`. | Android spike: notification listener on a real device logging the supported formats. |
-| Oct 26–30 | Dataset v1 (~100 records), evaluation runner, first results file. **M1 content complete.** | ADR for how the Sheets script reaches the API. |
+| Oct 26–30 | Dataset v1 (~100 records), evaluation runner, first results file. **M1 content complete.** | ADR for how the Sheets script reaches the API. Web app skeleton: static file serving and a read-only event list. |
 
 ### Phase 2 — Integrated prototype (2026-11-02 → internal target 2026-11-27, M2 due 2026-12-04)
 
@@ -88,9 +89,9 @@ Goal: every committed component exists and works together with proper data handl
 
 | Week | Main track | Side track |
 | --- | --- | --- |
-| Nov 2–8 | Authentication with per-user API tokens (hashed); review and correction endpoints with permission tests. M1 submitted from `main` (tag `v0.2.0`). | Labelled categorization dataset. |
-| Nov 9–15 | Android app: token setup, sending to `/v1/notifications/ingest`, retry without duplicates; request size limits. | |
-| Nov 16–22 | Google Sheets script posting rows to `/v1/transactions/bulk` with `source_ref`; file import of exports; cross-group tests on every endpoint. | Grow the matching dataset to 200–300 records. |
+| Nov 2–8 | Authentication with per-user API tokens (hashed); review and correction endpoints with permission tests. M1 submitted from `main` (tag `v0.2.0`). | Labelled categorization dataset. Styled screens in Figma. |
+| Nov 9–15 | Web app: sign-in, review queue, event detail with split, token management. Android app: token setup, sending to `/v1/notifications/ingest`, retry without duplicates; request size limits. | |
+| Nov 16–22 | Google Sheets script posting rows to `/v1/transactions/bulk` with `source_ref`; file import of exports (web app import screen); cross-group tests on every endpoint. | Grow the matching dataset to 200–300 records. Web app overview and manual entry. |
 | Nov 23–27 | LLM categorizer behind the categorizer interface with output validation; end-to-end demo across all sources. **M2 content complete.** | |
 
 ### Phase 3 — Evaluation, hardening and preliminary package (2026-11-30 → internal target 2027-01-08, M3 due 2027-01-15)
@@ -113,7 +114,7 @@ Goal: every committed component exists and works together with proper data handl
 
 | Risk | Impact | Mitigation |
 | --- | --- | --- |
-| Full scope is large for one semester | Late or shallow components | Matching first; priority order above; reduced-but-working fallback; feature freeze on Dec 18 |
+| Full scope is large for one semester (including the web app) | Late or shallow components | Matching first; priority order above; reduced-but-working fallback; feature freeze on Dec 18 |
 | Matching rules produce false merges on real-looking data | Core claim fails | Channel rule, review band, measured false-merge rate; thresholds tuned on a separate split |
 | Unknown real notification formats and time zones | Parser or matching off by hours | Decide time-zone default in Phase 1; keep raw payload for re-processing |
 | Android notification access and testing need a real device and real bank apps | Android component slips | Spike on a real device already in October; test with self-sent notifications in the supported formats; never store real personal data |
@@ -135,3 +136,4 @@ The detailed plan is written in M3.
 | Date | Change |
 | --- | --- |
 | 2026-10-09 | First version. |
+| 2026-10-09 | Added the web app as committed item 4 (main user interface, built before the Android app); Figma wireframes and web app work added to Phases 1–2 ([ADR 0005](../architecture/decisions/0005-web-client-first.md)). |
