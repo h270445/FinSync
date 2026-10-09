@@ -4,7 +4,7 @@ FinSync is a personal and community-focused financial tracking project designed 
 
 The project explores how financial transactions from different sources can be collected, normalized, and reconciled into a reliable, auditable record. Its main engineering challenge is **transaction matching across data sources**: detecting duplicate records without incorrectly merging separate financial events.
 
-The repository is the foundation for a BSc thesis project (Szakdolgozat I. in autumn 2026, continued in Szakdolgozat II.).
+The repository is the foundation for a BSc thesis project (built in Szakdolgozat I., autumn 2026; refined and written up in Szakdolgozat II.).
 
 ## Project goals
 
@@ -49,7 +49,7 @@ The repository currently contains a minimal backend flow:
 
 The items above describe intended development work, not completed functionality. The current parser supports only predefined notification formats; the repository does not yet provide a complete Android notification collector or direct Google Sheets integration.
 
-Which of these items belong to this semester and which to Szakdolgozat II. is set in the [roadmap](planning/roadmap.md#semester-scope).
+All of these items are committed for this semester (Szakdolgozat I.); the order and dates are in the [roadmap](planning/roadmap.md#semester-scope).
 
 ## Main thesis contribution: transaction matching
 

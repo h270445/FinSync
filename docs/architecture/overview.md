@@ -1,6 +1,6 @@
 # Architecture overview
 
-This document has two parts: the architecture **as implemented** today, and the **target** architecture the project grows into over Szakdolgozat I. and II. The target is a direction, not a commitment to build everything this semester; the semester scope is in the [roadmap](../planning/roadmap.md#semester-scope).
+This document has two parts: the architecture **as implemented** today, and the **target** architecture, which is built during this semester. The order of work is in the [roadmap](../planning/roadmap.md#plan-by-phase).
 
 ## 1. Current architecture (implemented)
 
@@ -74,7 +74,12 @@ finsync/
   evaluation/      dataset replay and metrics runner             (planned)
 tests/
   data/            labelled synthetic datasets                   (planned)
+clients/
+  android/         notification collector app (Kotlin)           (planned)
+  google-sheets/   Apps Script sending sheet rows to the API     (planned)
 ```
+
+Each client folder gets its own README with build and setup steps when it is created.
 
 ### Data model direction
 
@@ -114,7 +119,8 @@ transactions (immutable source records) ──event_id──► events (what mem
 | Storage | SQLite | SQLite with migrations; a server database only if multi-user deployment requires it |
 | API | `http.server` | Keep; revisit a framework only if routing or auth becomes the bottleneck |
 | Tests | `unittest` | Keep; add labelled datasets under `tests/data/` |
-| Clients | none | Android notification collector and Google Sheets script (Szakdolgozat II.) |
+| Clients | none | Android notification collector and Google Sheets script (Phase 2 of the roadmap) |
+| LLM | none | External LLM API called with the standard library (`urllib`), only for categorization, output validated |
 
 ## 5. Known architectural gaps
 

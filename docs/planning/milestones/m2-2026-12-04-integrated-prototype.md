@@ -10,18 +10,20 @@ The core flows committed for the semester work together, with proper data handli
 
 ## Acceptance criteria
 
-- [ ] All three sources (notification text, manual entry, spreadsheet-export import) go through the same matching pipeline.
+- [ ] All sources go through the same matching pipeline: Android notifications, Google Sheets rows, spreadsheet-export files and manual entries.
+- [ ] Demo: a notification on the phone and the same purchase entered in the sheet appear as one event.
 - [ ] Uncertain matches can be listed, confirmed and rejected; a wrong link can be split; every action is logged and supersedes the previous decision.
 - [ ] Requests are authenticated with per-user tokens; client-supplied identity headers are no longer trusted.
 - [ ] Every endpoint has a cross-group access test (403/404, nothing written).
 - [ ] Malformed input, oversized bodies and failing bulk imports leave the database unchanged and return a clear 400.
-- [ ] Thresholds tuned on the development split; results on the held-out test split saved with the commit id.
+- [ ] The LLM categorizer runs behind the same interface as the rule-based one and its output is validated against the category list.
 
 ## Checklist
 
-- [ ] Review and correction endpoints with tests.
-- [ ] CSV import with `import_batch_id` and `source_ref`.
 - [ ] Authentication and request size limits.
-- [ ] Full labelled dataset (200–300 records), threshold sweep.
-- [ ] Docs updated (API reference, security status, evaluation results).
+- [ ] Review and correction endpoints with tests.
+- [ ] Android app (notification listener, token setup, sending, retry) with its README.
+- [ ] Reachability decision for the Sheets script (ADR); Sheets script and file import with `import_batch_id` and `source_ref`.
+- [ ] LLM categorizer and labelled categorization dataset.
+- [ ] Docs updated (API reference, security status, client setup in the guides).
 - [ ] Release notes, tag `v0.3.0`, e-mail.

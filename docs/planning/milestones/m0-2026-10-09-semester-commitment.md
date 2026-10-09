@@ -10,7 +10,7 @@ Refined semester commitment: what the prototype will do, how it can be verified,
 
 ## Acceptance criteria
 
-- [x] The semester scope and the deferred items are written down ([roadmap](../roadmap.md#semester-scope)).
+- [x] The semester scope and its priority order are written down ([roadmap](../roadmap.md#semester-scope)).
 - [x] Each committed capability has a verification method ([roadmap](../roadmap.md#how-it-is-verified)).
 - [x] Current implementation status is documented ([overview](../../overview.md#current-implementation-status)).
 - [x] The steps to each deadline are planned ([roadmap](../roadmap.md#plan-by-phase)).

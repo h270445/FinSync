@@ -13,14 +13,17 @@ Runnable system, test and measurement results, a short professional report, know
 
 - [ ] A person new to the project can install, run, test and evaluate the system using only [getting-started.md](../../guides/getting-started.md) (tried on a clean machine).
 - [ ] All tests pass on the tagged commit.
-- [ ] Final measurement results with the commit id and command are in `docs/evaluation/results/`.
+- [ ] Final matching, categorization and security results with the commit id and command are in `docs/evaluation/results/`.
 - [ ] Documentation describes the actual implementation (every design marked Accepted or updated to match).
 - [ ] Known limitations are listed.
-- [ ] The Szakdolgozat II. plan is written.
+- [ ] The Szakdolgozat II. plan (refinement and thesis writing) is written.
 - [ ] [AI usage](../../ai-usage.md) is complete: significant uses and how their output was checked.
 
 ## Checklist
 
+- [ ] Full matching dataset, thresholds tuned on the development split, results on the test split.
+- [ ] LLM vs rule categorization measured on the same dataset (accuracy, error patterns, latency, cost).
+- [ ] Security and privacy evaluation results.
 - [ ] Edge-case tests (late manual entries, rounded amounts, time zones).
 - [ ] Clean-machine setup test.
 - [ ] Short professional report (`docs/report.md` or PDF linked from `docs/README.md`).
