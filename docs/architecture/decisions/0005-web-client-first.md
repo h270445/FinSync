@@ -5,7 +5,7 @@
 
 ## Context
 
-FinSync needs screens for listing events, reviewing uncertain matches, correcting wrong links, manual entry, file import and token management. The roadmap commits an Android app and a Google Sheets script, but neither is suited to these tasks: the Android app forwards notifications in the background, and the Sheets script only sends rows. Review and correction (roadmap item 2) therefore had no user interface. A reviewer must also be able to run and try the system from the repository guide alone.
+FinSync needs screens for listing events, reviewing uncertain matches, correcting wrong links, manual entry, file import and token management. The roadmap commits an Android app and spreadsheet import (a Google Sheets script only if time allows), but neither is suited to these tasks: the Android app forwards notifications in the background, and import only brings rows in. Review and correction (roadmap item 2) therefore had no user interface. A reviewer must also be able to run and try the system from the repository guide alone.
 
 ## Decision
 

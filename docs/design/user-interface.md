@@ -32,7 +32,7 @@ UI text is Hungarian, amounts in HUF (`12 990 Ft`), dates `2026. 10. 09.`. All e
 
 | # | Screen | Purpose | API (current or planned) | Needed by |
 | --- | --- | --- | --- | --- |
-| W1 | Sign in | E-mail and password (session cookie); choose a group if the member belongs to several | Token auth (planned, M2) | M2 |
+| W1 | Sign in | E-mail and password (session cookie); choose a group if the member belongs to several | Password login and session endpoints (planned, M2) | M2 |
 | W2 | Overview | Month totals per category and per member; count of events waiting for review | `GET /v1/events` | M2 |
 | W3 | Events | Deduplicated list: date, merchant, amount, category, source badges (notification, sheet, manual, file), review flag; filter by month, member, category, source | `GET /v1/events` | M1 side track (read-only) |
 | W4 | Event detail | The records behind one event, raw payload, source reference, import batch, decision history; **Split** action; category correction | `GET /v1/events`, `POST /v1/events/{id}/split` | M2 |
@@ -72,11 +72,11 @@ Figma is the design tool (prompt-based generation with Figma Make or First Draft
 | --- | --- | --- |
 | Figma file (source of truth) | Figma cloud; link in [ui/README.md](ui/README.md) | Link only |
 | Approved screen exports (PNG, 1x or 2x) | `docs/design/ui/` | Yes, small and referenced from docs and the thesis |
-| Raw or work-in-progress exports | `docs/design/ui/exports/` (local) | No, ignored |
+| Raw or work-in-progress exports | `docs/design/ui/exports/` (local only) | No; ignore rule pending |
 | `.fig` backups | Outside the repository | No |
 | Figma Make generated code | Copied into `web/` only after rewriting and review | Only the reviewed version |
 
-Figma keeps the design in its cloud, so there is usually nothing local to ignore; teams commit only the curated images their docs reference and ignore bulk export folders. The `exports/` ignore rule is proposed in [ui/README.md](ui/README.md).
+Figma keeps the design in its cloud, so there is usually nothing local to ignore; teams commit only the curated images their docs reference and ignore bulk export folders. The `exports/` ignore rule is pending ([ui/README.md](ui/README.md)).
 
 ## Open questions
 

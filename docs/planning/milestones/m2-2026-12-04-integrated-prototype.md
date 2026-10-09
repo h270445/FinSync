@@ -14,7 +14,7 @@ The core flows committed for the semester work together, with proper data handli
 - [ ] All sources go through the same matching pipeline: Android notifications (one bank format), spreadsheet-export files and manual entries (Google Sheets rows if the script is built).
 - [ ] Demo: a notification on the phone and the same purchase imported from a spreadsheet appear as one event, while two separate purchases of the same amount on the same day stay two events.
 - [ ] Uncertain matches can be listed, confirmed and rejected in the web app; a wrong link can be split; every action is logged and supersedes the previous decision.
-- [ ] Requests are authenticated with per-user tokens; client-supplied identity headers are no longer trusted.
+- [ ] Requests are authenticated: per-user API tokens for the Android app (and Sheets script), password login with a secure session cookie and CSRF protection for the web app; client-supplied identity headers are no longer trusted.
 - [ ] Every endpoint has a cross-group access test (403/404, nothing written).
 - [ ] Malformed input, oversized bodies and failing bulk imports leave the database unchanged and return a clear 400.
 - [ ] The LLM categorizer runs behind the same interface as the rule-based one and its output is validated against the category list.

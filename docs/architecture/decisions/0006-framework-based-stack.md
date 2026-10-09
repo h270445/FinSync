@@ -5,7 +5,7 @@
 
 ## Context
 
-ADR 0002 chose the Python standard library and SQLite so the prototype runs with no installation. The committed semester scope has since grown to three clients (web, Android, Google Sheets), token and password authentication, concurrent writes from several members, schema migrations and an LLM categorizer. With the standard library, routing, validation, authentication and migrations would all be hand-written. The author also wants to learn and show current industry tools. The supervisor advised (2026-10-09) to build on the existing backend instead of rebuilding it and to keep the semester's time for the matching core.
+ADR 0002 chose the Python standard library and SQLite so the prototype runs with no installation. The committed semester scope has since grown to a web app and an Android app (with spreadsheet import and an optional Google Sheets script), token and password authentication, concurrent writes from several members, schema migrations and an LLM categorizer. With the standard library, routing, validation, authentication and migrations would all be hand-written. The author also wants to learn and show current industry tools. The supervisor advised (2026-10-09) to build on the existing backend instead of rebuilding it and to keep the semester's time for the matching core.
 
 ## Decision
 
@@ -14,7 +14,7 @@ Adopt the stack in [technology-stack.md](../technology-stack.md) this semester, 
 - Backend: FastAPI, Pydantic, SQLAlchemy 2.0, Alembic, PostgreSQL, Uvicorn.
 - Web frontend: React with TypeScript and Vite, TanStack Query, Tailwind CSS with shadcn/ui, types generated from the OpenAPI schema.
 - Android: Kotlin with Jetpack Compose, WorkManager and Room.
-- Google Sheets: Apps Script in TypeScript, managed with clasp.
+- Google Sheets (optional this semester): Apps Script in TypeScript, managed with clasp.
 - Delivery: Docker Compose for local runs and hosting, GitHub Actions for CI.
 
 The layered layout of [ADR 0003](0003-layered-package-layout.md) stays; matching, ingestion and categorization remain framework-free Python.

@@ -3,14 +3,14 @@
 - Status: **Proposed** ([ADR 0006](decisions/0006-framework-based-stack.md)); the current implementation still uses the standard-library prototype described in [overview.md](overview.md#1-current-architecture-implemented)
 - Date: 2026-10-09
 
-This is the stack FinSync is built on by the end of the semester, chosen from the current requirements: transaction matching across sources, review and correction, traceability, three clients (web, Android, Google Sheets), token authentication, LLM categorization, measurable evaluation, and a setup someone else can run. A second goal is that the stack is current industry practice, for learning and for the author's portfolio.
+This is the stack FinSync is built on by the end of the semester, chosen from the current requirements: transaction matching across sources, review and correction, traceability, a web app and an Android app plus spreadsheet import (a Google Sheets script is optional this semester), token and password authentication, LLM categorization, measurable evaluation, and a setup someone else can run. A second goal is that the stack is current industry practice, for learning and for the author's portfolio.
 
 ## Summary
 
 ```text
 Browser ── React + TypeScript (Vite) ──┐
 Android ── Kotlin + Jetpack Compose ───┼── HTTPS / JSON ──> FastAPI (Python) ──> PostgreSQL
-Google Sheets ── Apps Script ──────────┘     │  SQLAlchemy + Alembic
+Google Sheets (optional) ── Apps Script ┘     │  SQLAlchemy + Alembic
                                               ├── matching, ingestion, categorization (pure Python)
                                               └── LLM provider (categorization only)
 
@@ -23,11 +23,11 @@ Local and deployment: Docker Compose (api, web, db) · CI: GitHub Actions
 | --- | --- | --- |
 | Language | **Python 3.12 or newer** | The matching, parsing and evaluation code already exists in Python and stays; strong data and LLM tooling for the evaluation. |
 | Web framework | **FastAPI** | Request and response models with validation (Pydantic) replace hand-written parsing and error mapping; dependency injection fits the "current user and group" check on every endpoint; generates an OpenAPI description used for the API reference and the typed frontend client. Widely used, good for a portfolio. |
-| Validation | **Pydantic v2** | Comes with FastAPI; one model per request body gives consistent 400/422 errors and request size limits in one place. |
+| Validation | **Pydantic v2** | Comes with FastAPI; one model per request body gives consistent 400/422 errors. Body size is limited before parsing by a small ASGI middleware checking `Content-Length` and the streamed size (and by Caddy's `request_body` limit when hosted). |
 | Database access | **SQLAlchemy 2.0** (Core and ORM, typed) | Explicit transactions and row locks, which the matching step needs; the same models work against PostgreSQL in production and in tests. |
 | Migrations | **Alembic** | Replaces the hand-written schema versioning planned for Phase 1; every schema change is a reviewed, reversible file. |
 | Database | **PostgreSQL** (current stable major version) | Real concurrent writers (several members and clients), row-level locks and transaction-scoped advisory locks for "match one record per group at a time", `JSONB` for raw payloads, and the database used in industry. |
-| Authentication | **Argon2-hashed API tokens** for the Android app and Sheets script; **password login with an HttpOnly session cookie** for the web app | Clients cannot keep a password but can store a revocable token; browsers should not keep long-lived secrets in JavaScript-readable storage. Both resolve to the same user and group checks. |
+| Authentication | **Argon2-hashed API tokens** for the Android app and Sheets script; **password login with an HttpOnly session cookie** for the web app | Clients cannot keep a password but can store a revocable token; browsers should not keep long-lived secrets in JavaScript-readable storage. Both resolve to the same user and group checks. The cookie is `Secure`, `HttpOnly`, `SameSite=Lax`; state-changing requests from the web app also need a matching `Origin` header and a CSRF token (double-submit), so a cross-site page cannot confirm, split or import on a member's behalf. |
 | LLM | Official SDK of one provider, called only from `finsync.categorization` | Behind the categorizer interface, sends only description and merchant, output validated against the category list. Provider chosen in November. |
 | Server | **Uvicorn** | The standard ASGI server for FastAPI. |
 
@@ -59,7 +59,7 @@ Angular was considered: it is complete and opinionated, but heavier for eight sc
 | HTTP | **Retrofit + OkHttp** (kotlinx.serialization) | Standard, typed HTTP client. |
 | Token storage | **DataStore**, encrypted with an Android Keystore key | The token never sits in plain text. |
 
-## Google Sheets
+## Google Sheets (optional this semester)
 
 | Concern | Choice | Why |
 | --- | --- | --- |
