@@ -1,14 +1,14 @@
 # Milestones
 
-One target file per course deadline. Each file states the expected result, acceptance criteria that can be checked from the repository, a checklist, and the version tag.
+One target file per course deadline. The course deadline is the latest submission date; each file also gives an earlier internal target, and work on the next milestone starts as soon as the current one is complete. Each file states the expected result, acceptance criteria that can be checked from the repository, a checklist, and the version tag.
 
-| Milestone | Deadline | File | Tag |
-| --- | --- | --- | --- |
-| M0 | 2026-10-09 | [Semester commitment](m0-2026-10-09-semester-commitment.md) | `v0.1.0` |
-| M1 | 2026-11-06 | [Working core](m1-2026-11-06-working-core.md) | `v0.2.0` |
-| M2 | 2026-12-04 | [Integrated prototype](m2-2026-12-04-integrated-prototype.md) | `v0.3.0` |
-| M3 | 2027-01-15 | [Preliminary final package](m3-2027-01-15-preliminary-package.md) | `v0.9.0` |
-| M4 | 2027-01-30 | [Corrected final package](m4-2027-01-30-final-package.md) | `v1.0.0` |
+| Milestone | Deadline | Internal target | File | Tag |
+| --- | --- | --- | --- | --- |
+| M0 | 2026-10-09 | – | [Semester commitment](m0-2026-10-09-semester-commitment.md) | `v0.1.0` |
+| M1 | 2026-11-06 | 2026-10-30 | [Working core](m1-2026-11-06-working-core.md) | `v0.2.0` |
+| M2 | 2026-12-04 | 2026-11-27 | [Integrated prototype](m2-2026-12-04-integrated-prototype.md) | `v0.3.0` |
+| M3 | 2027-01-15 | 2027-01-08 | [Preliminary final package](m3-2027-01-15-preliminary-package.md) | `v0.9.0` |
+| M4 | 2027-01-30 | as feedback arrives | [Corrected final package](m4-2027-01-30-final-package.md) | `v1.0.0` |
 
 ## Delivering a milestone
 

@@ -3,6 +3,7 @@
 - Deadline: 2027-01-15 23:59
 - Tag: `v0.9.0`
 - Status: planned
+- Internal target: 2027-01-08
 - Feature freeze: 2026-12-18
 
 ## Expected result (course)

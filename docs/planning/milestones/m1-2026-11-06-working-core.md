@@ -3,6 +3,7 @@
 - Deadline: 2026-11-06 23:59
 - Tag: `v0.2.0`
 - Status: planned
+- Internal target: 2026-10-30
 
 ## Expected result (course)
 
@@ -30,5 +31,6 @@ A banking notification and a manual entry for the same purchase arrive through t
 - [ ] `GET /v1/events`.
 - [ ] Synthetic dataset v1 (~100 labelled records) and its description.
 - [ ] Evaluation runner and first results.
+- [ ] Side tracks: Android notification-listener spike on a real device; ADR for how the Sheets script reaches the API.
 - [ ] Docs updated (API reference, storage README, design status → Accepted).
 - [ ] Release notes, tag `v0.2.0`, e-mail.

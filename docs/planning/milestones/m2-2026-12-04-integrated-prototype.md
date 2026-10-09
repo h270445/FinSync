@@ -3,6 +3,7 @@
 - Deadline: 2026-12-04 23:59
 - Tag: `v0.3.0`
 - Status: planned
+- Internal target: 2026-11-27
 
 ## Expected result (course)
 
@@ -23,7 +24,7 @@ The core flows committed for the semester work together, with proper data handli
 - [ ] Authentication and request size limits.
 - [ ] Review and correction endpoints with tests.
 - [ ] Android app (notification listener, token setup, sending, retry) with its README.
-- [ ] Reachability decision for the Sheets script (ADR); Sheets script and file import with `import_batch_id` and `source_ref`.
+- [ ] Sheets script and file import with `import_batch_id` and `source_ref`.
 - [ ] LLM categorizer and labelled categorization dataset.
 - [ ] Docs updated (API reference, security status, client setup in the guides).
 - [ ] Release notes, tag `v0.3.0`, e-mail.
