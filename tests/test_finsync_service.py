@@ -5,8 +5,8 @@ import os
 import tempfile
 import unittest
 
-from finsync.parser import parse_notification
-from finsync.service import AuthorizationError, FinSyncService
+from finsync.core import AuthorizationError, FinSyncService
+from finsync.ingestion import parse_notification
 from finsync.storage import FinSyncStorage
 
 
