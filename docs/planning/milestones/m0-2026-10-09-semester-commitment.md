@@ -22,4 +22,4 @@ Refined semester commitment: what the prototype will do, how it can be verified,
 - [x] Layered package layout ([ADR 0003](../../architecture/decisions/0003-layered-package-layout.md)).
 - [ ] Documentation pull request merged into `main`.
 - [ ] Tag `v0.1.0` created on that commit.
-- [ ] Milestone e-mail sent with the tag and commit id.
+- [ ] Milestone e-mail sent with the tag and commit id ([draft](../../releases/status-emails/2026-10-09-m0.md)).
