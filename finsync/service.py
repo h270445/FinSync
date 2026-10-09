@@ -53,18 +53,7 @@ class FinSyncService:
     def create_manual_transaction(self, user_id: str, group_id: str, payload: dict[str, Any]) -> int:
         self.ensure_authorized(user_id, group_id)
         tx = self._validate_transaction_payload(payload)
-        category = categorize_transaction(f"{tx.description} {tx.merchant or ''}")
-        return self._storage.insert_transaction(
-            user_id=user_id,
-            group_id=group_id,
-            amount=tx.amount,
-            currency=tx.currency,
-            description=tx.description,
-            merchant=tx.merchant,
-            category=category,
-            source="manual",
-            happened_at=tx.happened_at,
-        )
+        return self._storage.insert_transaction(**self._manual_record(user_id, group_id, tx))
 
     def bulk_create_manual_transactions(
         self,
@@ -73,10 +62,30 @@ class FinSyncService:
         rows: list[dict[str, Any]],
     ) -> list[int]:
         self.ensure_authorized(user_id, group_id)
-        created: list[int] = []
-        for row in rows:
-            created.append(self.create_manual_transaction(user_id, group_id, row))
-        return created
+        # Validate every row before writing anything, so one bad row rejects the whole batch.
+        validated: list[TransactionInput] = []
+        for index, row in enumerate(rows):
+            try:
+                validated.append(self._validate_transaction_payload(row))
+            except ValueError as error:
+                raise ValueError(f"Row {index}: {error}") from error
+        return self._storage.insert_transactions(
+            self._manual_record(user_id, group_id, tx) for tx in validated
+        )
+
+    @staticmethod
+    def _manual_record(user_id: str, group_id: str, tx: TransactionInput) -> dict[str, Any]:
+        return {
+            "user_id": user_id,
+            "group_id": group_id,
+            "amount": tx.amount,
+            "currency": tx.currency,
+            "description": tx.description,
+            "merchant": tx.merchant,
+            "category": categorize_transaction(f"{tx.description} {tx.merchant or ''}"),
+            "source": "manual",
+            "happened_at": tx.happened_at,
+        }
 
     def list_group_transactions(self, user_id: str, group_id: str) -> list[TransactionRecord]:
         self.ensure_authorized(user_id, group_id)
@@ -84,6 +93,8 @@ class FinSyncService:
 
     @staticmethod
     def _validate_transaction_payload(payload: dict[str, Any]) -> TransactionInput:
+        if not isinstance(payload, dict):
+            raise ValueError("Transaction must be a JSON object")
         required = {"amount", "currency", "description", "happened_at"}
         missing = required - payload.keys()
         if missing:
@@ -93,6 +104,8 @@ class FinSyncService:
             amount = Decimal(str(payload["amount"]))
         except (InvalidOperation, ValueError) as error:
             raise ValueError("Invalid amount") from error
+        if not amount.is_finite():
+            raise ValueError("Invalid amount")
         if amount == 0:
             raise ValueError("Amount cannot be zero")
 
