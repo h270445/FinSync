@@ -39,8 +39,9 @@ Constraints:
   "Fájl" (file import).
 - Use realistic but fictional data: group "Lakás – Fő utca", members "Anna", "Bálint",
   "Csilla"; merchants like "SPAR", "Lidl", "MOL", "Wolt", "BKK".
-- Implementation will be plain HTML/CSS/JS, so prefer simple components: tables,
-  forms, cards, tabs, dialogs. No complex charts beyond a simple bar chart.
+- Implementation uses React, TypeScript, Tailwind CSS and shadcn/ui components, so
+  build from standard components: tables, forms, cards, tabs, dialogs, toasts.
+  No complex charts beyond a simple bar chart.
 ```
 
 ## Screen prompts
@@ -153,8 +154,8 @@ Screen: group settings with two tabs.
 ### W1 — Sign in (Bejelentkezés)
 
 ```text
-Screen: centered card with a token field ("API token"), a sign-in button, a short
-explanation of where to get a token, and an error state for an invalid token.
+Screen: centered card with e-mail and password fields, a sign-in button and an error
+state for wrong credentials.
 After sign-in, if the member has several groups, show a group picker.
 ```
 
@@ -195,5 +196,5 @@ Add empty, loading and error states for this screen as separate frames.
 - [ ] Every destructive or linking action has a confirmation or undo.
 - [ ] Hungarian text, HUF and date formats are correct.
 - [ ] Works at 360 px; contrast is AA.
-- [ ] Buildable with plain HTML/CSS/JS (no complex custom widgets).
+- [ ] Buildable from shadcn/ui components (no complex custom widgets).
 - [ ] Only synthetic data.

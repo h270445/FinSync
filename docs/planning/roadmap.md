@@ -38,7 +38,7 @@ The professional core of the thesis is **transaction matching across sources**; 
 1. **Transaction matching and duplicate detection** with the event model, exact re-delivery detection, scored candidate matching and an append-only decision log ([design](../design/transaction-matching.md)).
 2. **Match review and correction:** list uncertain matches, confirm, reject, split.
 3. **Source traceability:** raw payload, source reference, import batch and decision history for every record.
-4. **Web app:** the main user interface for events, match review and correction, manual entry, file import and token management, built as plain HTML/CSS/JS served by the backend ([design](../design/user-interface.md), [ADR 0005](../architecture/decisions/0005-web-client-first.md)).
+4. **Web app:** the main user interface for events, match review and correction, manual entry, file import and token management, built with React and TypeScript ([design](../design/user-interface.md), [ADR 0005](../architecture/decisions/0005-web-client-first.md)).
 5. **Android integration:** a minimal Android app that reads supported banking notifications and sends them to the ingest endpoint.
 6. **Google Sheets integration:** a sheet-side script that sends new rows to the bulk endpoint, plus file import of spreadsheet exports.
 7. **LLM-based categorization** behind the same interface as the rule-based categorizer, compared with it on one labelled dataset.
@@ -79,9 +79,9 @@ Goal: the main technical risk, telling duplicates from look-alike purchases, has
 
 | Week | Main track | Side track |
 | --- | --- | --- |
-| Oct 12–18 | Schema versioning and migration: `events`, `match_decisions`, traceability columns. Time-zone decision (ADR). Matching normalization and fingerprint. | Synthetic matching dataset generator. Figma wireframes for the event list, review queue and Android setup. |
+| Oct 12–18 | Stack switch ([ADR 0006](../architecture/decisions/0006-framework-based-stack.md)): FastAPI, PostgreSQL, SQLAlchemy and Alembic, Docker Compose, CI; existing endpoints and tests ported. First Alembic migration: `events`, `match_decisions`, traceability columns. Time-zone decision (ADR). Matching normalization and fingerprint. | Synthetic matching dataset generator. Figma wireframes for the event list, review queue and Android setup. |
 | Oct 19–25 | Blocking, scoring and decision; matching wired into all ingest paths in one transaction; `event_id`, `match_outcome`; `GET /v1/events`. | Android spike: notification listener on a real device logging the supported formats. |
-| Oct 26–30 | Dataset v1 (~100 records), evaluation runner, first results file. **M1 content complete.** | ADR for how the Sheets script reaches the API. Web app skeleton: static file serving and a read-only event list. |
+| Oct 26–30 | Dataset v1 (~100 records), evaluation runner, first results file. **M1 content complete.** | ADR for how the Sheets script reaches the API. Web app skeleton (React, Vite, generated API types) with a read-only event list. |
 
 ### Phase 2 — Integrated prototype (2026-11-02 → internal target 2026-11-27, M2 due 2026-12-04)
 
@@ -114,6 +114,7 @@ Goal: every committed component exists and works together with proper data handl
 
 | Risk | Impact | Mitigation |
 | --- | --- | --- |
+| New stack (FastAPI, PostgreSQL, React, Compose) slows the start of Phase 1 | M1 core late | Switch in the first week only; matching stays pure Python; fallback: SQLite under SQLAlchemy until M2 |
 | Full scope is large for one semester (including the web app) | Late or shallow components | Matching first; priority order above; reduced-but-working fallback; feature freeze on Dec 18 |
 | Matching rules produce false merges on real-looking data | Core claim fails | Channel rule, review band, measured false-merge rate; thresholds tuned on a separate split |
 | Unknown real notification formats and time zones | Parser or matching off by hours | Decide time-zone default in Phase 1; keep raw payload for re-processing |
@@ -137,3 +138,4 @@ The detailed plan is written in M3.
 | --- | --- |
 | 2026-10-09 | First version. |
 | 2026-10-09 | Added the web app as committed item 4 (main user interface, built before the Android app); Figma wireframes and web app work added to Phases 1–2 ([ADR 0005](../architecture/decisions/0005-web-client-first.md)). |
+| 2026-10-09 | Proposed framework-based stack (FastAPI, PostgreSQL, React, Docker Compose); stack switch scheduled in the first week of Phase 1 ([ADR 0006](../architecture/decisions/0006-framework-based-stack.md)). |

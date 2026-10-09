@@ -57,7 +57,7 @@ Web app (browser) ─────────────┘
 | Layer | Package | Responsibility | Must not |
 | --- | --- | --- | --- |
 | Sources | separate clients (Android app, Sheets script) | Capture data, send it to the API | Hold their own transaction history |
-| Web UI | `finsync/web/` (planned) | Static HTML/CSS/JS calling the `/v1` API: events, review, corrections, entry, import, tokens ([ADR 0005](decisions/0005-web-client-first.md)) | Call anything but the public API; hold business rules |
+| Web UI | `web/` (planned) | React app calling the `/v1` API: events, review, corrections, entry, import, tokens ([ADR 0005](decisions/0005-web-client-first.md)) | Call anything but the public API; hold business rules |
 | API | `finsync.api` | Authentication, request parsing, size limits, error mapping, serialization | Contain business rules |
 | Application | `finsync.core` | Use cases, authorization, transaction boundaries | Parse source formats or build SQL |
 | Domain | `finsync.ingestion`, `finsync.matching`, `finsync.categorization` | Parsing, normalization, matching rules, categorization | Access the database, network or clock |
@@ -75,9 +75,10 @@ finsync/
   categorization/  rules (baseline), llm (comparison)            (exists: rules)
   storage/         sqlite, migrations                            (exists: sqlite)
   evaluation/      dataset replay and metrics runner             (planned)
-  web/             static web app served by the API server       (planned)
 tests/
   data/            labelled synthetic datasets                   (planned)
+migrations/        Alembic migrations                            (planned)
+web/               React + TypeScript frontend                   (planned)
 clients/
   android/         notification collector app (Kotlin)           (planned)
   google-sheets/   Apps Script sending sheet rows to the API     (planned)
@@ -117,16 +118,18 @@ transactions (immutable source records) ──event_id──► events (what mem
 
 ## 4. Technology
 
+The direction column is proposed in [ADR 0006](decisions/0006-framework-based-stack.md); full list and reasons in [technology-stack.md](technology-stack.md).
+
 | Concern | Now | Direction |
 | --- | --- | --- |
-| Language | Python (standard library) | Stay on the standard library while it suffices ([ADR 0002](decisions/0002-python-stdlib-and-sqlite.md)) |
-| Storage | SQLite | SQLite with migrations; a server database only if multi-user deployment requires it |
-| API | `http.server` | Keep; revisit a framework only if routing or auth becomes the bottleneck |
-| Deployment | Local run (`python -m finsync.api`) | No container while the backend has no dependencies; Docker only when the system is hosted on a server |
-| Tests | `unittest` | Keep; add labelled datasets under `tests/data/` |
-| Web UI | none | Plain HTML/CSS/JS, no build step, served by `http.server` ([ADR 0005](decisions/0005-web-client-first.md), proposed) |
-| Clients | none | Android notification collector (Kotlin) and Google Sheets script (Phase 2 of the roadmap) |
-| LLM | none | External LLM API called with the standard library (`urllib`), only for categorization, output validated |
+| Language | Python (standard library) | Python with FastAPI and Pydantic |
+| Storage | SQLite | PostgreSQL with SQLAlchemy 2.0 and Alembic migrations |
+| API | `http.server` | FastAPI on Uvicorn, OpenAPI schema |
+| Tests | `unittest` | pytest (existing tests run unchanged), PostgreSQL in tests, labelled datasets under `tests/data/` |
+| Web UI | none | React, TypeScript, Vite, TanStack Query, Tailwind CSS, shadcn/ui ([ADR 0005](decisions/0005-web-client-first.md)) |
+| Clients | none | Android: Kotlin, Jetpack Compose, WorkManager; Sheets: Apps Script with clasp |
+| LLM | none | One provider's SDK, only for categorization, output validated |
+| Delivery | Local run (`python -m finsync.api`) | Docker Compose (db, api, web), GitHub Actions CI |
 
 ## 5. Known architectural gaps
 
