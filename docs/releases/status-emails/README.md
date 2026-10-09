@@ -5,7 +5,7 @@ The text of every progress e-mail sent to the thesis supervisor, one file per e-
 - The English release notes in [releases/](../README.md) remain the official description of each milestone; the e-mail is a short Hungarian summary that points to the tag.
 - File name: `YYYY-MM-DD-<milestone or topic>.md`, for example `2026-10-09-m0.md`.
 - Commit the text in the same pull request as the release notes, before sending. After sending, set `Státusz: elküldve` and the send date; later corrections go into a new e-mail, not into the sent one.
-- No personal data beyond the supervisor's name; no passwords, tokens or real financial data.
+- No personal data beyond the supervisor's name (no e-mail addresses); no passwords, tokens or real financial data.
 
 ## Index
 

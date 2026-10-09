@@ -3,7 +3,7 @@
 - Status: **Proposed** ([ADR 0006](decisions/0006-framework-based-stack.md)); the current implementation still uses the standard-library prototype described in [overview.md](overview.md#1-current-architecture-implemented)
 - Date: 2026-10-09
 
-This is the stack FinSync is built on by the end of the semester, chosen from the current requirements: transaction matching across sources, review and correction, traceability, three clients (web, Android, Google Sheets), token authentication, LLM categorization, measurable evaluation, and a setup someone else can run. A second goal is that the stack is current industry practice, for learning and for the author's portfolio.
+This is the target stack for FinSync, introduced in two stages (see [Staging](#staging)), chosen from the current requirements: transaction matching across sources, review and correction, traceability, three clients (web, Android, Google Sheets), token authentication, LLM categorization, measurable evaluation, and a setup someone else can run. A second goal is that the stack is current industry practice, for learning and for the author's portfolio.
 
 ## Summary
 
@@ -104,10 +104,13 @@ docker-compose.yml  db, api, web
 | Kubernetes | Docker Compose on one host covers the demo and later hosting. |
 | An ORM-free raw SQL layer | SQLAlchemy Core still allows explicit SQL where matching needs it. |
 
-## Cost and risk
+## Staging
 
-The switch adds setup and learning before the main technical risk (matching) is solved. To contain it:
+Following the supervisor's advice (2026-10-09) to build on the existing backend and keep the semester's time for the core, the stack is introduced in two stages:
 
-- The framework switch happens in the first week of Phase 1, where the roadmap already planned the storage rework (schema versioning). The matching functions are pure Python and are written in parallel.
-- The React frontend starts only after `GET /v1/events` exists (Phase 1 side track), so the M1 core is not delayed.
-- If M1 is at risk on 2026-10-30, the fallback is to keep FastAPI and SQLAlchemy but run on SQLite until M2; the matching code does not change.
+| Stage | Backend | Web | Clients | Delivery |
+| --- | --- | --- | --- | --- |
+| **Szakdolgozat I.** (this semester) | Existing standard-library backend and SQLite, extended with matching, review, tokens and migrations by hand ([ADR 0002](decisions/0002-python-stdlib-and-sqlite.md)) | React, TypeScript, Vite, TanStack Query, Tailwind CSS, shadcn/ui | Android (Kotlin, Compose) for one bank format; spreadsheet file import; Sheets script if time allows | Local run, GitHub Actions for tests |
+| **Szakdolgozat II.** | FastAPI, Pydantic, SQLAlchemy, Alembic, PostgreSQL; the API contract stays the same | Unchanged | Fuller Android and Sheets clients | Docker Compose, hosting if needed |
+
+The matching, ingestion and categorization packages are pure Python, so the backend migration does not touch the thesis logic. The web app talks only to the `/v1` API, so it does not change either. The second stage can start earlier only if all M2 acceptance criteria are met ahead of schedule.

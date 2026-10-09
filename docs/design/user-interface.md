@@ -32,14 +32,14 @@ UI text is Hungarian, amounts in HUF (`12 990 Ft`), dates `2026. 10. 09.`. All e
 
 | # | Screen | Purpose | API (current or planned) | Needed by |
 | --- | --- | --- | --- | --- |
-| W1 | Sign in | E-mail and password (session cookie); choose a group if the member belongs to several | Token auth (planned, M2) | M2 |
+| W1 | Sign in | Personal API token this semester (e-mail and password with a session cookie after the backend migration); choose a group if the member belongs to several | Token auth (planned, M2) | M2 |
 | W2 | Overview | Month totals per category and per member; count of events waiting for review | `GET /v1/events` | M2 |
 | W3 | Events | Deduplicated list: date, merchant, amount, category, source badges (notification, sheet, manual, file), review flag; filter by month, member, category, source | `GET /v1/events` | M1 side track (read-only) |
-| W4 | Event detail | The records behind one event, raw payload, source reference, import batch, decision history; **Split** action | `GET /v1/events`, `POST /v1/events/{id}/split` | M2 |
+| W4 | Event detail | The records behind one event, raw payload, source reference, import batch, decision history; **Split** action; category correction | `GET /v1/events`, `POST /v1/events/{id}/split` | M2 |
 | W5 | Review queue | Two records side by side, score and feature breakdown (amount, time, merchant), **Same purchase** / **Different purchases** | `GET /v1/matches/review`, `POST /v1/matches/{id}/confirm`, `.../reject` | M2 |
 | W6 | Add transaction | Manual entry form; after saving, show the match outcome | `POST /v1/transactions` | M2 |
 | W7 | Import file | Upload a spreadsheet export, preview rows, import, summary per outcome (new, linked, needs review, re-delivery, rejected rows with reasons) | `POST /v1/transactions/bulk` | M2 |
-| W8 | Settings | Group members; create and revoke API tokens for the Android app and the Sheets script (token shown once) | Token endpoints (planned, M2) | M2 |
+| W8 | Settings (if time allows) | Group members; create and revoke API tokens for the Android app and the Sheets script (token shown once) | Token endpoints (planned, M2) | M2 |
 
 ### Android app
 

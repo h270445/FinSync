@@ -29,7 +29,7 @@ The first working version must not slip to January: M3 is reviewed and M4 only f
 
 ## Semester scope
 
-Every capability listed in the [project overview](../overview.md#planned--not-yet-implemented) is committed for **this semester**. Szakdolgozat II. is reserved for refinement based on the evaluation results and for writing the thesis.
+Every capability listed in the [project overview](../overview.md#planned--not-yet-implemented) is committed for **this semester**, the Android and Google Sheets clients in a reduced scope. Szakdolgozat II. is reserved for refinement based on the evaluation results and for writing the thesis.
 
 ### Committed for this semester
 
@@ -38,18 +38,18 @@ The professional core of the thesis is **transaction matching across sources**; 
 1. **Transaction matching and duplicate detection** with the event model, exact re-delivery detection, scored candidate matching and an append-only decision log ([design](../design/transaction-matching.md)).
 2. **Match review and correction:** list uncertain matches, confirm, reject, split.
 3. **Source traceability:** raw payload, source reference, import batch and decision history for every record.
-4. **Web app:** the main user interface for events, match review and correction, manual entry, file import and token management, built with React and TypeScript ([design](../design/user-interface.md), [ADR 0005](../architecture/decisions/0005-web-client-first.md)).
-5. **Android integration:** a minimal Android app that reads supported banking notifications and sends them to the ingest endpoint.
-6. **Google Sheets integration:** a sheet-side script that sends new rows to the bulk endpoint, plus file import of spreadsheet exports.
-7. **LLM-based categorization** behind the same interface as the rule-based categorizer, compared with it on one labelled dataset.
-8. **Authentication and stronger access control:** server-issued per-user API tokens replace client-supplied identity headers.
-9. **Security and privacy evaluation:** group isolation, input validation, atomicity, traceability and AI-boundary tests, plus a data-minimization review.
-10. **Measurement:** labelled synthetic datasets and an evaluation runner for matching and categorization.
+4. **Authentication and stronger access control:** server-issued per-user API tokens replace client-supplied identity headers.
+5. **Measurement:** labelled synthetic datasets and an evaluation runner for matching, compared with a naive baseline that stores every incoming row separately.
+6. **LLM-based categorization** behind the same interface as the rule-based categorizer, compared with it on one hand-labelled dataset (accuracy, error patterns, time and cost); members can correct a suggested category.
+7. **Web app** (React and TypeScript): event list, event detail, match review and correction, category correction ([design](../design/user-interface.md), [ADR 0005](../architecture/decisions/0005-web-client-first.md)).
+8. **Security and privacy evaluation:** group isolation, input validation, atomicity, traceability and AI-boundary tests, plus a data-minimization review.
+9. **Android integration (reduced scope):** a minimal app that forwards one bank's notification format to the ingest endpoint.
+10. **Spreadsheet input (reduced scope):** file import of spreadsheet exports; a Google Sheets script that posts new rows only if time allows.
 11. **Documentation and setup guide** that let someone else run the system and the evaluation from the repository.
 
 ### Priority if time runs short
 
-The order above is the priority order. Items 1–3 and 8 are never cut; the web app (4) may shrink to the event list and review screens. If a later item slips, it is delivered in a reduced but working form (for example, the Android app supports one bank's format) rather than dropped, and the reduction is recorded in the change log below.
+The order above is the priority order, following the supervisor's advice (2026-10-09) to keep enough time for the core. Items 1–5 are never cut; the web app (7) may shrink to the event list and review screens. If a later item slips, it is delivered in a reduced but working form (for example, the Android app supports one bank's format) rather than dropped, and the reduction is recorded in the change log below.
 
 ### How it is verified
 
@@ -79,9 +79,9 @@ Goal: the main technical risk, telling duplicates from look-alike purchases, has
 
 | Week | Main track | Side track |
 | --- | --- | --- |
-| Oct 12–18 | Stack switch ([ADR 0006](../architecture/decisions/0006-framework-based-stack.md)): FastAPI, PostgreSQL, SQLAlchemy and Alembic, Docker Compose, CI; existing endpoints and tests ported. First Alembic migration: `events`, `match_decisions`, traceability columns. Time-zone decision (ADR). Matching normalization and fingerprint. | Synthetic matching dataset generator. Figma wireframes for the event list, review queue and Android setup. |
+| Oct 12–18 | Schema versioning and migration on the existing backend: `events`, `match_decisions`, traceability columns. Time-zone decision (ADR). Matching normalization and fingerprint. | Synthetic matching dataset generator. Figma wireframes for the event list, review queue and Android setup. |
 | Oct 19–25 | Blocking, scoring and decision; matching wired into all ingest paths in one transaction; `event_id`, `match_outcome`; `GET /v1/events`. | Android spike: notification listener on a real device logging the supported formats. |
-| Oct 26–30 | Dataset v1 (~100 records), evaluation runner, first results file. **M1 content complete.** | ADR for how the Sheets script reaches the API. Web app skeleton (React, Vite, generated API types) with a read-only event list. |
+| Oct 26–30 | Dataset v1 (~100 records), evaluation runner, first results file. **M1 content complete.** | ADR for how the Sheets script reaches the API. Web app skeleton (React, Vite) with a read-only event list. |
 
 ### Phase 2 — Integrated prototype (2026-11-02 → internal target 2026-11-27, M2 due 2026-12-04)
 
@@ -90,9 +90,9 @@ Goal: every committed component exists and works together with proper data handl
 | Week | Main track | Side track |
 | --- | --- | --- |
 | Nov 2–8 | Authentication with per-user API tokens (hashed); review and correction endpoints with permission tests. M1 submitted from `main` (tag `v0.2.0`). | Labelled categorization dataset. Styled screens in Figma. |
-| Nov 9–15 | Web app: sign-in, review queue, event detail with split, token management. Android app: token setup, sending to `/v1/notifications/ingest`, retry without duplicates; request size limits. | |
-| Nov 16–22 | Google Sheets script posting rows to `/v1/transactions/bulk` with `source_ref`; file import of exports (web app import screen); cross-group tests on every endpoint. | Grow the matching dataset to 200–300 records. Web app overview and manual entry. |
-| Nov 23–27 | LLM categorizer behind the categorizer interface with output validation; end-to-end demo across all sources. **M2 content complete.** | |
+| Nov 9–15 | Web app: sign-in, review queue, event detail with split. Request size limits; cross-group tests on every endpoint. | Android app (one bank format): token setup, sending to `/v1/notifications/ingest`, retry without duplicates. |
+| Nov 16–22 | File import of spreadsheet exports with `source_ref` and `import_batch_id`; grow the matching dataset to 200–300 records. | Google Sheets script posting rows to `/v1/transactions/bulk`, if on schedule. Web app overview and manual entry. |
+| Nov 23–27 | LLM categorizer behind the categorizer interface with output validation; category correction (API and web app); end-to-end demo. **M2 content complete.** | |
 
 ### Phase 3 — Evaluation, hardening and preliminary package (2026-11-30 → internal target 2027-01-08, M3 due 2027-01-15)
 
@@ -114,7 +114,7 @@ Goal: every committed component exists and works together with proper data handl
 
 | Risk | Impact | Mitigation |
 | --- | --- | --- |
-| New stack (FastAPI, PostgreSQL, React, Compose) slows the start of Phase 1 | M1 core late | Switch in the first week only; matching stays pure Python; fallback: SQLite under SQLAlchemy until M2 |
+| React adds a Node build to the setup | Harder for others to run | Build steps in the getting-started guide; the API and evaluation run without it |
 | Full scope is large for one semester (including the web app) | Late or shallow components | Matching first; priority order above; reduced-but-working fallback; feature freeze on Dec 18 |
 | Matching rules produce false merges on real-looking data | Core claim fails | Channel rule, review band, measured false-merge rate; thresholds tuned on a separate split |
 | Unknown real notification formats and time zones | Parser or matching off by hours | Decide time-zone default in Phase 1; keep raw payload for re-processing |
@@ -127,8 +127,9 @@ Goal: every committed component exists and works together with proper data handl
 ## Szakdolgozat II. (outline)
 
 1. Refinement of matching, categorization and the clients based on the M3/M4 evaluation and feedback.
-2. Additional measurements where the semester's results leave questions open.
-3. Writing the thesis.
+2. Migration of the backend to FastAPI, PostgreSQL and Docker Compose ([ADR 0006](../architecture/decisions/0006-framework-based-stack.md)), and fuller Android and Google Sheets clients.
+3. Additional measurements where the semester's results leave questions open.
+4. Writing the thesis.
 
 The detailed plan is written in M3.
 
@@ -138,4 +139,4 @@ The detailed plan is written in M3.
 | --- | --- |
 | 2026-10-09 | First version. |
 | 2026-10-09 | Added the web app as committed item 4 (main user interface, built before the Android app); Figma wireframes and web app work added to Phases 1–2 ([ADR 0005](../architecture/decisions/0005-web-client-first.md)). |
-| 2026-10-09 | Proposed framework-based stack (FastAPI, PostgreSQL, React, Docker Compose); stack switch scheduled in the first week of Phase 1 ([ADR 0006](../architecture/decisions/0006-framework-based-stack.md)). |
+| 2026-10-09 | Supervisor feedback: core first, build on the existing backend, adjust client scope. Priority order changed (authentication and measurement moved up, naive baseline and category correction added, Android and Sheets reduced); the backend stays on the standard library and SQLite this semester, React is used for the web app, FastAPI, PostgreSQL and Docker move to Szakdolgozat II ([ADR 0006](../architecture/decisions/0006-framework-based-stack.md)). |
