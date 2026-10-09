@@ -18,6 +18,8 @@ The evaluation will measure:
 | Missed duplicate rate | True pairs left in different events and not flagged for review / all true pairs |
 | Review rate (ambiguous case handling) | Records ending in `needs_review` / all records |
 
+**Baseline:** the same metrics for a naive system that stores every incoming row separately (the current behaviour). The difference shows how many double-counted expenses matching removes and at what cost in false merges and review effort.
+
 The runner (`python -m finsync.evaluation`, planned) replays a split in timestamp order through a fresh in-memory database, sweeps the auto-link threshold from 0.70 to 0.95 in steps of 0.05, and replays the test split in a second order to check that results do not depend on arrival order. The evaluation also considers the ability to trace and correct matching decisions.
 
 ## 2. Transaction categorization

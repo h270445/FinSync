@@ -10,6 +10,8 @@ Each significant, hard-to-reverse decision gets one short record: the context, t
 | [0002](0002-python-stdlib-and-sqlite.md) | Python standard library and SQLite for the prototype | Accepted |
 | [0003](0003-layered-package-layout.md) | Layered package layout | Accepted |
 | [0004](0004-event-based-transaction-matching.md) | Event-based, rule-scored transaction matching | Proposed |
+| [0005](0005-web-client-first.md) | Web app as the main user interface, built before the Android app | Proposed |
+| [0006](0006-framework-based-stack.md) | Framework-based stack: FastAPI, PostgreSQL, React | Proposed |
 
 ## Template
 

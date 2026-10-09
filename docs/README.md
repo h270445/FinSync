@@ -17,7 +17,7 @@ Everything about FinSync beyond the code lives here. Documents describe the **ac
 
 ## Conventions
 
-- Language: English. File names: lowercase, hyphen-separated.
+- Language: English, except [releases/status-emails/](releases/status-emails/README.md), which keeps the Hungarian e-mails to the supervisor. File names: lowercase, hyphen-separated.
 - Every folder has a `README.md` that lists its contents.
 - Status words: **implemented** (in `main` and tested), **in progress**, **planned**, **proposed** (design not yet agreed).
 - When code changes behaviour, the matching document changes in the same pull request.

@@ -41,15 +41,16 @@ The repository currently contains a minimal backend flow:
 * **Duplicate detection:** Identification of likely duplicates while avoiding false merges of separate transactions.
 * **Match review and correction:** Handling of uncertain matches, user confirmation, and correction of incorrect decisions.
 * **Source traceability:** Recording where a transaction originated and how matching decisions were made.
+* **Web app:** Browser-based interface for reviewing events and matches, correcting decisions, manual entry and file import.
 * **Android integration:** Collection of supported banking notification data on an Android device.
-* **Google Sheets integration:** Direct integration for convenient manual and bulk data entry.
+* **Spreadsheet input:** Import of spreadsheet exports; a direct Google Sheets script only if time allows.
 * **LLM-based categorization:** Comparison of language-model categorization against the existing rule-based baseline.
 * **Authentication and stronger access control:** Establishing user identity rather than trusting a client-supplied identifier.
 * **Security and privacy evaluation:** Testing access-control boundaries, input validation, data minimization, and other relevant safeguards.
 
 The items above describe intended development work, not completed functionality. The current parser supports only predefined notification formats; the repository does not yet provide a complete Android notification collector or direct Google Sheets integration.
 
-All of these items are committed for this semester (Szakdolgozat I.); the order and dates are in the [roadmap](planning/roadmap.md#semester-scope).
+All of these items are committed for this semester (Szakdolgozat I.), the Android app and spreadsheet input in a reduced scope; the order and dates are in the [roadmap](planning/roadmap.md#semester-scope).
 
 ## Main thesis contribution: transaction matching
 

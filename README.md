@@ -4,6 +4,36 @@ FinSync is a personal and community-focused financial tracking project for coupl
 
 This repository contains an early backend prototype and is the foundation for a BSc thesis project.
 
+## Thesis commitment (Szakdolgozat I., autumn 2026)
+
+**Target users and scenario.** A shared household of 2–4 people (a couple or roommates) who track their common expenses. Anna's phone captures a 4 500 Ft SPAR card purchase from the bank notification; later Bálint records the same purchase from the shared spreadsheet. FinSync must count it once. If two separate 4 500 Ft purchases happened on the same day, it must keep both.
+
+**The hard part.** The sources do not give clean, independent data, and equal amount and time alone are not enough to decide. FinSync has to decide which information makes two records the same purchase, when to ask a member for confirmation, and how a wrong link is corrected, while keeping every decision traceable ([matching design](docs/design/transaction-matching.md)).
+
+**Committed capabilities** (details and priority order in the [roadmap](docs/planning/roadmap.md#semester-scope)):
+
+1. Records from bank notifications, manual entry and spreadsheet imports end up in one reviewable list of purchases (events).
+2. Duplicates are linked across sources, look-alike separate purchases stay separate, and uncertain cases go to a member for confirmation.
+3. Every record keeps its source, and every link, confirmation, rejection and split is logged and can be undone.
+4. Members are authenticated and see only their own group's data.
+5. Rule-based and LLM-based categorization are compared on the same hand-labelled transactions; a member can correct the suggested category.
+
+**How correctness is verified.**
+
+- A labelled synthetic dataset with repeated deliveries, duplicates across sources, look-alike separate purchases and faulty or incomplete input. Metrics: duplicates found, separate purchases wrongly merged, cases sent to review. Compared with a naive baseline that stores every row separately ([evaluation plan](docs/evaluation/evaluation-plan.md)).
+- Categorization: accuracy, error patterns, time and cost of both methods on the same labelled set.
+- Automated tests for each flow and a cross-group access test for every endpoint. Synthetic data only.
+
+**Implemented today vs planned.**
+
+- *Implemented:* an HTTP API with parsing of two predefined notification text patterns, manual and bulk entry, keyword-based categorization, SQLite storage, group-membership checks and five tests.
+- *Planned:* matching and duplicate detection, review and correction, authentication (identity is currently supplied by the request), the Android app, spreadsheet and Google Sheets input, LLM categorization, the web app and the evaluation runner.
+
+**Effort and experience.**
+
+- Planned weekly effort: *to be filled in by the author*.
+- Experience with the planned technologies: *to be filled in by the author*.
+
 ## Quick start
 
 Requires Python 3.10+ and no third-party packages.
