@@ -79,9 +79,9 @@ Goal: the main technical risk, telling duplicates from look-alike purchases, has
 
 | Week | Main track | Side track |
 | --- | --- | --- |
-| Oct 12–18 | Schema versioning and migration on the existing backend: `events`, `match_decisions`, traceability columns. Time-zone decision (ADR). Matching normalization and fingerprint. | Synthetic matching dataset generator. Figma wireframes for the event list, review queue and Android setup. |
+| Oct 12–18 | Stack switch on top of the existing backend ([ADR 0006](../architecture/decisions/0006-framework-based-stack.md)): FastAPI routes, SQLAlchemy and Alembic on PostgreSQL, Docker Compose, CI; existing parsing, categorization and tests carried over. First Alembic migration: `events`, `match_decisions`, traceability columns. Time-zone decision (ADR). Matching normalization and fingerprint. | Synthetic matching dataset generator. Figma wireframes for the event list, review queue and Android setup. |
 | Oct 19–25 | Blocking, scoring and decision; matching wired into all ingest paths in one transaction; `event_id`, `match_outcome`; `GET /v1/events`. | Android spike: notification listener on a real device logging the supported formats. |
-| Oct 26–30 | Dataset v1 (~100 records), evaluation runner, first results file. **M1 content complete.** | ADR for how the Sheets script reaches the API. Web app skeleton (React, Vite) with a read-only event list. |
+| Oct 26–30 | Dataset v1 (~100 records), evaluation runner, first results file. **M1 content complete.** | ADR for how the Sheets script reaches the API. Web app skeleton (React, Vite, generated API types) with a read-only event list. |
 
 ### Phase 2 — Integrated prototype (2026-11-02 → internal target 2026-11-27, M2 due 2026-12-04)
 
@@ -114,7 +114,7 @@ Goal: every committed component exists and works together with proper data handl
 
 | Risk | Impact | Mitigation |
 | --- | --- | --- |
-| React adds a Node build to the setup | Harder for others to run | Build steps in the getting-started guide; the API and evaluation run without it |
+| Stack switch (FastAPI, PostgreSQL, React, Compose) slows the start of Phase 1 | M1 core late | Existing logic is carried over, not rewritten; switch in the first week only; matching stays pure Python; fallback: FastAPI and SQLAlchemy on SQLite until M2 |
 | Full scope is large for one semester (including the web app) | Late or shallow components | Matching first; priority order above; reduced-but-working fallback; feature freeze on Dec 18 |
 | Matching rules produce false merges on real-looking data | Core claim fails | Channel rule, review band, measured false-merge rate; thresholds tuned on a separate split |
 | Unknown real notification formats and time zones | Parser or matching off by hours | Decide time-zone default in Phase 1; keep raw payload for re-processing |
@@ -127,7 +127,7 @@ Goal: every committed component exists and works together with proper data handl
 ## Szakdolgozat II. (outline)
 
 1. Refinement of matching, categorization and the clients based on the M3/M4 evaluation and feedback.
-2. Migration of the backend to FastAPI, PostgreSQL and Docker Compose ([ADR 0006](../architecture/decisions/0006-framework-based-stack.md)), and fuller Android and Google Sheets clients.
+2. Fuller Android and Google Sheets clients.
 3. Additional measurements where the semester's results leave questions open.
 4. Writing the thesis.
 
@@ -139,4 +139,4 @@ The detailed plan is written in M3.
 | --- | --- |
 | 2026-10-09 | First version. |
 | 2026-10-09 | Added the web app as committed item 4 (main user interface, built before the Android app); Figma wireframes and web app work added to Phases 1–2 ([ADR 0005](../architecture/decisions/0005-web-client-first.md)). |
-| 2026-10-09 | Supervisor feedback: core first, build on the existing backend, adjust client scope. Priority order changed (authentication and measurement moved up, naive baseline and category correction added, Android and Sheets reduced); the backend stays on the standard library and SQLite this semester, React is used for the web app, FastAPI, PostgreSQL and Docker move to Szakdolgozat II ([ADR 0006](../architecture/decisions/0006-framework-based-stack.md)). |
+| 2026-10-09 | Supervisor feedback: core first, build on the existing backend, adjust client scope. Priority order changed (authentication and measurement moved up, naive baseline and category correction added, Android and Sheets reduced); the framework-based stack (FastAPI, PostgreSQL, React, Docker Compose) stays this semester, built on the existing backend logic ([ADR 0006](../architecture/decisions/0006-framework-based-stack.md)). |

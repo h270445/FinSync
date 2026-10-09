@@ -118,7 +118,7 @@ transactions (immutable source records) ──event_id──► events (what mem
 
 ## 4. Technology
 
-The direction column is proposed in [ADR 0006](decisions/0006-framework-based-stack.md): the web app and Android app use it this semester, the backend rows apply from Szakdolgozat II. Full list, reasons and staging in [technology-stack.md](technology-stack.md).
+The direction column is proposed in [ADR 0006](decisions/0006-framework-based-stack.md): introduced this semester on top of the existing backend logic. Full list and reasons in [technology-stack.md](technology-stack.md).
 
 | Concern | Now | Direction |
 | --- | --- | --- |

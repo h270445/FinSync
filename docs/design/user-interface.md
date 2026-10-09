@@ -32,7 +32,7 @@ UI text is Hungarian, amounts in HUF (`12 990 Ft`), dates `2026. 10. 09.`. All e
 
 | # | Screen | Purpose | API (current or planned) | Needed by |
 | --- | --- | --- | --- | --- |
-| W1 | Sign in | Personal API token this semester (e-mail and password with a session cookie after the backend migration); choose a group if the member belongs to several | Token auth (planned, M2) | M2 |
+| W1 | Sign in | E-mail and password (session cookie); choose a group if the member belongs to several | Token auth (planned, M2) | M2 |
 | W2 | Overview | Month totals per category and per member; count of events waiting for review | `GET /v1/events` | M2 |
 | W3 | Events | Deduplicated list: date, merchant, amount, category, source badges (notification, sheet, manual, file), review flag; filter by month, member, category, source | `GET /v1/events` | M1 side track (read-only) |
 | W4 | Event detail | The records behind one event, raw payload, source reference, import batch, decision history; **Split** action; category correction | `GET /v1/events`, `POST /v1/events/{id}/split` | M2 |

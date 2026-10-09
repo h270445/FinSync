@@ -154,8 +154,8 @@ Screen: group settings with two tabs.
 ### W1 — Sign in (Bejelentkezés)
 
 ```text
-Screen: centered card with an API token field ("API token"), a sign-in button, a short
-explanation of where to get a token, and an error state for an invalid token.
+Screen: centered card with e-mail and password fields, a sign-in button and an error
+state for wrong credentials.
 After sign-in, if the member has several groups, show a group picker.
 ```
 

@@ -123,7 +123,7 @@ Every endpoint keeps `ensure_authorized(user_id, group_id)`; every lookup by id 
 ### Where the code goes
 
 - `finsync/matching/`: pure functions `normalize`, `fingerprint`, `is_candidate`, `score`, `decide`.
-- `finsync/storage/`: candidate query, event and decision writes, a `transaction()` context using `BEGIN IMMEDIATE` (after the PostgreSQL migration planned in [ADR 0006](../architecture/decisions/0006-framework-based-stack.md): a transaction-scoped advisory lock per group).
+- `finsync/storage/`: candidate query, event and decision writes, a `transaction()` context using `BEGIN IMMEDIATE` (after the PostgreSQL switch planned in [ADR 0006](../architecture/decisions/0006-framework-based-stack.md): a transaction-scoped advisory lock per group).
 - `finsync/core/`: each ingest path calls one `_store_and_match(record)`; bulk import runs in one transaction with an `import_batch_id`.
 - `finsync/evaluation/`: the evaluation runner (`python -m finsync.evaluation`).
 
