@@ -31,8 +31,8 @@ This repository contains an early backend prototype and is the foundation for a 
 
 **Effort and experience.**
 
-- Planned weekly effort: *to be filled in by the author*.
-- Experience with the planned technologies: *to be filled in by the author*.
+- Planned weekly effort: two working days per week (Friday and Saturday). Time spent is logged in [docs/planning/time-log.md](docs/planning/time-log.md).
+- Experience with the planned technologies: React, Docker, PostgreSQL and AWS from university course projects, and a mobile-first website. New for this project: a complete Android app, LLM integration and Google Sheets integration.
 
 ## Quick start
 
