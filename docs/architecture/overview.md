@@ -122,6 +122,7 @@ transactions (immutable source records) ──event_id──► events (what mem
 | Language | Python (standard library) | Stay on the standard library while it suffices ([ADR 0002](decisions/0002-python-stdlib-and-sqlite.md)) |
 | Storage | SQLite | SQLite with migrations; a server database only if multi-user deployment requires it |
 | API | `http.server` | Keep; revisit a framework only if routing or auth becomes the bottleneck |
+| Deployment | Local run (`python -m finsync.api`) | No container while the backend has no dependencies; Docker only when the system is hosted on a server |
 | Tests | `unittest` | Keep; add labelled datasets under `tests/data/` |
 | Web UI | none | Plain HTML/CSS/JS, no build step, served by `http.server` ([ADR 0005](decisions/0005-web-client-first.md), proposed) |
 | Clients | none | Android notification collector (Kotlin) and Google Sheets script (Phase 2 of the roadmap) |
