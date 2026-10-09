@@ -31,7 +31,9 @@ Android banking notifications ─┐
                                │
 Manual transaction entry ──────┼──> Backend API (authenticated)
                                │         │
-Spreadsheet / Google Sheets ───┘         ▼
+Spreadsheet / Google Sheets ───┤         ▼
+                               │
+Web app (browser) ─────────────┘
                                   Input validation
                                          │
                                          ▼
@@ -55,6 +57,7 @@ Spreadsheet / Google Sheets ───┘         ▼
 | Layer | Package | Responsibility | Must not |
 | --- | --- | --- | --- |
 | Sources | separate clients (Android app, Sheets script) | Capture data, send it to the API | Hold their own transaction history |
+| Web UI | `finsync/web/` (planned) | Static HTML/CSS/JS calling the `/v1` API: events, review, corrections, entry, import, tokens ([ADR 0005](decisions/0005-web-client-first.md)) | Call anything but the public API; hold business rules |
 | API | `finsync.api` | Authentication, request parsing, size limits, error mapping, serialization | Contain business rules |
 | Application | `finsync.core` | Use cases, authorization, transaction boundaries | Parse source formats or build SQL |
 | Domain | `finsync.ingestion`, `finsync.matching`, `finsync.categorization` | Parsing, normalization, matching rules, categorization | Access the database, network or clock |
@@ -72,6 +75,7 @@ finsync/
   categorization/  rules (baseline), llm (comparison)            (exists: rules)
   storage/         sqlite, migrations                            (exists: sqlite)
   evaluation/      dataset replay and metrics runner             (planned)
+  web/             static web app served by the API server       (planned)
 tests/
   data/            labelled synthetic datasets                   (planned)
 clients/
@@ -119,7 +123,8 @@ transactions (immutable source records) ──event_id──► events (what mem
 | Storage | SQLite | SQLite with migrations; a server database only if multi-user deployment requires it |
 | API | `http.server` | Keep; revisit a framework only if routing or auth becomes the bottleneck |
 | Tests | `unittest` | Keep; add labelled datasets under `tests/data/` |
-| Clients | none | Android notification collector and Google Sheets script (Phase 2 of the roadmap) |
+| Web UI | none | Plain HTML/CSS/JS, no build step, served by `http.server` ([ADR 0005](decisions/0005-web-client-first.md), proposed) |
+| Clients | none | Android notification collector (Kotlin) and Google Sheets script (Phase 2 of the roadmap) |
 | LLM | none | External LLM API called with the standard library (`urllib`), only for categorization, output validated |
 
 ## 5. Known architectural gaps
