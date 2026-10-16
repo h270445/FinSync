@@ -80,7 +80,7 @@ Goal: the main technical risk, telling duplicates from look-alike purchases, has
 | Week | Main track | Side track |
 | --- | --- | --- |
 | Oct 12–18 | Stack switch on top of the existing backend ([ADR 0006](../architecture/decisions/0006-framework-based-stack.md)): FastAPI routes, SQLAlchemy and Alembic on PostgreSQL, Docker Compose, CI; existing parsing, categorization and tests carried over. First Alembic migration: `events`, `match_decisions`, traceability columns. Time-zone decision (ADR). Matching normalization and fingerprint. | Synthetic matching dataset generator. Figma wireframes for the event list, review queue and Android setup. |
-| Oct 19–25 | Blocking, scoring and decision; matching wired into all ingest paths in one transaction; `event_id`, `match_outcome`; `GET /v1/events`. | Android spike: notification listener on a real device logging the supported formats. |
+| Oct 19–25 | Interim note to the supervisor by Oct 22 (matching status, whether the SQLite fallback was needed). Blocking, scoring and decision; matching wired into all ingest paths in one transaction; `event_id`, `match_outcome`; `GET /v1/events`. | Android spike: notification listener on a real device logging the supported formats. |
 | Oct 26–30 | Dataset v1 (~100 records), evaluation runner, first results file. **M1 content complete.** | ADR for how the Sheets script reaches the API. Web app skeleton (React, Vite, generated API types) with a read-only event list. |
 
 ### Phase 2 — Integrated prototype (2026-11-02 → internal target 2026-11-27, M2 due 2026-12-04)
@@ -140,3 +140,4 @@ The detailed plan is written in M3.
 | 2026-10-09 | First version. |
 | 2026-10-09 | Added the web app as committed item 4 (main user interface, built before the Android app); Figma wireframes and web app work added to Phases 1–2 ([ADR 0005](../architecture/decisions/0005-web-client-first.md)). |
 | 2026-10-09 | Supervisor feedback: core first, build on the existing backend, adjust client scope. Priority order changed (authentication and measurement moved up, naive baseline and category correction added, Android and Sheets reduced); the framework-based stack (FastAPI, PostgreSQL, React, Docker Compose) stays this semester, built on the existing backend logic ([ADR 0006](../architecture/decisions/0006-framework-based-stack.md)). |
+| 2026-10-16 | Supervisor accepted the commitment and schedule ([feedback](supervisor-feedback.md#2026-10-16--reply-to-the-m0-e-mail)); added the Oct 22 interim note, the baseline and hand-decided examples to M1, and carrying over the PR #2 and #3 fixes. |

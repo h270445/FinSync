@@ -11,7 +11,7 @@ The text of every progress e-mail sent to the thesis supervisor, one file per e-
 
 | Date | Milestone | Tag | Status |
 | --- | --- | --- | --- |
-| 2026-10-09 | [M0 — félévi vállalás](2026-10-09-m0.md) | `v0.1.0` | Draft |
+| 2026-10-09 | [M0 — félévi vállalás](2026-10-09-m0.md) | `0.1.0` | Sent |
 
 ## Template
 

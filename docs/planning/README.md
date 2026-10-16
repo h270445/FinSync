@@ -3,6 +3,7 @@
 | File / folder | Contents |
 | --- | --- |
 | [roadmap.md](roadmap.md) | Semester roadmap: scope, phases, weekly plan, risks, and the Szakdolgozat II. outline |
+| [supervisor-feedback.md](supervisor-feedback.md) | Summary of each supervisor letter and the actions it created |
 | [time-log.md](time-log.md) | Time spent per session and per week |
 | [milestones/](milestones/README.md) | One target file per course deadline: expected result, acceptance criteria, checklist, version tag |
 
