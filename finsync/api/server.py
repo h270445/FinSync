@@ -6,7 +6,7 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 
-from finsync.service import AuthorizationError, FinSyncService
+from finsync.core import AuthorizationError, FinSyncService
 from finsync.storage import FinSyncStorage
 
 

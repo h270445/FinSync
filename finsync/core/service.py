@@ -6,7 +6,7 @@ from decimal import Decimal, InvalidOperation
 from typing import Any
 
 from finsync.categorization import categorize_transaction
-from finsync.parser import parse_notification
+from finsync.ingestion import parse_notification
 from finsync.storage import FinSyncStorage, TransactionRecord
 
 
