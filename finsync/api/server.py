@@ -3,10 +3,22 @@ from __future__ import annotations
 import json
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import re
 from urllib.parse import urlparse
 
-from finsync.core import AuthorizationError, FinSyncService, StoreResult
+from finsync.core import (
+    AuthorizationError,
+    ConflictError,
+    FinSyncService,
+    NotFoundError,
+    ReviewItem,
+    StoreResult,
+)
 from finsync.storage import EventRecord, FinSyncStorage, TransactionRecord
+
+
+_REVIEW_ACTION = re.compile(r"^/v1/matches/(?P<decision_id>\d+)/(?P<action>confirm|reject)$")
+_SPLIT = re.compile(r"^/v1/events/(?P<event_id>\d+)/split$")
 
 
 class FinSyncRequestHandler(BaseHTTPRequestHandler):
@@ -72,9 +84,32 @@ class FinSyncRequestHandler(BaseHTTPRequestHandler):
                 )
                 return
 
+            review = _REVIEW_ACTION.match(path)
+            if review:
+                decision_id = int(review.group("decision_id"))
+                if review.group("action") == "confirm":
+                    result = self.service.confirm_match(user_id, group_id, decision_id)
+                else:
+                    result = self.service.reject_match(user_id, group_id, decision_id)
+                self._send_json(HTTPStatus.OK, _result_json(result))
+                return
+
+            split = _SPLIT.match(path)
+            if split:
+                transaction_id = payload.get("transaction_id")
+                if not isinstance(transaction_id, int) or isinstance(transaction_id, bool):
+                    raise ValueError("transaction_id must be an integer")
+                result = self.service.split_event(user_id, group_id, int(split.group("event_id")), transaction_id)
+                self._send_json(HTTPStatus.OK, _result_json(result))
+                return
+
             self._send_json(HTTPStatus.NOT_FOUND, {"error": "Not found"})
         except AuthorizationError as error:
             self._send_json(HTTPStatus.FORBIDDEN, {"error": str(error)})
+        except NotFoundError as error:
+            self._send_json(HTTPStatus.NOT_FOUND, {"error": str(error)})
+        except ConflictError as error:
+            self._send_json(HTTPStatus.CONFLICT, {"error": str(error)})
         except ValueError as error:
             self._send_json(HTTPStatus.BAD_REQUEST, {"error": str(error)})
 
@@ -85,6 +120,12 @@ class FinSyncRequestHandler(BaseHTTPRequestHandler):
                 user_id, group_id = self._identity()
                 transactions = self.service.list_group_transactions(user_id, group_id)
                 self._send_json(HTTPStatus.OK, {"transactions": [_transaction_json(tx) for tx in transactions]})
+                return
+
+            if path == "/v1/matches/review":
+                user_id, group_id = self._identity()
+                items = self.service.list_open_reviews(user_id, group_id)
+                self._send_json(HTTPStatus.OK, {"reviews": [_review_json(item) for item in items]})
                 return
 
             if path == "/v1/events":
@@ -105,6 +146,16 @@ def _result_json(result: StoreResult) -> dict:
         "transaction_id": result.transaction_id,
         "event_id": result.event_id,
         "match_outcome": result.match_outcome,
+    }
+
+
+def _review_json(item: ReviewItem) -> dict:
+    return {
+        "decision_id": item.decision_id,
+        "score": item.score,
+        "features": item.features,
+        "transaction": _transaction_json(item.transaction),
+        "candidate_event": _event_json(item.candidate_event),
     }
 
 

@@ -17,6 +17,7 @@ python -m unittest discover -s tests
 | `test_finsync_service.py` | Notification parsing, notification ingest, manual and bulk creation (including atomic rollback and invalid rows), group authorization |
 | `test_categorization.py` | Whole-word keyword matching of the rule-based categorizer |
 | `test_matching.py` | Matching rules: merchant tokens, local day, fingerprint, each blocking gate, score values, thresholds and runner-up margin |
+| `test_review.py` | Review list, confirm, reject (not proposed again), split, identical-row confirm, other-group access (404) and the HTTP flow |
 | `test_matching_service.py` | Matching end to end: the four hand-decided examples (repeated notification, reversed arrival order, date-only manual entry, two same-amount purchases), further design scenarios, the schema migration |
 
 ## Conventions

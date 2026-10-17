@@ -13,7 +13,8 @@ Status: describes the endpoints **implemented** in `finsync/api/server.py`.
 | `200` | Read succeeded |
 | `400` | Missing headers, invalid JSON, validation error (`{"error": "..."}`) |
 | `403` | User is not a member of the group |
-| `404` | Unknown path |
+| `404` | Unknown path, or an id that does not exist in the requested group |
+| `409` | A review action that no longer fits, such as answering a decision twice |
 
 ## Endpoints
 
@@ -24,6 +25,10 @@ Status: describes the endpoints **implemented** in `finsync/api/server.py`.
 | `POST` | `/v1/transactions/bulk` | Create multiple transactions from a structured payload |
 | `GET` | `/v1/transactions` | List transactions accessible within the requested group |
 | `GET` | `/v1/events` | List the group's events (one per purchase), each with its source records |
+| `GET` | `/v1/matches/review` | List uncertain matches waiting for a member |
+| `POST` | `/v1/matches/{decision_id}/confirm` | Confirm: the record joins the candidate event |
+| `POST` | `/v1/matches/{decision_id}/reject` | Reject: the record stays separate and the pair is not proposed again |
+| `POST` | `/v1/events/{event_id}/split` | Move one record out of an event (undo a wrong link) |
 
 These endpoints describe the current prototype. They do not imply that direct Android or Google Sheets integrations are available.
 
@@ -76,4 +81,20 @@ Response `200`:
 
 Response `200`: `{"events": [{"id": 1, "amount": "-1234.56", "currency": "HUF", "direction": "expense", "happened_at": "...", "merchant": "Tesco", "category": "groceries", "primary_transaction_id": 1, "review_state": "clear", "transactions": [ ... ]}]}`. Display values come from the primary record (a notification first, then the earliest). `review_state` is `needs_review` while an uncertain match waits for a member.
 
-Planned endpoints for review (`/v1/matches/...`, split) are described in the [matching design](../design/transaction-matching.md#user-flow-and-api).
+### `GET /v1/matches/review`
+
+Response `200`: `{"reviews": [{"decision_id": 4, "score": 0.8, "features": {"a": 1.0, "t": 1.0, "m": 0.3333, "delta": "0d", "score": 0.8, "runner_up": null}, "transaction": { ... }, "candidate_event": { ... }}]}`. `features` explains the score: amount `a`, time `t`, merchant `m`; an identical manual row carries `identical_row_of_id` instead.
+
+### `POST /v1/matches/{decision_id}/confirm` and `/reject`
+
+No body. Response `200`: `{"transaction_id": 2, "event_id": 1, "match_outcome": "confirmed"}` (or `"rejected"`). The answer is written to the decision log with the member's id; answering the same decision again returns `409`.
+
+### `POST /v1/events/{event_id}/split`
+
+```json
+{"transaction_id": 1}
+```
+
+Moves that record, with its re-deliveries, to a new event and logs a `split` decision. Response `200`: `{"transaction_id": 1, "event_id": 3, "match_outcome": "split"}`. Naming a re-delivery returns `400`, an event with a single record `409`.
+
+Design: [matching design](../design/transaction-matching.md#user-flow-and-api).

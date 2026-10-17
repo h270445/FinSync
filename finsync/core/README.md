@@ -16,12 +16,13 @@ The use cases of the system. Each public method of `FinSyncService` is one opera
 | `bulk_create_manual_transactions` | `manual` | All rows in one transaction with one `import_batch_id`; nothing is stored if a row is invalid |
 | `list_group_transactions` | – | Returns the group's records, newest first |
 | `list_group_events` | – | Returns the group's events with their records |
+| `list_open_reviews` | – | Unanswered `needs_review` decisions with the record, the candidate event and the features |
+| `confirm_match`, `reject_match` | – | Answer a review: link the record, or keep it separate and never propose the pair again |
+| `split_event` | – | Move one original record (with its re-deliveries) out of an event: the undo of a wrong link |
 | `bootstrap_demo_membership` | – | Adds `demo-user` to `demo-group` for local use |
 
 Every use case calls `ensure_authorized(user_id, group_id)` first.
 
 Every ingest use case goes through `_store_and_match`, which stores the record, runs matching ([design](../../docs/design/transaction-matching.md)) and writes the decision in the same database transaction.
 
-## Planned
-
-- Review use cases: list, confirm, reject, split.
+Errors: `AuthorizationError` (not a member, 403), `NotFoundError` (id not in this group, 404), `ConflictError` (decision already answered or the action no longer fits, 409), `ValueError` (invalid input, 400).
