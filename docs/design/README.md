@@ -4,7 +4,8 @@ Detailed designs for individual features, written before implementation and upda
 
 | File | Feature | Status |
 | --- | --- | --- |
-| [transaction-matching.md](transaction-matching.md) | Transaction matching and duplicate detection | Proposed |
+| [transaction-matching.md](transaction-matching.md) | Transaction matching and duplicate detection | Partially implemented |
+| [categorization.md](categorization.md) | Categorization of ambiguous purchases: precedence, LLM rules, handling per input platform | Proposed |
 | [user-interface.md](user-interface.md) | Clients, screens and design workflow (web app first) | Proposed |
 | [figma-prompts.md](figma-prompts.md) | Prompt plan for generating screens in Figma | Proposed |
 | [ui/](ui/README.md) | Approved screen exports from Figma | – |

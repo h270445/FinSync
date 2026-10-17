@@ -6,7 +6,7 @@ import os
 import tempfile
 import unittest
 
-from finsync.core import AuthorizationError, FinSyncService
+from finsync.core import AuthorizationError, FinSyncService, TransactionInput
 from finsync.ingestion import parse_notification
 from finsync.storage import FinSyncStorage
 
@@ -29,12 +29,12 @@ class FinSyncServiceTest(unittest.TestCase):
         self.assertEqual(parsed.merchant_or_counterparty, "Tesco")
 
     def test_notification_ingest_persists_and_categorizes(self) -> None:
-        transaction_id = self.service.ingest_notification(
+        result = self.service.ingest_notification(
             "user-1",
             "group-1",
             "CARD PURCHASE -1234.56 HUF at Tesco on 2026-09-01 13:45",
         )
-        self.assertGreater(transaction_id, 0)
+        self.assertGreater(result.transaction_id, 0)
 
         transactions = self.service.list_group_transactions("user-1", "group-1")
         self.assertEqual(len(transactions), 1)
@@ -42,7 +42,7 @@ class FinSyncServiceTest(unittest.TestCase):
         self.assertEqual(transactions[0].source, "android_notification")
 
     def test_manual_transaction_creation(self) -> None:
-        transaction_id = self.service.create_manual_transaction(
+        result = self.service.create_manual_transaction(
             "user-1",
             "group-1",
             {
@@ -53,7 +53,7 @@ class FinSyncServiceTest(unittest.TestCase):
                 "happened_at": datetime(2026, 9, 5, 7, 0, tzinfo=timezone.utc).isoformat(),
             },
         )
-        self.assertGreater(transaction_id, 0)
+        self.assertGreater(result.transaction_id, 0)
 
         transactions = self.service.list_group_transactions("user-1", "group-1")
         self.assertEqual(len(transactions), 1)
@@ -85,7 +85,6 @@ class FinSyncServiceTest(unittest.TestCase):
         )
         self.assertEqual(len(ids), 2)
 
-
     def _row(self, **overrides: object) -> dict:
         row = {
             "amount": "-1000",
@@ -104,23 +103,24 @@ class FinSyncServiceTest(unittest.TestCase):
         self.assertEqual(self.service.list_group_transactions("user-1", "group-1"), [])
 
     def test_bulk_storage_failure_rolls_back_earlier_rows(self) -> None:
-        def records():
-            yield {
-                "user_id": "user-1",
-                "group_id": "group-1",
-                "amount": Decimal("-1"),
-                "currency": "HUF",
-                "description": "Taxi",
-                "merchant": None,
-                "category": "transport",
-                "source": "manual",
-                "happened_at": datetime(2026, 9, 6, tzinfo=timezone.utc),
-            }
-            raise RuntimeError("storage failed mid-batch")
-
+        record = FinSyncService._manual_record(
+            "user-1",
+            "group-1",
+            TransactionInput(
+                amount=Decimal("-1"),
+                currency="HUF",
+                description="Taxi",
+                merchant=None,
+                happened_at=datetime(2026, 9, 6, tzinfo=timezone.utc),
+            ),
+        )
         with self.assertRaises(RuntimeError):
-            self.storage.insert_transactions(records())
+            with self.storage.transaction() as session:
+                FinSyncService._store_and_match(session, record)
+                raise RuntimeError("storage failed mid-batch")
         self.assertEqual(self.storage.list_transactions("group-1"), [])
+        self.assertEqual(self.storage.list_events("group-1"), [])
+        self.assertEqual(self.storage.list_decisions("group-1"), [])
 
     def test_non_finite_amounts_are_rejected(self) -> None:
         for amount in ("NaN", "nan", "sNaN", "Infinity", "-Infinity", float("nan")):

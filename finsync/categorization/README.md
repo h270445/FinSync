@@ -4,7 +4,7 @@ Assigns a spending category to a transaction from its description and merchant t
 
 | File | Contents |
 | --- | --- |
-| `rules.py` | `categorize_transaction()`: keyword rules for `groceries`, `transport`, `entertainment`, `housing`, else `other` |
+| `rules.py` | `categorize_transaction()`: keyword rules for `groceries`, `transport`, `entertainment`, `housing`, else `other`; keywords match whole words only ("bus" does not match "business") |
 | `__init__.py` | Public name: `categorize_transaction` |
 
 The rule-based categorizer is the baseline for the planned comparison with an LLM-based categorizer ([evaluation plan](../../docs/evaluation/evaluation-plan.md)).

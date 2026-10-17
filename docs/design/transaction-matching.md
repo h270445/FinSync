@@ -1,6 +1,6 @@
 # Transaction matching and duplicate detection
 
-- Status: **Proposed** (not implemented)
+- Status: **Partially implemented** (matching steps 1–5 on SQLite since 2026-10-17; review endpoints and evaluation pending)
 - Date: 2026-10-09
 - Decision record: [ADR 0004](../architecture/decisions/0004-event-based-transaction-matching.md)
 
@@ -13,24 +13,61 @@ The core rule that stops false merges: an event may hold at most one original re
 - **In scope:** exact re-import detection, cross-source matching, the review queue, undo, the data model, tests and the evaluation dataset.
 - **Out of scope:** foreign-currency matching, split payments, LLM-assisted matching, authentication (see [Open questions](#open-questions)).
 
+## Where duplicates come from
+
+Three different things look like duplicates. They need different handling, and mixing them up is the main source of wrong merges.
+
+| Kind | What it is | Typical source | Handling |
+| --- | --- | --- | --- |
+| **A. Re-delivery** | The same record from the same source arrives again | Android retry after a network error or restart, a notification posted twice; the same export file uploaded twice or two exports with overlapping date ranges; a Sheets row sent again; a double-clicked web form | Automatic, no question to the member: recognised by an identity key, stored as `exact_duplicate`, never counted twice |
+| **B. Cross-source duplicate** | The same purchase reported by different channels | Notification and a manual, sheet or file entry; two members both logging a shared dinner | Candidate matching with a score: auto-link only when confident and unique, otherwise review; always reversible with split |
+| **C. Look-alike, not a duplicate** | Separate purchases that share amount and time | Two bus tickets or coffees on the same day; monthly subscriptions; a refund of the same amount | Must stay separate: the one-original-per-channel rule, the time window, the direction gate; ambiguous cases go to review, never to an automatic merge |
+
+### Per source
+
+| Source | Re-delivery risk (A) | Identity key, strongest first | Notes |
+| --- | --- | --- | --- |
+| **Android notifications** | High: retries, restarts, re-posted notifications | Client idempotency key per notification (generated once on the phone and resent on every retry); then the fingerprint of the notification text | Some banks send an authorization and a later booking notification for one purchase; that is the same channel, so the parser must tell the two types apart (check during the Android spike). Notification time is minute-precise. |
+| **File import (CSV/XLSX export)** | High: the same file twice, overlapping date ranges | Bank transaction reference column if the export has one; else `source_ref` built from the row; whole-file hash per `import_batch_id` | Re-importing a known file is reported before anything is stored. Two identical rows inside one file are not merged automatically (two equal tickets are possible); they go to review. Exports often carry the booking date, 1–3 days after the purchase, so rows are day-precision. |
+| **Google Sheets script** | Medium: resending rows after an edit or a failed run | A stable row id column written by the script, used as `source_ref` | An edited row is a new version of the same record, not a new purchase (open question 7). |
+| **Manual entry (web app)** | Low: double submit | Idempotency key per form submission | Manual entries are the main cause of kind B; typed amounts may be rounded and the time is often day-precision. |
+
+### Practices this design follows
+
+1. **Idempotency first.** Clients send a key that stays the same across retries; the server stores it and answers a repeated request with the original result instead of creating a record. This removes most of kind A before any matching runs.
+2. **Source identity before content.** A reference the source itself provides (bank transaction id, sheet row id) beats a content hash; the content fingerprint is the fallback.
+3. **Fuzzy matching only across channels.** Kind B is scored; within one channel only kind A is possible, so look-alikes (kind C) from the same phone are never merged.
+4. **Keep everything, link instead of delete.** Every record stays stored with its raw payload; duplicates are linked to an event, so totals count the event once and nothing is lost.
+5. **Human decision when uncertain, and undo.** Review for the middle band and split for wrong links; every decision is logged.
+6. **Measure both error types.** Missed duplicates (double-counted expenses) and false merges (a real purchase disappears) are reported separately, because the second is worse for the user.
+
+### Hand-decided examples (first tests)
+
+Requested by the supervisor (2026-10-16) before the full dataset:
+
+| Example | Expected |
+| --- | --- |
+| Same notification sent twice (retry) | Kind A: `exact_duplicate`, one event |
+| Manual entry first, notification for the same purchase later | Kind B: linked, same result as the other order |
+| Date-only manual entry vs. a notification at 18:42 the same day | Kind B: candidate with day-precision time score; linked or review by merchant |
+| Two notifications of 4 500 Ft at the same shop, 10 minutes apart | Kind C: two events |
+
 ## Current state
 
-Every call inserts a new row into `transactions` with no comparison against existing rows, so the same purchase sent twice becomes two rows.
+Steps 1 to 5 below run on every ingest path since 2026-10-17, on the existing SQLite backend (`finsync/matching/`, `FinSyncService._store_and_match`, schema version 2). Review and correction endpoints, client idempotency keys and the evaluation runner are not built yet.
 
-| Entry point | Code | Source written | What reaches storage |
+| Entry point | Channel | Exact re-delivery key | `match_outcome` in the response |
 | --- | --- | --- | --- |
-| `POST /v1/notifications/ingest` | `FinSyncService.ingest_notification` | `android_notification` | Amount, currency, merchant from regex; time to the minute; description `card_purchase:<merchant>` |
-| `POST /v1/transactions` | `create_manual_transaction` | `manual` | Free-text description, optional merchant, ISO time (a date-only value becomes midnight) |
-| `POST /v1/transactions/bulk` | `bulk_create_manual_transactions` | `manual` | Same as manual, one insert per row, no batch id |
+| `POST /v1/notifications/ingest` | `android_notification` + member | Fingerprint of the notification text | Yes |
+| `POST /v1/transactions` | `manual` + member | Fingerprint of the row; only with a `source_ref`, else an identical row goes to review | Yes |
+| `POST /v1/transactions/bulk` | `manual` + member | Same as manual; all rows in one transaction with one `import_batch_id` | Yes, per row |
 
-Gaps that matter for matching:
+Choices made while implementing, open to change:
 
-- **No raw payload or source reference.** The notification text and spreadsheet row are discarded after parsing, so an exact re-import cannot be recognised and a decision cannot be traced back.
-- **Bulk import is not one unit.** A failed row leaves earlier rows saved and a retry creates duplicates.
-- **Time precision is lost.** A manual `2026-09-05` and a notification `2026-09-05 13:45` look 13 h 45 min apart.
-- **Notification times are assumed UTC.** If banks print local time (likely, not verified), that is a 1–2 hour shift against a manual entry in Hungarian local time.
-- **Sign convention is not enforced.** A positive manual `4990` would never match a `-4990` notification.
-- **Merchant fields differ in shape.** Notifications carry a clean merchant; manual rows often only have a description such as "Tesco weekly shop".
+- **Time:** everything is stored in UTC. A date-only manual value is kept as that date at 00:00 UTC with `happened_at_precision = day`; calendar days of minute-precision records are taken in Europe/Budapest. Notification times are still read as UTC (open question 1).
+- **Direction:** a manual row may send `direction` (`expense` or `income`), which sets the sign; without it the typed sign decides, as before.
+- **Below 0.60:** the decision row still names the best candidate event, so a near miss can be inspected later.
+- **Concurrency:** each ingest call runs inside `BEGIN IMMEDIATE`, so two calls cannot both read the same candidates.
 
 ## Matching approach
 
@@ -158,13 +195,15 @@ Every endpoint keeps `ensure_authorized(user_id, group_id)`; every lookup by id 
 4. Foreign-currency card purchases are out of scope; confirm with the supervisor.
 5. Split payments and refunds are out of scope for the first version.
 6. An LLM could later score only the `needs_review` band as a comparison point.
+7. Sheets rows can be edited after sending: treat an edit as a new version superseding the old record, or as a correction of the same record?
+8. Client idempotency keys (Android, web) are a new request field; agree the header name and how long keys are kept.
 
 ## Implementation plan
 
 Each step is a separate pull request with its tests; dates are in the [roadmap](../planning/roadmap.md).
 
-1. Schema migration: new columns, `events`, `match_decisions`, one event per existing row.
-2. `finsync/matching/` with normalisation, fingerprint, blocking, scoring and decision, plus unit tests.
-3. Wire matching into the three ingest paths; atomic bulk import; `event_id` and `match_outcome` in responses.
+1. ~~Schema migration: new columns, `events`, `match_decisions`, one event per existing row.~~ Done 2026-10-17.
+2. ~~`finsync/matching/` with normalisation, fingerprint, blocking, scoring and decision, plus unit tests.~~ Done 2026-10-17.
+3. ~~Wire matching into the three ingest paths; atomic bulk import; `event_id` and `match_outcome` in responses.~~ Done 2026-10-17, with `GET /v1/events`.
 4. Review and correction endpoints with service and permission tests.
 5. Synthetic evaluation dataset and the evaluation runner; tune on the development split, report on the test split.
