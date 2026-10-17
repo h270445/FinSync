@@ -25,7 +25,7 @@ A banking notification and a manual entry for the same purchase arrive through t
 
 ## Checklist
 
-- [ ] Fixes from PR #2 (whole-word categorization) and PR #3 (atomic bulk import, amount validation) carried over to the current layout.
+- [x] Fixes from PR #2 (whole-word categorization) and PR #3 (atomic bulk import, amount validation) carried over to the current layout.
 - [ ] Schema versioning and migration (`events`, `match_decisions`, new columns).
 - [ ] Notification time-zone decision recorded (ADR).
 - [ ] `finsync/matching/` with unit tests.

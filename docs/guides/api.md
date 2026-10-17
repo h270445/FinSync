@@ -54,7 +54,7 @@ Response `201`: `{"transaction_id": 1}`. Supported formats are listed in [finsyn
 {"rows": [ { "amount": "-1000", "currency": "HUF", "description": "Taxi", "happened_at": "2026-09-06T10:00:00+00:00" } ]}
 ```
 
-Each row has the same fields as a manual transaction. Response `201`: `{"transaction_ids": [3]}`.
+Each row has the same fields as a manual transaction. The import is atomic: if any row is invalid (for example a non-object row, a zero or non-finite amount), nothing is stored and the `400` error names the row (`Row 1: Amount cannot be zero`). Response `201`: `{"transaction_ids": [3]}`.
 
 ### `GET /v1/transactions`
 

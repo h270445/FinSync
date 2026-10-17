@@ -24,7 +24,7 @@ Each entry lists the points as actions; ticked actions link to where they were d
 - [ ] Hand-decided examples first, at least: repeated submission, reverse arrival order, date-only manual entry, two separate purchases with the same amount ([matching design](../design/transaction-matching.md#testing-and-evaluation)).
 - [ ] M1 results: matching vs. naive baseline on the same data, false merges reported separately ([M1](milestones/m1-2026-11-06-working-core.md)).
 - [ ] Totals follow confirm, reject and split (test and web app).
-- [ ] Carry over the fixes from PR #2 (whole-word categorization) and PR #3 (atomic bulk import, amount validation).
+- [x] Carry over the fixes from PR #2 (whole-word categorization) and PR #3 (atomic bulk import, amount validation) (PR #7).
 - [ ] Interim note to the supervisor by 2026-10-22: state of matching, and whether the SQLite fallback was needed. Not an official deadline.
 - [ ] Answer the supervisor's question: is this order realistic with Friday and Saturday as working days, and is any side track too much for the November core?
 - Contact: progress e-mails with repository link and commit id, sent directly from Gmail.

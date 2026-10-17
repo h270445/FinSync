@@ -14,7 +14,8 @@ python -m unittest discover -s tests
 
 | File | Covers |
 | --- | --- |
-| `test_finsync_service.py` | Notification parsing, notification ingest, manual and bulk creation, group authorization |
+| `test_finsync_service.py` | Notification parsing, notification ingest, manual and bulk creation (including atomic rollback and invalid rows), group authorization |
+| `test_categorization.py` | Whole-word keyword matching of the rule-based categorizer |
 
 ## Conventions
 

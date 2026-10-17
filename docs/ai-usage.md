@@ -17,8 +17,8 @@ The course requires documenting significant use of AI tools and how their result
 | --- | --- | --- | --- | --- |
 | 2026-10-01 | GitHub Copilot agent | Initial MVP backend flow | Unit tests; reviewed and merged by the author | #1 |
 | 2026-10-09 | Claude Code | Matching and duplicate detection design (proposed) | Under review by the author | – |
-| 2026-10-09 | Claude Code | Whole-word categorization fix | Unit tests; awaiting author review | #2 |
-| 2026-10-09 | Claude Code | Atomic bulk import, amount validation | Unit and HTTP tests; awaiting author review | #3 |
+| 2026-10-09 | Claude Code | Whole-word categorization fix | Unit tests; carried over to the current layout by Claude Code, tests re-run | #2, #7 |
+| 2026-10-09 | Claude Code | Atomic bulk import, amount validation | Unit and HTTP tests; branch updated by GitHub Copilot, merged by Claude Code, tests re-run | #3, #7 |
 | 2026-10-09 | Claude Code | Documentation structure, package layout, roadmap | Existing tests pass after the move; reviewed and merged by the author | #4 |
 | 2026-10-09 | Claude Code | UI plan, Figma prompt plan, technology stack, ADR 0005 and 0006 (proposed) | Awaiting author review | this PR |
 

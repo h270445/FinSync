@@ -135,5 +135,4 @@ The direction column is proposed in [ADR 0006](decisions/0006-framework-based-st
 
 - Identity is supplied by the client in headers (no authentication).
 - Notification timestamps are assumed UTC.
-- Bulk import is not atomic (being fixed in a separate pull request).
 - No schema versioning or migrations yet.

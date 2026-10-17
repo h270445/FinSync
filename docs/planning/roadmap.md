@@ -71,7 +71,7 @@ Weeks start on Monday. Each line is roughly one pull request with its tests and 
 - [x] Minimal backend: notification parsing, manual and bulk entry, categorization, SQLite, group checks, tests.
 - [x] Matching design ([design/transaction-matching.md](../design/transaction-matching.md)).
 - [x] Documentation structure, layered package layout, roadmap.
-- [ ] Open pull requests merged: whole-word categorization (#2), atomic bulk import and amount validation (#3).
+- [x] Fixes from the open pull requests carried over: whole-word categorization (#2), atomic bulk import and amount validation (#3).
 
 ### Phase 1 — Working core (2026-10-12 → internal target 2026-10-30, M1 due 2026-11-06)
 
