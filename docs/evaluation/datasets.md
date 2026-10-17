@@ -11,9 +11,10 @@
 | Column | Meaning |
 | --- | --- |
 | `record_id` | `R0001`… in arrival order |
+| `case` | One run of a scenario; a look-alike pair (two bus tickets, a purchase and its refund) shares a case while keeping two `true_event` labels |
 | `true_event` | Label: records with the same value describe the same purchase. Never shown to the matcher |
 | `scenario`, `kind` | How the record was produced; `kind` is the duplicate kind from the [matching design](../design/transaction-matching.md#where-duplicates-come-from): `A` re-delivery, `B` cross-source duplicate, `C` look-alike, `none` single record |
-| `split` | `dev` (for tuning) or `test` (for reporting), fixed per `true_event` from a hash, so a purchase is never split across them |
+| `split` | `dev` (for tuning) or `test` (for reporting), fixed per `case` from a hash, so neither a purchase nor a look-alike pair is split across them |
 | `member`, `source`, `arrives_at` | Who sent it, through which channel, and when it reached the server |
 | `message` | Notification text, for `android_notification` rows |
 | `amount` … `source_ref` | Manual row fields, the same as `POST /v1/transactions` |

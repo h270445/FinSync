@@ -469,11 +469,24 @@ class StorageSession:
         ).fetchone()
         return row is not None
 
-    def latest_decision_id(self, transaction_id: int) -> int | None:
+    def link_decision_id(self, transaction_id: int, event_id: int) -> int | None:
+        """The latest decision that put this record into this event, if the record's own decision did."""
         row = self._connection.execute(
-            "SELECT MAX(id) AS id FROM match_decisions WHERE transaction_id = ?", (transaction_id,)
+            """
+            SELECT MAX(id) AS id FROM match_decisions
+            WHERE transaction_id = ? AND candidate_event_id = ?
+              AND outcome IN ('auto_linked', 'confirmed', 'exact_duplicate')
+            """,
+            (transaction_id, event_id),
         ).fetchone()
         return row["id"]
+
+    def open_reviews_for_event(self, event_id: int) -> list[dict[str, Any]]:
+        rows = self._connection.execute(
+            f"SELECT * FROM match_decisions d WHERE d.candidate_event_id = ? AND {_OPEN_REVIEW} ORDER BY d.id",
+            (event_id,),
+        ).fetchall()
+        return [_decision_dict(row) for row in rows]
 
     def rejected_event_ids(self, group_id: str, fingerprint: str) -> set[int]:
         """Events a member has already rejected for a record with this fingerprint."""

@@ -26,11 +26,19 @@ class MatchingDatasetTest(unittest.TestCase):
         rows = read_csv(DATASET)
         self.assertGreaterEqual(len(rows), 100)
         self.assertEqual({row.scenario for row in rows}, {name for name, _ in SCENARIOS})
-        splits = collections.defaultdict(set)
-        for row in rows:
-            splits[row.true_event].add(row.split)
-        self.assertTrue(all(len(values) == 1 for values in splits.values()))
+        for key in ("true_event", "case"):
+            splits = collections.defaultdict(set)
+            for row in rows:
+                splits[getattr(row, key)].add(row.split)
+            self.assertTrue(all(len(values) == 1 for values in splits.values()), key)
         self.assertEqual({row.split for row in rows}, {"dev", "test"})
+
+    def test_re_deliveries_come_from_one_channel_for_any_seed(self) -> None:
+        for seed in range(20):
+            rows = generate(60, seed)
+            for event in {row.true_event for row in rows if row.kind == "A"}:
+                channels = {(row.member, row.source) for row in rows if row.true_event == event}
+                self.assertEqual(len(channels), 1, (seed, event))
 
     def test_every_record_can_be_ingested(self) -> None:
         with tempfile.TemporaryDirectory() as tempdir:

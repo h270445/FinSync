@@ -39,7 +39,36 @@ UI text is Hungarian, amounts in HUF (`12 990 Ft`), dates `2026. 10. 09.`. All e
 | W5 | Review queue | Two records side by side, score and feature breakdown (amount, time, merchant), **Same purchase** / **Different purchases** | `GET /v1/matches/review`, `POST /v1/matches/{id}/confirm`, `.../reject` | M2 |
 | W6 | Add transaction | Manual entry form; after saving, show the match outcome | `POST /v1/transactions` | M2 |
 | W7 | Import file | Upload a spreadsheet export, preview rows, import, summary per outcome (new, linked, needs review, re-delivery, rejected rows with reasons) | `POST /v1/transactions/bulk` | M2 |
-| W8 | Settings (if time allows) | Group members; create and revoke API tokens for the Android app and the Sheets script (token shown once) | Token endpoints (planned, M2) | M2 |
+| W8 | Settings | Member and group settings, see [Settings](#settings) | Token and settings endpoints (planned, M2) | M2 |
+
+### Settings
+
+Two levels. A member changes their own settings; group settings are changed only by the group's owner. ⭐ marks what is planned for this semester (M2), the rest is later.
+
+**Member:**
+
+| Setting | Default | |
+| --- | --- | --- |
+| Category questions on or off | On | ⭐ |
+| Daily question limit | None (no limit); optional maximum, questions over it go to the "uncertain categories" filter | ⭐ |
+| Amount below which no question is asked | 2 000 Ft | ⭐ |
+| Quiet hours for questions (for example 22:00–07:00; questions wait until morning) | Off | |
+| API tokens for the Android app and the Sheets script: create (shown once), revoke, last used | – | ⭐ |
+| Language and date format | Hungarian | |
+
+**Group:**
+
+| Setting | Default | |
+| --- | --- | --- |
+| Members: invite, remove | – | ⭐ |
+| Category list: rename, add, merge | Starting list from the [categorization design](categorization.md#open-questions) | ⭐ |
+| Merchant memory: the learned "merchant → category" entries, edit or delete; mark a merchant as mixed-assortment | Filled from corrections | ⭐ |
+| Import mappings: bank export columns, sheet category values (for example "kaja" → groceries) | Asked on first use | |
+| Currency and time zone | HUF, Europe/Budapest | |
+
+**Deliberately not settings:** the matching thresholds (0.85 / 0.60) and the category question thresholds (0.80 / 0.20). They are part of the measured result: a member-chosen value would make the reported accuracy untrue for their data, and a bad value causes silent false merges. A later "careful / normal" switch that only sends more cases to review is possible.
+
+**Later, not this semester:** CSV export, deleting the group's data, choosing the LLM provider.
 
 ### Android app
 

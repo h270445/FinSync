@@ -286,6 +286,8 @@ class FinSyncService:
             for event_id in {target, previous_event} - {None}:
                 session.refresh_event(event_id)
                 session.refresh_review_state(event_id)
+            if previous_event is not None and not session.event_originals(previous_event):
+                _retarget_reviews(session, group_id, previous_event, target)
         return StoreResult(record.id, target, "confirmed")
 
     def reject_match(self, user_id: str, group_id: str, decision_id: int) -> StoreResult:
@@ -337,7 +339,8 @@ class FinSyncService:
                 features=None,
                 matcher_version=MATCHER_VERSION,
                 decided_by=user_id,
-                supersedes_id=session.latest_decision_id(record.id),
+                # Only the decision that made this link is undone; an open review of the record stays open.
+                supersedes_id=session.link_decision_id(record.id, event_id),
             )
             for affected in (event_id, new_event_id):
                 session.refresh_event(affected)
@@ -459,6 +462,21 @@ def _match_record_of(existing: TransactionRecord) -> MatchRecord:
         id=existing.id,
         event_id=existing.event_id,
     )
+
+
+def _retarget_reviews(session: StorageSession, group_id: str, emptied_event: int, new_event: int) -> None:
+    """Open reviews that pointed at an event whose records all moved now point where they went."""
+    for review in session.open_reviews_for_event(emptied_event):
+        session.insert_decision(
+            group_id=group_id,
+            transaction_id=int(review["transaction_id"]),
+            candidate_event_id=new_event,
+            outcome="needs_review",
+            features={**(review["features"] or {}), "retargeted_from_event_id": emptied_event},
+            matcher_version=review["matcher_version"],
+            decided_by="system",
+            supersedes_id=int(review["id"]),
+        )
 
 
 def _store_new_event(

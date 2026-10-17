@@ -70,6 +70,8 @@ Choices made while implementing, open to change:
 - **Concurrency:** each ingest call runs inside `BEGIN IMMEDIATE`, so two calls cannot both read the same candidates.
 - **Review state:** an event is `needs_review` while one of its records has an unanswered `needs_review` decision. An event left without records (after a confirm moved its only record away) is kept for the log but hidden from `GET /v1/events`.
 - **Confirming an identical manual row** (the two-bus-tickets case) turns it into a re-delivery of the original; confirming any other record into an event that already holds that channel returns 409 ("split it first").
+- **Reviews follow moved records:** when a confirm empties an event, open reviews that pointed at it are re-issued (by `system`) against the event its record moved to, so no question is lost.
+- **Split undoes only the link itself:** it supersedes the decision that put the record into that event, if the record has one; an open review of the record stays open.
 - **Rejected pairs:** a record whose fingerprint was already rejected for an event is never proposed for that event again.
 - **Errors:** an id from another group returns 404, an action on a decision that is no longer open returns 409.
 

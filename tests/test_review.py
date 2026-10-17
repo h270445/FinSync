@@ -100,6 +100,41 @@ class ReviewTest(unittest.TestCase):
         moved = next(tx for tx in event.transactions if tx.id == second.transaction_id)
         self.assertEqual(moved.duplicate_of_id, first.transaction_id)
 
+    def test_reviews_pointing_at_an_emptied_event_follow_its_record(self) -> None:
+        notification, manual, review = self._uncertain_pair()
+        copy = self._manual(happened_at="2026-09-05", merchant=None, description="Tesco weekly shop")
+        self.assertEqual(copy.match_outcome, "needs_review")  # identical row of the manual entry
+
+        self.service.confirm_match("user-1", "group-1", review.decision_id)
+
+        [pending] = self.service.list_open_reviews("user-1", "group-1")
+        self.assertEqual(pending.transaction.id, copy.transaction_id)
+        self.assertEqual(pending.candidate_event.id, notification.event_id)
+        self.service.confirm_match("user-1", "group-1", pending.decision_id)
+        [event] = self._events()
+        self.assertEqual(len(event.transactions), 3)
+        copied = next(tx for tx in event.transactions if tx.id == copy.transaction_id)
+        self.assertEqual(copied.duplicate_of_id, manual.transaction_id)
+
+    def test_split_keeps_an_unrelated_open_review(self) -> None:
+        self.storage.add_group_membership("user-2", "group-1")
+        notification, manual, review = self._uncertain_pair()
+        # The other member logs the same purchase; it links to the manual entry's own event.
+        other = self.service.create_manual_transaction(
+            "user-2",
+            "group-1",
+            {"amount": "-4500", "currency": "HUF", "description": "Tesco weekly shop", "happened_at": "2026-09-05"},
+        )
+        self.assertEqual(other.event_id, manual.event_id)
+
+        result = self.service.split_event("user-1", "group-1", manual.event_id, manual.transaction_id)
+
+        [still_open] = self.service.list_open_reviews("user-1", "group-1")
+        self.assertEqual(still_open.decision_id, review.decision_id)
+        events = {event.id: event for event in self._events()}
+        self.assertEqual(events[result.event_id].review_state, "needs_review")
+        self.assertIsNone(self.storage.list_decisions("group-1")[-1]["supersedes_id"])
+
     def test_split_undoes_a_wrong_link(self) -> None:
         notification = self.service.ingest_notification("user-1", "group-1", NOTIFICATION)
         repeated = self.service.ingest_notification("user-1", "group-1", NOTIFICATION)

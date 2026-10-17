@@ -42,6 +42,7 @@ MERCHANTS = (
 @dataclass(frozen=True)
 class Row:
     record_id: str
+    case: str
     true_event: str
     scenario: str
     kind: str
@@ -64,6 +65,11 @@ class _Builder:
         self.rows: list[Row] = []
         self._events = 0
         self._sheet_rows = 0
+        self._cases = 0
+
+    def start_case(self) -> None:
+        """One scenario run; all its records share a case id and a split, so look-alike pairs stay together."""
+        self._cases += 1
 
     # Helpers -------------------------------------------------------------------------------
 
@@ -80,13 +86,15 @@ class _Builder:
         return self.rng.choice([m for m in MERCHANTS if m[1] not in exclude])
 
     def _add(self, event: str, scenario: str, kind: str, member: str, source: str, arrives: datetime, **values: str) -> None:
+        case = f"C{self._cases:04d}"
         self.rows.append(
             Row(
                 record_id="",
+                case=case,
                 true_event=event,
                 scenario=scenario,
                 kind=kind,
-                split=_split_of(event),
+                split=_split_of(case),
                 member=member,
                 source=source,
                 arrives_at=arrives.isoformat(),
@@ -195,11 +203,11 @@ class _Builder:
         event, when = self._new_event(), self._moment()
         _, name, description, amounts = self._merchant()
         amount, ref = -Decimal(self.rng.choice(amounts)), self.sheet_ref()
-        arrives = when + timedelta(hours=8)
-        self.manual(event, "resent_sheet_row", "A", when, amount, description, merchant=name, date_only=True,
-                    arrives=arrives, source_ref=ref)
-        self.manual(event, "resent_sheet_row", "A", when, amount, description, merchant=name, date_only=True,
-                    arrives=arrives + timedelta(minutes=30), source_ref=ref)
+        arrives, member = when + timedelta(hours=8), self.rng.choice(MEMBERS)
+        # A re-delivery comes from the same channel, so both rows are sent by the same member.
+        for delay in (0, 30):
+            self.manual(event, "resent_sheet_row", "A", when, amount, description, merchant=name, member=member,
+                        date_only=True, arrives=arrives + timedelta(minutes=delay), source_ref=ref)
 
     def same_amount_same_phone(self) -> None:
         when = self._moment()
@@ -272,9 +280,9 @@ SCENARIOS: tuple[tuple[str, int], ...] = (
 )
 
 
-def _split_of(event: str) -> str:
-    """dev or test, fixed by the event label so all records of one purchase stay together."""
-    return "dev" if hashlib.sha256(event.encode()).digest()[0] % 2 == 0 else "test"
+def _split_of(case: str) -> str:
+    """dev or test, fixed per case, so the records of one purchase and its look-alikes stay together."""
+    return "dev" if hashlib.sha256(case.encode()).digest()[0] % 2 == 0 else "test"
 
 
 def generate(records: int = 100, seed: int = 2026) -> list[Row]:
@@ -283,9 +291,11 @@ def generate(records: int = 100, seed: int = 2026) -> list[Row]:
     names = [name for name, _ in SCENARIOS]
     weights = [weight for _, weight in SCENARIOS]
     for name in names:
+        builder.start_case()
         getattr(builder, name)()
     while len(builder.rows) < records:
         scenario: Callable[[], None] = getattr(builder, builder.rng.choices(names, weights)[0])
+        builder.start_case()
         scenario()
     ordered = sorted(builder.rows, key=lambda row: (row.arrives_at, row.true_event))
     return [Row(**{**asdict(row), "record_id": f"R{index:04d}"}) for index, row in enumerate(ordered, start=1)]
