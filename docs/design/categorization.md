@@ -57,10 +57,25 @@ When events are linked by matching, the event takes the highest-precedence categ
 
 | Platform | What it knows | Handling |
 | --- | --- | --- |
-| **Android notification** | Merchant and amount only | Automatic category by the order above; a `low` category shows as a suggestion in the web app's list. Asking on the phone right after the purchase is the most accurate option but is out of scope for this semester. |
+| **Android notification** | Merchant and amount only | Automatic category by the order above; when it is uncertain, a question on the phone ([Asking the member](#asking-the-member-proposed-by-the-author-2026-10-17)), otherwise a suggestion in the web app's list. |
 | **Manual entry (web)** | The member is present | The category field is pre-filled with the suggestion; the member's choice is stored as `user`. Changing a suggested category teaches merchant memory. |
 | **File import (bank export)** | Often a bank category or MCC column | Used as `source` through a mapping table. The import preview lists the `low` and `uncategorized` rows so they can be fixed in bulk before saving. |
 | **Google Sheets** | A category column the member typed | Taken as `user` after mapping; an unknown value such as "kaja" is mapped once and remembered. |
+
+## Asking the member (proposed by the author, 2026-10-17)
+
+When the category is uncertain, the member is asked with a short reason and the two or three most likely categories plus "Other" (and "Later"), for example: "Tesco sells food and clothing too. What was this?" On Android this is a notification with action buttons (Android allows three, so two categories plus "Other"); in the web app the same chooser appears on the event.
+
+**When to ask.** A model's self-reported percentage is not calibrated, so it is not used directly. Confidence is computed instead:
+
+- the probability of the top category from token log-probabilities over the allowed list, where the provider exposes them, or the share of the top answer in five samples otherwise;
+- **ask when the top category is below 0.80, or the gap to the second is below 0.20**, or the merchant is on the mixed-assortment list without a group memory entry, or rules and LLM disagree.
+
+0.80 and 0.20 are starting values. Like the matching thresholds they are tuned on the development split: the target is at most 5 % wrong answers among the categories set without asking, with as few questions as that allows; both rates are reported.
+
+**Against question fatigue:** never ask for a merchant the group has confirmed; a small-amount limit (starting at 2 000 Ft) below which the suggestion is kept silently; at most three questions a day, the rest collected in the web app's "uncertain categories" filter; the reason text comes from a template, not free LLM text. An unanswered question leaves the suggestion `low`, nothing is blocked.
+
+**Scope:** the web chooser is part of the review UI this semester; the Android notification with actions is a stretch goal of the reduced Android app.
 
 ## Mixed baskets
 
