@@ -94,7 +94,7 @@ Goal: every committed component exists and works together with proper data handl
 | Nov 2–8 | Authentication with per-user API tokens (hashed); review and correction endpoints already done on Oct 17. M1 submitted from `main` (tag `v0.2.0`). | Labelled categorization dataset. Styled screens in Figma. |
 | Nov 9–15 | Web app: sign-in, review queue, event detail with split. Request size limits; cross-group tests on every endpoint. | Android app (one bank format): token setup, sending to `/v1/notifications/ingest`, retry without duplicates. |
 | Nov 16–22 | File import of spreadsheet exports with `source_ref` and `import_batch_id`; grow the matching dataset to 200–300 records. | Google Sheets script posting rows to `/v1/transactions/bulk`, if on schedule. Web app overview and manual entry. |
-| Nov 23–27 | LLM categorizer behind the categorizer interface with output validation; category correction (API and web app); end-to-end demo. **M2 content complete.** | |
+| Nov 23–27 | LLM categorizer behind the categorizer interface with output validation; category correction with the "mixed" flag and category lines (API and web app, [design](../design/categorization.md#mixed-baskets)); end-to-end demo. **M2 content complete.** | |
 
 ### Phase 3 — Evaluation, hardening and preliminary package (2026-11-30 → internal target 2027-01-08, M3 due 2027-01-15)
 
