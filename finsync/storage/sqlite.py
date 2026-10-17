@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from decimal import Decimal
 import sqlite3
-from typing import Iterable
+from typing import Any, Iterable
 
 
 @dataclass(frozen=True)
@@ -86,29 +86,61 @@ class FinSyncStorage:
         source: str,
         happened_at: datetime,
     ) -> int:
-        now = datetime.now(timezone.utc).isoformat()
         with self._connect() as connection:
-            cursor = connection.execute(
-                """
-                INSERT INTO transactions (
-                    user_id, group_id, amount, currency, description,
-                    merchant, category, source, happened_at, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    user_id,
-                    group_id,
-                    str(amount),
-                    currency,
-                    description,
-                    merchant,
-                    category,
-                    source,
-                    happened_at.isoformat(),
-                    now,
-                ),
+            return self._insert(
+                connection,
+                user_id=user_id,
+                group_id=group_id,
+                amount=amount,
+                currency=currency,
+                description=description,
+                merchant=merchant,
+                category=category,
+                source=source,
+                happened_at=happened_at,
             )
-            return int(cursor.lastrowid)
+
+    def insert_transactions(self, transactions: Iterable[dict[str, Any]]) -> list[int]:
+        """Insert several transactions atomically: either all are stored or none are."""
+        with self._connect() as connection:
+            return [self._insert(connection, **transaction) for transaction in transactions]
+
+    @staticmethod
+    def _insert(
+        connection: sqlite3.Connection,
+        *,
+        user_id: str,
+        group_id: str,
+        amount: Decimal,
+        currency: str,
+        description: str,
+        merchant: str | None,
+        category: str,
+        source: str,
+        happened_at: datetime,
+    ) -> int:
+        now = datetime.now(timezone.utc).isoformat()
+        cursor = connection.execute(
+            """
+            INSERT INTO transactions (
+                user_id, group_id, amount, currency, description,
+                merchant, category, source, happened_at, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                user_id,
+                group_id,
+                str(amount),
+                currency,
+                description,
+                merchant,
+                category,
+                source,
+                happened_at.isoformat(),
+                now,
+            ),
+        )
+        return int(cursor.lastrowid)
 
     def list_transactions(self, group_id: str) -> list[TransactionRecord]:
         with self._connect() as connection:
