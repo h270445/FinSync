@@ -73,7 +73,7 @@ When the category is uncertain, the member is asked with a short reason and the 
 
 0.80 and 0.20 are starting values. Like the matching thresholds they are tuned on the development split: the target is at most 5 % wrong answers among the categories set without asking, with as few questions as that allows; both rates are reported.
 
-**Against question fatigue:** never ask for a merchant the group has confirmed; a small-amount limit (starting at 2 000 Ft) below which the suggestion is kept silently; at most three questions a day, the rest collected in the web app's "uncertain categories" filter; the reason text comes from a template, not free LLM text. An unanswered question leaves the suggestion `low`, nothing is blocked.
+**Against question fatigue:** never ask for a merchant the group has confirmed; a small-amount limit (starting at 2 000 Ft) below which the suggestion is kept silently; an optional daily question limit in the member's settings, off by default (author's decision, 2026-10-17), with questions over the limit collected in the web app's "uncertain categories" filter; the reason text comes from a template, not free LLM text. An unanswered question leaves the suggestion `low`, nothing is blocked.
 
 **Scope:** the web chooser is part of the review UI this semester; the Android notification with actions is a stretch goal of the reduced Android app.
 

@@ -32,3 +32,4 @@ Decisions made by the author, as opposed to suggested by an AI tool. Filled in b
 | 2026-10-09 | Web app before the Android app; React for the web app | UI plan (PR #5) | Easier testing; learning and portfolio |
 | 2026-10-09 | Status e-mails kept in the repository in Hungarian | – | Backup and traceability of reports |
 | 2026-10-17 | Duplicate handling first, on the existing SQLite backend, before the stack switch | Weekly plan that started with the stack switch | The supervisor's letter names the working Nov 6 core as the priority |
+| 2026-10-17 | Ask the member about uncertain categories on the phone, with the likeliest options and "Other"; no daily question limit by default, configurable in settings | Categorization design (uncertain category shown only as a suggestion) | Most accurate while the purchase is fresh; the member decides how often to be asked |
