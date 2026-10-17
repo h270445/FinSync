@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from datetime import datetime
 import json
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 
-from finsync.core import AuthorizationError, FinSyncService
-from finsync.storage import FinSyncStorage
+from finsync.core import AuthorizationError, FinSyncService, StoreResult
+from finsync.storage import EventRecord, FinSyncStorage, TransactionRecord
 
 
 class FinSyncRequestHandler(BaseHTTPRequestHandler):
@@ -50,21 +49,27 @@ class FinSyncRequestHandler(BaseHTTPRequestHandler):
                 message = str(payload.get("message", "")).strip()
                 if not message:
                     raise ValueError("message is required")
-                transaction_id = self.service.ingest_notification(user_id, group_id, message)
-                self._send_json(HTTPStatus.CREATED, {"transaction_id": transaction_id})
+                result = self.service.ingest_notification(user_id, group_id, message)
+                self._send_json(HTTPStatus.CREATED, _result_json(result))
                 return
 
             if path == "/v1/transactions":
-                transaction_id = self.service.create_manual_transaction(user_id, group_id, payload)
-                self._send_json(HTTPStatus.CREATED, {"transaction_id": transaction_id})
+                result = self.service.create_manual_transaction(user_id, group_id, payload)
+                self._send_json(HTTPStatus.CREATED, _result_json(result))
                 return
 
             if path == "/v1/transactions/bulk":
                 rows = payload.get("rows")
                 if not isinstance(rows, list):
                     raise ValueError("rows must be a list")
-                transaction_ids = self.service.bulk_create_manual_transactions(user_id, group_id, rows)
-                self._send_json(HTTPStatus.CREATED, {"transaction_ids": transaction_ids})
+                results = self.service.bulk_create_manual_transactions(user_id, group_id, rows)
+                self._send_json(
+                    HTTPStatus.CREATED,
+                    {
+                        "transaction_ids": [result.transaction_id for result in results],
+                        "results": [_result_json(result) for result in results],
+                    },
+                )
                 return
 
             self._send_json(HTTPStatus.NOT_FOUND, {"error": "Not found"})
@@ -76,33 +81,65 @@ class FinSyncRequestHandler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802
         try:
             path = urlparse(self.path).path
-            if path != "/v1/transactions":
-                self._send_json(HTTPStatus.NOT_FOUND, {"error": "Not found"})
+            if path == "/v1/transactions":
+                user_id, group_id = self._identity()
+                transactions = self.service.list_group_transactions(user_id, group_id)
+                self._send_json(HTTPStatus.OK, {"transactions": [_transaction_json(tx) for tx in transactions]})
                 return
 
-            user_id, group_id = self._identity()
-            transactions = self.service.list_group_transactions(user_id, group_id)
-            serialized = [
-                {
-                    "id": tx.id,
-                    "user_id": tx.user_id,
-                    "group_id": tx.group_id,
-                    "amount": str(tx.amount),
-                    "currency": tx.currency,
-                    "description": tx.description,
-                    "merchant": tx.merchant,
-                    "category": tx.category,
-                    "source": tx.source,
-                    "happened_at": tx.happened_at.isoformat(),
-                    "created_at": tx.created_at.isoformat(),
-                }
-                for tx in transactions
-            ]
-            self._send_json(HTTPStatus.OK, {"transactions": serialized})
+            if path == "/v1/events":
+                user_id, group_id = self._identity()
+                events = self.service.list_group_events(user_id, group_id)
+                self._send_json(HTTPStatus.OK, {"events": [_event_json(event) for event in events]})
+                return
+
+            self._send_json(HTTPStatus.NOT_FOUND, {"error": "Not found"})
         except AuthorizationError as error:
             self._send_json(HTTPStatus.FORBIDDEN, {"error": str(error)})
         except ValueError as error:
             self._send_json(HTTPStatus.BAD_REQUEST, {"error": str(error)})
+
+
+def _result_json(result: StoreResult) -> dict:
+    return {
+        "transaction_id": result.transaction_id,
+        "event_id": result.event_id,
+        "match_outcome": result.match_outcome,
+    }
+
+
+def _transaction_json(tx: TransactionRecord) -> dict:
+    return {
+        "id": tx.id,
+        "user_id": tx.user_id,
+        "group_id": tx.group_id,
+        "amount": str(tx.amount),
+        "currency": tx.currency,
+        "description": tx.description,
+        "merchant": tx.merchant,
+        "category": tx.category,
+        "source": tx.source,
+        "happened_at": tx.happened_at.isoformat(),
+        "happened_at_precision": tx.happened_at_precision,
+        "created_at": tx.created_at.isoformat(),
+        "event_id": tx.event_id,
+        "duplicate_of_id": tx.duplicate_of_id,
+    }
+
+
+def _event_json(event: EventRecord) -> dict:
+    return {
+        "id": event.id,
+        "amount": str(event.amount),
+        "currency": event.currency,
+        "direction": event.direction,
+        "happened_at": event.happened_at.isoformat(),
+        "merchant": event.merchant,
+        "category": event.category,
+        "primary_transaction_id": event.primary_transaction_id,
+        "review_state": event.review_state,
+        "transactions": [_transaction_json(tx) for tx in event.transactions],
+    }
 
 
 def run_server(host: str = "127.0.0.1", port: int = 8080) -> None:

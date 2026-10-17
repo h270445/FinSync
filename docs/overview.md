@@ -31,16 +31,15 @@ The repository currently contains a minimal backend flow:
 * **Bulk transaction input:** API endpoint for importing multiple transactions from structured payloads, including rows prepared from a spreadsheet export.
 * **Rule-based categorization:** Basic deterministic transaction categorization.
 * **Persistent storage:** SQLite-based transaction persistence.
+* **Transaction matching and duplicate detection (first version):** every record is linked to an event; exact re-deliveries, confident cross-source matches and uncertain cases are told apart by a rule-based score, and each decision is logged with its reason ([design](design/transaction-matching.md)).
 * **Group membership checks:** Read and write operations check whether the supplied user identifier belongs to the requested group.
 * **Modular backend structure:** Separate packages for API, application core, ingestion, categorization, matching and storage ([finsync/README.md](../finsync/README.md)).
 * **Automated tests:** A test suite is included in the repository ([tests/README.md](../tests/README.md)).
 
 ### Planned — not yet implemented
 
-* **Transaction matching:** Reconciliation of records originating from different input sources.
-* **Duplicate detection:** Identification of likely duplicates while avoiding false merges of separate transactions.
 * **Match review and correction:** Handling of uncertain matches, user confirmation, and correction of incorrect decisions.
-* **Source traceability:** Recording where a transaction originated and how matching decisions were made.
+* **Measured matching results:** Evaluation dataset and runner, compared with the store-every-row baseline.
 * **Web app:** Browser-based interface for reviewing events and matches, correcting decisions, manual entry and file import.
 * **Android integration:** Collection of supported banking notification data on an Android device.
 * **Spreadsheet input:** Import of spreadsheet exports; a direct Google Sheets script only if time allows.

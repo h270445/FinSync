@@ -21,6 +21,7 @@ The course requires documenting significant use of AI tools and how their result
 | 2026-10-09 | Claude Code | Atomic bulk import, amount validation | Unit and HTTP tests; branch updated by GitHub Copilot, merged by Claude Code, tests re-run | #3, #7 |
 | 2026-10-09 | Claude Code | Documentation structure, package layout, roadmap | Existing tests pass after the move; reviewed and merged by the author | #4 |
 | 2026-10-09 | Claude Code | UI plan, Figma prompt plan, technology stack, ADR 0005 and 0006 (proposed) | Awaiting author review | this PR |
+| 2026-10-17 | Claude Code | Duplicate kinds and sources; matching steps 1–5 on SQLite (rules, schema version 2, wiring, `GET /v1/events`) | 37 unit and service tests including the four hand-decided examples; awaiting author review | session PR |
 
 ## Author decisions
 
@@ -30,3 +31,4 @@ Decisions made by the author, as opposed to suggested by an AI tool. Filled in b
 | --- | --- | --- | --- |
 | 2026-10-09 | Web app before the Android app; React for the web app | UI plan (PR #5) | Easier testing; learning and portfolio |
 | 2026-10-09 | Status e-mails kept in the repository in Hungarian | – | Backup and traceability of reports |
+| 2026-10-17 | Duplicate handling first, on the existing SQLite backend, before the stack switch | Weekly plan that started with the stack switch | The supervisor's letter names the working Nov 6 core as the priority |

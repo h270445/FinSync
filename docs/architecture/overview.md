@@ -17,10 +17,11 @@ finsync.core         FinSyncService: authorization check, validation, use cases
     │
     ├──► finsync.ingestion       notification text parser
     ├──► finsync.categorization  keyword rules
-    └──► finsync.storage         SQLite: group_memberships, transactions
+    ├──► finsync.matching        normalise, fingerprint, score, decide (pure rules)
+    └──► finsync.storage         SQLite: group_memberships, transactions, events, match_decisions
 ```
 
-Each incoming record becomes one row in `transactions`. There is no comparison with existing rows yet, so the same purchase sent twice is stored twice.
+Each incoming record is stored unchanged and linked to an event: an exact re-delivery joins its original, a confident cross-source match is linked, an uncertain one is flagged for review, anything else gets its own event. Every decision is logged. Review and correction endpoints are not built yet.
 
 ## 2. Target architecture
 

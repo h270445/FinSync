@@ -77,6 +77,8 @@ Weeks start on Monday. Each line is roughly one pull request with its tests and 
 
 Goal: the main technical risk, telling duplicates from look-alike purchases, has a working, measured solution.
 
+**Order changed on 2026-10-17:** matching came first on the existing SQLite backend (normalisation, fingerprint, blocking, scoring, decision, wiring, `GET /v1/events`, done on Oct 17), because the supervisor named the working Nov 6 core as the deciding factor. The stack switch follows once the core works; if it would delay M1, the SQLite fallback stays until M2.
+
 | Week | Main track | Side track |
 | --- | --- | --- |
 | Oct 12–18 | Stack switch on top of the existing backend ([ADR 0006](../architecture/decisions/0006-framework-based-stack.md)): FastAPI routes, SQLAlchemy and Alembic on PostgreSQL, Docker Compose, CI; existing parsing, categorization and tests carried over. First Alembic migration: `events`, `match_decisions`, traceability columns. Time-zone decision (ADR). Matching normalization and fingerprint. | Synthetic matching dataset generator. Figma wireframes for the event list, review queue and Android setup. |
