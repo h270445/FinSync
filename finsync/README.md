@@ -7,18 +7,19 @@ The FinSync backend: a Python standard-library HTTP API that ingests transaction
 | Folder | Layer | Contents |
 | --- | --- | --- |
 | [`api/`](api/README.md) | HTTP | Request handler, identity headers, JSON (de)serialization, server entry point |
-| [`core/`](core/README.md) | Application | `FinSyncService`: the use cases (ingest, create, bulk create, list) and authorization checks |
+| [`core/`](core/README.md) | Application | `FinSyncService`: the use cases (ingest, create, bulk create, list, review) and authorization checks |
 | [`ingestion/`](ingestion/README.md) | Domain | Source-specific parsers, currently the notification text parser |
 | [`categorization/`](categorization/README.md) | Domain | Rule-based categorizer (baseline for the planned LLM comparison) |
-| [`matching/`](matching/README.md) | Domain | Transaction matching and duplicate detection (planned, empty) |
-| [`storage/`](storage/README.md) | Persistence | SQLite schema, transaction and membership queries |
+| [`matching/`](matching/README.md) | Domain | Transaction matching and duplicate detection: normalise, fingerprint, score, decide |
+| [`storage/`](storage/README.md) | Persistence | SQLite schema and migrations, transactions, events, match decisions, memberships |
+| [`evaluation/`](evaluation/README.md) | Tooling | Synthetic labelled datasets; the evaluation runner follows |
 
 ## Dependency rule
 
 Imports only point downwards:
 
 ```text
-api  →  core  →  ingestion, categorization, matching, storage
+api, evaluation  →  core  →  ingestion, categorization, matching, storage
 ```
 
 - `ingestion`, `categorization` and `matching` do not import `api`, `core` or `storage`; they work on plain values so they can be unit-tested without a database.

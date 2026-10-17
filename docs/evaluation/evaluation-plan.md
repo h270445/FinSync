@@ -6,7 +6,7 @@ All evaluation uses synthetic data. Each measurement is reproducible from a comm
 
 A test dataset will contain examples of duplicate transactions, distinct transactions with similar attributes, incomplete records, and conflicting input data.
 
-**Dataset** (`tests/data/matching_eval.csv`, planned): 200–300 synthetic records, each with its channel, member, raw fields and a hand-assigned `true_event` label. Records are split 50/50 into development and test sets by `true_event`, so both records of a pair stay together. Thresholds are tuned on the development split only.
+**Dataset** (`tests/data/matching_eval.csv`; version 1 with 100 records exists, see [datasets.md](datasets.md)): 200–300 synthetic records in the final version, each with its channel, member, raw fields and a hand-assigned `true_event` label. Records are split 50/50 into development and test sets by `true_event`, so both records of a pair stay together. Thresholds are tuned on the development split only.
 
 The evaluation will measure:
 

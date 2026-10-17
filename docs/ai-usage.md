@@ -23,6 +23,7 @@ The course requires documenting significant use of AI tools and how their result
 | 2026-10-09 | Claude Code | UI plan, Figma prompt plan, technology stack, ADR 0005 and 0006 (proposed) | Awaiting author review | this PR |
 | 2026-10-17 | Claude Code | Duplicate kinds and sources; matching steps 1–5 on SQLite (rules, schema version 2, wiring, `GET /v1/events`); categorization design | 37 unit and service tests including the four hand-decided examples; reviewed and merged by the author | #7 |
 | 2026-10-17 | Claude Code | Review endpoints: list, confirm, reject, split | 8 service, permission and HTTP tests (45 in total) | session PR |
+| 2026-10-17 | Claude Code | Synthetic matching dataset generator and dataset v1 (100 records) | Reproducibility and ingest tests; scenario labels by construction | session PR |
 
 ## Author decisions
 
