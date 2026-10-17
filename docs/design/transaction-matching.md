@@ -13,6 +13,45 @@ The core rule that stops false merges: an event may hold at most one original re
 - **In scope:** exact re-import detection, cross-source matching, the review queue, undo, the data model, tests and the evaluation dataset.
 - **Out of scope:** foreign-currency matching, split payments, LLM-assisted matching, authentication (see [Open questions](#open-questions)).
 
+## Where duplicates come from
+
+Three different things look like duplicates. They need different handling, and mixing them up is the main source of wrong merges.
+
+| Kind | What it is | Typical source | Handling |
+| --- | --- | --- | --- |
+| **A. Re-delivery** | The same record from the same source arrives again | Android retry after a network error or restart, a notification posted twice; the same export file uploaded twice or two exports with overlapping date ranges; a Sheets row sent again; a double-clicked web form | Automatic, no question to the member: recognised by an identity key, stored as `exact_duplicate`, never counted twice |
+| **B. Cross-source duplicate** | The same purchase reported by different channels | Notification and a manual, sheet or file entry; two members both logging a shared dinner | Candidate matching with a score: auto-link only when confident and unique, otherwise review; always reversible with split |
+| **C. Look-alike, not a duplicate** | Separate purchases that share amount and time | Two bus tickets or coffees on the same day; monthly subscriptions; a refund of the same amount | Must stay separate: the one-original-per-channel rule, the time window, the direction gate; ambiguous cases go to review, never to an automatic merge |
+
+### Per source
+
+| Source | Re-delivery risk (A) | Identity key, strongest first | Notes |
+| --- | --- | --- | --- |
+| **Android notifications** | High: retries, restarts, re-posted notifications | Client idempotency key per notification (generated once on the phone and resent on every retry); then the fingerprint of the notification text | Some banks send an authorization and a later booking notification for one purchase; that is the same channel, so the parser must tell the two types apart (check during the Android spike). Notification time is minute-precise. |
+| **File import (CSV/XLSX export)** | High: the same file twice, overlapping date ranges | Bank transaction reference column if the export has one; else `source_ref` built from the row; whole-file hash per `import_batch_id` | Re-importing a known file is reported before anything is stored. Two identical rows inside one file are not merged automatically (two equal tickets are possible); they go to review. Exports often carry the booking date, 1–3 days after the purchase, so rows are day-precision. |
+| **Google Sheets script** | Medium: resending rows after an edit or a failed run | A stable row id column written by the script, used as `source_ref` | An edited row is a new version of the same record, not a new purchase (open question 7). |
+| **Manual entry (web app)** | Low: double submit | Idempotency key per form submission | Manual entries are the main cause of kind B; typed amounts may be rounded and the time is often day-precision. |
+
+### Practices this design follows
+
+1. **Idempotency first.** Clients send a key that stays the same across retries; the server stores it and answers a repeated request with the original result instead of creating a record. This removes most of kind A before any matching runs.
+2. **Source identity before content.** A reference the source itself provides (bank transaction id, sheet row id) beats a content hash; the content fingerprint is the fallback.
+3. **Fuzzy matching only across channels.** Kind B is scored; within one channel only kind A is possible, so look-alikes (kind C) from the same phone are never merged.
+4. **Keep everything, link instead of delete.** Every record stays stored with its raw payload; duplicates are linked to an event, so totals count the event once and nothing is lost.
+5. **Human decision when uncertain, and undo.** Review for the middle band and split for wrong links; every decision is logged.
+6. **Measure both error types.** Missed duplicates (double-counted expenses) and false merges (a real purchase disappears) are reported separately, because the second is worse for the user.
+
+### Hand-decided examples (first tests)
+
+Requested by the supervisor (2026-10-16) before the full dataset:
+
+| Example | Expected |
+| --- | --- |
+| Same notification sent twice (retry) | Kind A: `exact_duplicate`, one event |
+| Manual entry first, notification for the same purchase later | Kind B: linked, same result as the other order |
+| Date-only manual entry vs. a notification at 18:42 the same day | Kind B: candidate with day-precision time score; linked or review by merchant |
+| Two notifications of 4 500 Ft at the same shop, 10 minutes apart | Kind C: two events |
+
 ## Current state
 
 Every call inserts a new row into `transactions` with no comparison against existing rows, so the same purchase sent twice becomes two rows.
@@ -158,6 +197,8 @@ Every endpoint keeps `ensure_authorized(user_id, group_id)`; every lookup by id 
 4. Foreign-currency card purchases are out of scope; confirm with the supervisor.
 5. Split payments and refunds are out of scope for the first version.
 6. An LLM could later score only the `needs_review` band as a comparison point.
+7. Sheets rows can be edited after sending: treat an edit as a new version superseding the old record, or as a correction of the same record?
+8. Client idempotency keys (Android, web) are a new request field; agree the header name and how long keys are kept.
 
 ## Implementation plan
 
