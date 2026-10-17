@@ -35,6 +35,8 @@ Both approaches will be evaluated on the same manually labeled dataset using mea
 
 The goal is to determine where an LLM provides a measurable benefit over deterministic rules, rather than assuming that an AI-based solution is inherently better.
 
+Ambiguous merchants (for example a supermarket that also sells clothing) are labelled separately, and abstaining is scored as its own outcome; the details are in the [categorization design](../design/categorization.md#evaluation).
+
 ## 3. Security and privacy
 
 Requirements are in [architecture/security-and-privacy.md](../architecture/security-and-privacy.md). They are verified with automated tests where possible:

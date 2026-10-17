@@ -1,0 +1,87 @@
+# Categorization of ambiguous purchases
+
+- Status: **Proposed** (not implemented)
+- Date: 2026-10-17
+
+## Summary
+
+A merchant name does not determine the category. "Tesco 12 000 Ft" can be food, clothing, a game or a mix of all three, and a bank notification carries nothing else. No categorizer, rule-based or LLM, can know the answer from that input, so FinSync does not pretend to: every category carries **where it came from** and **how sure it is**, an uncertain one is shown as a suggestion the member can fix in one tap, and a correction is remembered for the next purchase at that merchant.
+
+## The problem in three cases
+
+| Case | Example | Can it be decided from the record? |
+| --- | --- | --- |
+| **Clear merchant** | BKK, Netflix, MOL fuel | Yes: one category fits almost always |
+| **Mixed-assortment merchant** | Tesco, Spar, Auchan, Rossmann, Amazon, eMAG | No: the usual category is a good guess, but often wrong |
+| **Unknown or cryptic text** | "SUMUP *KJ BT", "PAYPAL *12345" | No: even the merchant is unclear |
+
+Only the first case is a categorization problem in the usual sense. The other two are an information problem: the missing information is in the member's head or on the receipt.
+
+## Data model
+
+New fields on `events` (the category belongs to the purchase, not to one source record):
+
+| Field | Values | Purpose |
+| --- | --- | --- |
+| `category` | one of the allowed categories, or `uncategorized` | The category used in totals |
+| `category_source` | `user`, `source`, `merchant_memory`, `rule`, `llm`, `none` | Who decided |
+| `category_confidence` | `high`, `low` | Whether it is shown as settled or as a suggestion |
+
+A new `merchant_categories` table (per group): `merchant_key`, `category`, `times_confirmed`, `updated_at`. It is filled from member corrections and confirmations, never from LLM output alone.
+
+Every change of category is logged (who, old, new, when), the same way match decisions are.
+
+## Order of precedence
+
+The first step that gives an answer wins:
+
+1. **Member's choice** on any record of the event (manual entry, sheet column, correction in the web app). Never overwritten by automation.
+2. **Category supplied by the source**, when the source has one (a bank export's category or MCC column, a sheet's category column), mapped to the allowed list. An unmappable value is not guessed; the mapping is asked once and remembered.
+3. **Merchant memory** of the group: the category the group confirmed for this merchant. `high` once confirmed twice without a later correction.
+4. **Keyword rules** (the current baseline). `high` for clear merchants, `low` for merchants on the mixed-assortment list.
+5. **LLM**, only when the steps above give nothing or only `low`. It must answer with one allowed category or `unknown`; anything else is rejected. Its answer is always `low` unless it agrees with a rule.
+6. Otherwise `uncategorized`.
+
+When events are linked by matching, the event takes the highest-precedence category of its records, so a manual "clothing" beats the notification's guessed "groceries".
+
+## LLM rules
+
+- **Abstaining is a valid answer.** The prompt lists the allowed categories plus `unknown`, and states that a mixed-assortment merchant without further detail is `unknown` or the usual category marked uncertain. A wrong confident answer is the worst outcome, the same principle as false merges in matching.
+- **Structured output, temperature 0**, validated against the allowed list ([security](../architecture/security-and-privacy.md)).
+- **Only description, merchant and amount are sent**, never member names or group data.
+- **The group's own corrections go into the prompt as examples** (few-shot), so the model learns household habits without fine-tuning.
+- **Self-reported confidence is not trusted**; confidence comes from agreement with rules or memory.
+- Results are cached by merchant key and description, so the same text is not sent twice.
+
+## Per input platform
+
+| Platform | What it knows | Handling |
+| --- | --- | --- |
+| **Android notification** | Merchant and amount only | Automatic category by the order above; a `low` category shows as a suggestion in the web app's list. Asking on the phone right after the purchase is the most accurate option but is out of scope for this semester. |
+| **Manual entry (web)** | The member is present | The category field is pre-filled with the suggestion; the member's choice is stored as `user`. Changing a suggested category teaches merchant memory. |
+| **File import (bank export)** | Often a bank category or MCC column | Used as `source` through a mapping table. The import preview lists the `low` and `uncategorized` rows so they can be fixed in bulk before saving. |
+| **Google Sheets** | A category column the member typed | Taken as `user` after mapping; an unknown value such as "kaja" is mapped once and remembered. |
+
+## Mixed baskets
+
+One Tesco receipt with food and a T-shirt is really two categories. Splitting one event into category lines (12 000 Ft = 9 000 groceries + 3 000 clothing) is the complete answer but needs line items, a split UI and changes to totals. **Proposed for this semester:** one category per event, the usual one marked `low`, corrected by the member when it matters. Category lines are a candidate for the second semester.
+
+## Review in the web app
+
+- The event list shows `low` categories in a lighter style with a "suggestion" marker; one tap confirms or changes it.
+- A filter "uncertain categories" lists them; there is no mandatory queue, because a wrong category is a smaller error than a wrong merge.
+- Confirming or changing a category at a merchant offers "always use this for Tesco" only when the merchant is not on the mixed-assortment list.
+
+## Evaluation
+
+Added to the [evaluation plan](../evaluation/evaluation-plan.md#2-transaction-categorization):
+
+- The labelled dataset marks each item as clear or ambiguous. For ambiguous items the label records what the member actually bought, so a merchant-only guess can be scored honestly.
+- Metrics per approach (rules, LLM, rules + memory): accuracy on clear items; on ambiguous items accuracy **and** abstention rate; wrong-and-`high` rate as the main error; corrections a member would have to make per 100 purchases; time and cost per item.
+- The comparison shows where the LLM helps (cryptic text, unfamiliar merchants) and where it cannot (mixed baskets without detail).
+
+## Open questions
+
+1. Which mixed-assortment merchants go on the starting list (proposal: the large Hungarian grocery, drugstore and marketplace chains)?
+2. Do the target bank's notifications or exports carry an MCC or a category? Check during the Android spike and with a sample export.
+3. Final category list: the current four plus `other` is too short; proposal: groceries, eating out, transport, housing and utilities, health, clothing, entertainment, household, other.
