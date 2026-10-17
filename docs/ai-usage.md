@@ -21,7 +21,9 @@ The course requires documenting significant use of AI tools and how their result
 | 2026-10-09 | Claude Code | Atomic bulk import, amount validation | Unit and HTTP tests; branch updated by GitHub Copilot, merged by Claude Code, tests re-run | #3, #7 |
 | 2026-10-09 | Claude Code | Documentation structure, package layout, roadmap | Existing tests pass after the move; reviewed and merged by the author | #4 |
 | 2026-10-09 | Claude Code | UI plan, Figma prompt plan, technology stack, ADR 0005 and 0006 (proposed) | Awaiting author review | this PR |
-| 2026-10-17 | Claude Code | Duplicate kinds and sources; matching steps 1–5 on SQLite (rules, schema version 2, wiring, `GET /v1/events`) | 37 unit and service tests including the four hand-decided examples; awaiting author review | session PR |
+| 2026-10-17 | Claude Code | Duplicate kinds and sources; matching steps 1–5 on SQLite (rules, schema version 2, wiring, `GET /v1/events`); categorization design | 37 unit and service tests including the four hand-decided examples; reviewed and merged by the author | #7 |
+| 2026-10-17 | Claude Code | Review endpoints: list, confirm, reject, split | 8 service, permission and HTTP tests (45 in total) | session PR |
+| 2026-10-17 | Claude Code | Synthetic matching dataset generator and dataset v1 (100 records) | Reproducibility and ingest tests; scenario labels by construction | session PR |
 
 ## Author decisions
 
@@ -33,3 +35,4 @@ Decisions made by the author, as opposed to suggested by an AI tool. Filled in b
 | 2026-10-09 | Status e-mails kept in the repository in Hungarian | – | Backup and traceability of reports |
 | 2026-10-17 | Duplicate handling first, on the existing SQLite backend, before the stack switch | Weekly plan that started with the stack switch | The supervisor's letter names the working Nov 6 core as the priority |
 | 2026-10-17 | Ask the member about uncertain categories on the phone, with the likeliest options and "Other"; no daily question limit by default, configurable in settings | Categorization design (uncertain category shown only as a suggestion) | Most accurate while the purchase is fresh; the member decides how often to be asked |
+| 2026-10-17 | Mixed baskets: one category by default, a "mixed" flag and splitting an event into category lines, all this semester | Splitting proposed for the second semester | Building the data model once avoids reworking it in the second semester |

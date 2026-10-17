@@ -27,5 +27,6 @@ The core flows committed for the semester work together, with proper data handli
 - [ ] Android app (notification listener, token setup, sending, retry) with its README.
 - [ ] File import with `import_batch_id` and `source_ref`; Sheets script if time allows.
 - [ ] LLM categorizer and labelled categorization dataset.
+- [ ] Category correction, the "mixed" flag and category lines (lines add up to the event amount; totals follow them).
 - [ ] Docs updated (API reference, security status, client setup in the guides).
 - [ ] Release notes, tag `v0.3.0`, e-mail.

@@ -31,7 +31,8 @@ A banking notification and a manual entry for the same purchase arrive through t
 - [x] `finsync/matching/` with unit tests.
 - [x] Matching wired into all ingest paths; `event_id`, `match_outcome` in responses.
 - [x] `GET /v1/events`.
-- [ ] Synthetic dataset v1 (~100 labelled records) and its description.
+- [x] Review and correction endpoints (planned for Nov 2–8, done early on Oct 17).
+- [x] Synthetic dataset v1 (~100 labelled records) and its description.
 - [ ] Evaluation runner and first results.
 - [ ] Side tracks: Android notification-listener spike on a real device; ADR for how the Sheets script reaches the API.
 - [ ] Docs updated (API reference, storage README, design status → Accepted).

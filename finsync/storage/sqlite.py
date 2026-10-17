@@ -47,6 +47,12 @@ class EventRecord:
     transactions: tuple[TransactionRecord, ...]
 
 
+# A needs_review decision nobody has answered yet (no later decision supersedes it).
+_OPEN_REVIEW = """
+    d.outcome = 'needs_review'
+    AND NOT EXISTS (SELECT 1 FROM match_decisions later WHERE later.supersedes_id = d.id)
+"""
+
 _TRANSACTION_COLUMNS = """
     id, user_id, group_id, amount, currency, description, merchant, category, source,
     happened_at, created_at, event_id, direction, happened_at_precision, duplicate_of_id,
@@ -243,7 +249,10 @@ class FinSyncStorage:
                 transactions_by_event.setdefault(record.event_id, []).append(record)
         with self._connect() as connection:
             rows = connection.execute(
-                "SELECT * FROM events WHERE group_id = ? ORDER BY happened_at DESC, id DESC",
+                """
+                SELECT * FROM events WHERE group_id = ? AND review_state != 'empty'
+                ORDER BY happened_at DESC, id DESC
+                """,
                 (group_id,),
             ).fetchall()
         return [
@@ -268,10 +277,15 @@ class FinSyncStorage:
             rows = connection.execute(
                 "SELECT * FROM match_decisions WHERE group_id = ? ORDER BY id", (group_id,)
             ).fetchall()
-        return [
-            {**dict(row), "features": json.loads(row["features"]) if row["features"] else None}
-            for row in rows
-        ]
+        return [_decision_dict(row) for row in rows]
+
+    def list_open_reviews(self, group_id: str) -> list[dict[str, Any]]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                f"SELECT * FROM match_decisions d WHERE d.group_id = ? AND {_OPEN_REVIEW} ORDER BY d.id",
+                (group_id,),
+            ).fetchall()
+        return [_decision_dict(row) for row in rows]
 
 
 class StorageSession:
@@ -418,6 +432,85 @@ class StorageSession:
             ),
         )
 
+    def refresh_review_state(self, event_id: int) -> None:
+        """needs_review while a record of the event has an undecided review; empty once all records left."""
+        if not self._connection.execute("SELECT 1 FROM transactions WHERE event_id = ?", (event_id,)).fetchone():
+            state = "empty"
+        elif self._connection.execute(
+            f"""
+            SELECT 1 FROM match_decisions d JOIN transactions t ON t.id = d.transaction_id
+            WHERE t.event_id = ? AND {_OPEN_REVIEW}
+            """,
+            (event_id,),
+        ).fetchone():
+            state = "needs_review"
+        else:
+            state = "clear"
+        self._connection.execute(
+            "UPDATE events SET review_state = ?, updated_at = ? WHERE id = ?", (state, _now(), event_id)
+        )
+
+    def get_transaction(self, group_id: str, transaction_id: int) -> TransactionRecord | None:
+        row = self._connection.execute(
+            f"SELECT {_TRANSACTION_COLUMNS} FROM transactions WHERE group_id = ? AND id = ?",
+            (group_id, transaction_id),
+        ).fetchone()
+        return _row_to_transaction(row) if row else None
+
+    def get_decision(self, group_id: str, decision_id: int) -> dict[str, Any] | None:
+        row = self._connection.execute(
+            "SELECT * FROM match_decisions d WHERE group_id = ? AND id = ?", (group_id, decision_id)
+        ).fetchone()
+        return _decision_dict(row) if row else None
+
+    def is_superseded(self, decision_id: int) -> bool:
+        row = self._connection.execute(
+            "SELECT 1 FROM match_decisions WHERE supersedes_id = ?", (decision_id,)
+        ).fetchone()
+        return row is not None
+
+    def link_decision_id(self, transaction_id: int, event_id: int) -> int | None:
+        """The latest decision that put this record into this event, if the record's own decision did."""
+        row = self._connection.execute(
+            """
+            SELECT MAX(id) AS id FROM match_decisions
+            WHERE transaction_id = ? AND candidate_event_id = ?
+              AND outcome IN ('auto_linked', 'confirmed', 'exact_duplicate')
+            """,
+            (transaction_id, event_id),
+        ).fetchone()
+        return row["id"]
+
+    def open_reviews_for_event(self, event_id: int) -> list[dict[str, Any]]:
+        rows = self._connection.execute(
+            f"SELECT * FROM match_decisions d WHERE d.candidate_event_id = ? AND {_OPEN_REVIEW} ORDER BY d.id",
+            (event_id,),
+        ).fetchall()
+        return [_decision_dict(row) for row in rows]
+
+    def rejected_event_ids(self, group_id: str, fingerprint: str) -> set[int]:
+        """Events a member has already rejected for a record with this fingerprint."""
+        rows = self._connection.execute(
+            """
+            SELECT d.candidate_event_id FROM match_decisions d JOIN transactions t ON t.id = d.transaction_id
+            WHERE d.group_id = ? AND d.outcome = 'rejected' AND t.fingerprint = ?
+            """,
+            (group_id, fingerprint),
+        ).fetchall()
+        return {int(row["candidate_event_id"]) for row in rows if row["candidate_event_id"] is not None}
+
+    def move_record(self, transaction_id: int, event_id: int, duplicate_of_id: int | None = None) -> None:
+        """Move an original record and its re-deliveries to another event (review and split only)."""
+        self._connection.execute(
+            "UPDATE transactions SET event_id = ? WHERE id = ? OR duplicate_of_id = ?",
+            (event_id, transaction_id, transaction_id),
+        )
+        if duplicate_of_id is not None:
+            self._connection.execute(
+                "UPDATE transactions SET duplicate_of_id = ? WHERE id = ? OR duplicate_of_id = ?",
+                (duplicate_of_id, transaction_id, transaction_id),
+            )
+
     def insert_decision(
         self,
         *,
@@ -462,6 +555,10 @@ def _execute_script(connection: sqlite3.Connection, script: str) -> None:
 
 def candidate_time_range(happened_at: datetime, days: int) -> tuple[datetime, datetime]:
     return happened_at - timedelta(days=days), happened_at + timedelta(days=days)
+
+
+def _decision_dict(row: sqlite3.Row) -> dict[str, Any]:
+    return {**dict(row), "features": json.loads(row["features"]) if row["features"] else None}
 
 
 def _row_to_transaction(row: sqlite3.Row) -> TransactionRecord:

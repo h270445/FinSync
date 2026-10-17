@@ -1,6 +1,6 @@
 # Transaction matching and duplicate detection
 
-- Status: **Partially implemented** (matching steps 1–5 on SQLite since 2026-10-17; review endpoints and evaluation pending)
+- Status: **Partially implemented** (matching steps 1–5 and the review endpoints on SQLite since 2026-10-17; evaluation pending)
 - Date: 2026-10-09
 - Decision record: [ADR 0004](../architecture/decisions/0004-event-based-transaction-matching.md)
 
@@ -54,7 +54,7 @@ Requested by the supervisor (2026-10-16) before the full dataset:
 
 ## Current state
 
-Steps 1 to 5 below run on every ingest path since 2026-10-17, on the existing SQLite backend (`finsync/matching/`, `FinSyncService._store_and_match`, schema version 2). Review and correction endpoints, client idempotency keys and the evaluation runner are not built yet.
+Steps 1 to 5 below run on every ingest path since 2026-10-17, on the existing SQLite backend (`finsync/matching/`, `FinSyncService._store_and_match`, schema version 2). The review endpoints (list, confirm, reject, split) work as described in [User flow and API](#user-flow-and-api). Client idempotency keys and the evaluation runner are not built yet.
 
 | Entry point | Channel | Exact re-delivery key | `match_outcome` in the response |
 | --- | --- | --- | --- |
@@ -68,6 +68,12 @@ Choices made while implementing, open to change:
 - **Direction:** a manual row may send `direction` (`expense` or `income`), which sets the sign; without it the typed sign decides, as before.
 - **Below 0.60:** the decision row still names the best candidate event, so a near miss can be inspected later.
 - **Concurrency:** each ingest call runs inside `BEGIN IMMEDIATE`, so two calls cannot both read the same candidates.
+- **Review state:** an event is `needs_review` while one of its records has an unanswered `needs_review` decision. An event left without records (after a confirm moved its only record away) is kept for the log but hidden from `GET /v1/events`.
+- **Confirming an identical manual row** (the two-bus-tickets case) turns it into a re-delivery of the original; confirming any other record into an event that already holds that channel returns 409 ("split it first").
+- **Reviews follow moved records:** when a confirm empties an event, open reviews that pointed at it are re-issued (by `system`) against the event its record moved to, so no question is lost.
+- **Split undoes only the link itself:** it supersedes the decision that put the record into that event, if the record has one; an open review of the record stays open.
+- **Rejected pairs:** a record whose fingerprint was already rejected for an event is never proposed for that event again.
+- **Errors:** an id from another group returns 404, an action on a decision that is no longer open returns 409.
 
 ## Matching approach
 
@@ -205,5 +211,5 @@ Each step is a separate pull request with its tests; dates are in the [roadmap](
 1. ~~Schema migration: new columns, `events`, `match_decisions`, one event per existing row.~~ Done 2026-10-17.
 2. ~~`finsync/matching/` with normalisation, fingerprint, blocking, scoring and decision, plus unit tests.~~ Done 2026-10-17.
 3. ~~Wire matching into the three ingest paths; atomic bulk import; `event_id` and `match_outcome` in responses.~~ Done 2026-10-17, with `GET /v1/events`.
-4. Review and correction endpoints with service and permission tests.
+4. ~~Review and correction endpoints with service and permission tests.~~ Done 2026-10-17.
 5. Synthetic evaluation dataset and the evaluation runner; tune on the development split, report on the test split.

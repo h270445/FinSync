@@ -79,7 +79,19 @@ When the category is uncertain, the member is asked with a short reason and the 
 
 ## Mixed baskets
 
-One Tesco receipt with food and a T-shirt is really two categories. Splitting one event into category lines (12 000 Ft = 9 000 groceries + 3 000 clothing) is the complete answer but needs line items, a split UI and changes to totals. **Proposed for this semester:** one category per event, the usual one marked `low`, corrected by the member when it matters. Category lines are a candidate for the second semester.
+One Tesco receipt with food and a T-shirt is really two categories. **Decided by the author (2026-10-17): all three levels below are built this semester, so the data model does not have to be reworked in the second semester.**
+
+1. **One category per event** by default: the usual category, marked `low` for a mixed-assortment merchant, corrected in one tap.
+2. **A "mixed" flag** a member can set without giving amounts: the whole amount stays under the main category, and reports show how much of a total may be inaccurate.
+3. **Category lines:** the member splits an event into lines, for example 12 000 Ft = 9 000 Ft groceries + 3 000 Ft clothing.
+
+Data model for lines: a new `event_category_lines` table (`event_id`, `category`, `amount`, `created_by`, `created_at`). An event without lines counts its whole amount under `events.category`; an event with lines counts each line instead. The lines must add up to the event amount exactly (checked on write; the last line takes the remainder of a rounded split), and they must have the event's sign. Saving lines replaces the previous set as one logged change.
+
+Interaction with matching: lines belong to the event, not to a source record, so linking or confirming does not touch them. When a split moves a record to a new event, the lines stay on the original event, and the new event starts without lines; the member is shown that the old lines may need checking.
+
+Totals: category totals sum the lines of split events and the whole amount of the others, so the overview and the evaluation use one rule.
+
+Automatic splitting from receipts (photo, e-receipt) is out of scope.
 
 ## Review in the web app
 

@@ -21,7 +21,7 @@ finsync.core         FinSyncService: authorization check, validation, use cases
     └──► finsync.storage         SQLite: group_memberships, transactions, events, match_decisions
 ```
 
-Each incoming record is stored unchanged and linked to an event: an exact re-delivery joins its original, a confident cross-source match is linked, an uncertain one is flagged for review, anything else gets its own event. Every decision is logged. Review and correction endpoints are not built yet.
+Each incoming record is stored unchanged and linked to an event: an exact re-delivery joins its original, a confident cross-source match is linked, an uncertain one is flagged for review, anything else gets its own event. Every decision is logged, and a member can confirm, reject or split through the review endpoints.
 
 ## 2. Target architecture
 

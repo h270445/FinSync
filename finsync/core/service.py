@@ -34,6 +34,14 @@ class AuthorizationError(PermissionError):
     """Raised when user is not authorized for group access."""
 
 
+class NotFoundError(LookupError):
+    """Raised when an id does not exist in the requested group."""
+
+
+class ConflictError(ValueError):
+    """Raised when a review action no longer fits the current state, such as a decision already answered."""
+
+
 @dataclass(frozen=True)
 class TransactionInput:
     amount: Decimal
@@ -53,6 +61,17 @@ class StoreResult:
     transaction_id: int
     event_id: int
     match_outcome: str
+
+
+@dataclass(frozen=True)
+class ReviewItem:
+    """One uncertain match waiting for a member: the record, the event it may belong to, and why."""
+
+    decision_id: int
+    transaction: TransactionRecord
+    candidate_event: EventRecord
+    score: float | None
+    features: dict[str, Any] | None
 
 
 class FinSyncService:
@@ -154,7 +173,8 @@ class FinSyncService:
         # Step 2: exact re-delivery. A manual row without a client reference may be a second,
         # identical purchase (two bus tickets), so it goes to review instead.
         original = session.find_original_by_fingerprint(group_id, record["fingerprint"])
-        if original is not None and original.event_id is not None:
+        rejected = session.rejected_event_ids(group_id, record["fingerprint"])
+        if original is not None and original.event_id is not None and original.event_id not in rejected:
             if record["source"] != "manual" or record.get("source_ref"):
                 transaction_id = session.insert_record(
                     **record, event_id=original.event_id, duplicate_of_id=original.id
@@ -178,7 +198,7 @@ class FinSyncService:
         best_by_event: dict[int, Any] = {}
         channels_by_event: dict[int, set[str]] = {}
         for existing in session.candidate_records(group_id, record["currency"], start, end):
-            if existing.event_id is None:
+            if existing.event_id is None or existing.event_id in rejected:
                 continue
             if existing.event_id not in channels_by_event:
                 channels_by_event[existing.event_id] = {
@@ -218,6 +238,128 @@ class FinSyncService:
     def list_group_events(self, user_id: str, group_id: str) -> list[EventRecord]:
         self.ensure_authorized(user_id, group_id)
         return self._storage.list_events(group_id)
+
+    def list_open_reviews(self, user_id: str, group_id: str) -> list[ReviewItem]:
+        """Undecided needs_review decisions, each with the record and the event it may belong to."""
+        self.ensure_authorized(user_id, group_id)
+        events = {event.id: event for event in self._storage.list_events(group_id)}
+        transactions = {tx.id: tx for tx in self._storage.list_transactions(group_id)}
+        items = []
+        for decision in self._storage.list_open_reviews(group_id):
+            candidate = events.get(decision["candidate_event_id"])
+            record = transactions.get(decision["transaction_id"])
+            if candidate is None or record is None:
+                continue
+            items.append(ReviewItem(decision["id"], record, candidate, decision["score"], decision["features"]))
+        return items
+
+    def confirm_match(self, user_id: str, group_id: str, decision_id: int) -> StoreResult:
+        """The member says the record is the same purchase as the candidate event: link them."""
+        self.ensure_authorized(user_id, group_id)
+        with self._storage.transaction() as session:
+            decision, record = self._open_review(session, group_id, decision_id)
+            target = int(decision["candidate_event_id"])
+            features = decision["features"] or {}
+            originals = session.event_originals(target)
+            if not originals:
+                raise ConflictError("The proposed event no longer holds any record")
+            channel = _channel(record.source, record.user_id)
+            same_channel = [item for item in originals if _channel(item.source, item.user_id) == channel]
+            duplicate_of_id = None
+            if same_channel:
+                # Only an identical row from the same channel can join: it becomes a re-delivery of the original.
+                if features.get("identical_row_of_id") != same_channel[0].id:
+                    raise ConflictError("The event already holds a record from this channel; split it first")
+                duplicate_of_id = same_channel[0].id
+            previous_event = int(record.event_id) if record.event_id is not None else None
+            session.move_record(record.id, target, duplicate_of_id)
+            session.insert_decision(
+                group_id=group_id,
+                transaction_id=record.id,
+                candidate_event_id=target,
+                outcome="confirmed",
+                features=decision["features"],
+                matcher_version=decision["matcher_version"],
+                decided_by=user_id,
+                supersedes_id=decision_id,
+            )
+            for event_id in {target, previous_event} - {None}:
+                session.refresh_event(event_id)
+                session.refresh_review_state(event_id)
+            if previous_event is not None and not session.event_originals(previous_event):
+                _retarget_reviews(session, group_id, previous_event, target)
+        return StoreResult(record.id, target, "confirmed")
+
+    def reject_match(self, user_id: str, group_id: str, decision_id: int) -> StoreResult:
+        """The member says the record is a separate purchase: keep it apart and never propose the pair again."""
+        self.ensure_authorized(user_id, group_id)
+        with self._storage.transaction() as session:
+            decision, record = self._open_review(session, group_id, decision_id)
+            session.insert_decision(
+                group_id=group_id,
+                transaction_id=record.id,
+                candidate_event_id=decision["candidate_event_id"],
+                outcome="rejected",
+                features=decision["features"],
+                matcher_version=decision["matcher_version"],
+                decided_by=user_id,
+                supersedes_id=decision_id,
+            )
+            if record.event_id is not None:
+                session.refresh_review_state(record.event_id)
+        return StoreResult(record.id, int(record.event_id or 0), "rejected")
+
+    def split_event(self, user_id: str, group_id: str, event_id: int, transaction_id: int) -> StoreResult:
+        """Undo a wrong link: move one original record (with its re-deliveries) to a new event of its own."""
+        self.ensure_authorized(user_id, group_id)
+        with self._storage.transaction() as session:
+            record = session.get_transaction(group_id, transaction_id)
+            if record is None or record.event_id != event_id:
+                raise NotFoundError("Transaction not found in this event")
+            if record.duplicate_of_id is not None:
+                raise ValueError("A re-delivery moves with its original; split the original record instead")
+            if len(session.event_originals(event_id)) < 2:
+                raise ConflictError("The event holds only this record; there is nothing to split")
+            new_event_id = session.create_event(
+                group_id=group_id,
+                amount=record.amount,
+                currency=record.currency,
+                direction=record.direction,
+                happened_at=record.happened_at,
+                merchant=record.merchant,
+                category=record.category,
+                review_state="clear",
+            )
+            session.move_record(record.id, new_event_id)
+            session.insert_decision(
+                group_id=group_id,
+                transaction_id=record.id,
+                candidate_event_id=event_id,
+                outcome="split",
+                features=None,
+                matcher_version=MATCHER_VERSION,
+                decided_by=user_id,
+                # Only the decision that made this link is undone; an open review of the record stays open.
+                supersedes_id=session.link_decision_id(record.id, event_id),
+            )
+            for affected in (event_id, new_event_id):
+                session.refresh_event(affected)
+                session.refresh_review_state(affected)
+        return StoreResult(record.id, new_event_id, "split")
+
+    @staticmethod
+    def _open_review(
+        session: StorageSession, group_id: str, decision_id: int
+    ) -> tuple[dict[str, Any], TransactionRecord]:
+        decision = session.get_decision(group_id, decision_id)
+        if decision is None:
+            raise NotFoundError("Decision not found")
+        if decision["outcome"] != "needs_review" or session.is_superseded(decision_id):
+            raise ConflictError("This decision is not waiting for review")
+        record = session.get_transaction(group_id, int(decision["transaction_id"]))
+        if record is None or decision["candidate_event_id"] is None:
+            raise NotFoundError("Decision not found")
+        return decision, record
 
     @staticmethod
     def _validate_transaction_payload(payload: dict[str, Any]) -> TransactionInput:
@@ -322,6 +464,21 @@ def _match_record_of(existing: TransactionRecord) -> MatchRecord:
     )
 
 
+def _retarget_reviews(session: StorageSession, group_id: str, emptied_event: int, new_event: int) -> None:
+    """Open reviews that pointed at an event whose records all moved now point where they went."""
+    for review in session.open_reviews_for_event(emptied_event):
+        session.insert_decision(
+            group_id=group_id,
+            transaction_id=int(review["transaction_id"]),
+            candidate_event_id=new_event,
+            outcome="needs_review",
+            features={**(review["features"] or {}), "retargeted_from_event_id": emptied_event},
+            matcher_version=review["matcher_version"],
+            decided_by="system",
+            supersedes_id=int(review["id"]),
+        )
+
+
 def _store_new_event(
     session: StorageSession,
     record: dict[str, Any],
@@ -338,7 +495,7 @@ def _store_new_event(
         happened_at=record["happened_at"],
         merchant=record["merchant"],
         category=record["category"],
-        review_state="needs_review" if outcome == "needs_review" else "clear",
+        review_state="clear",
     )
     transaction_id = session.insert_record(**record, event_id=event_id)
     session.refresh_event(event_id)
@@ -350,4 +507,5 @@ def _store_new_event(
         features=details,
         matcher_version=MATCHER_VERSION,
     )
+    session.refresh_review_state(event_id)
     return StoreResult(transaction_id, event_id, outcome)

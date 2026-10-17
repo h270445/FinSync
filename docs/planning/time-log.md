@@ -7,7 +7,7 @@ Time spent on the project, for the weekly-effort figure the supervisor asked for
 | 2026-10-01 | 20:05–20:20 | 15 | Repository, initial MVP backend (Copilot agent), PR #1 | Commits |
 | 2026-10-09 | whole day | 240 | Brainstorming, codebase review, documentation structure and roadmap (PR #4), UI and stack decisions, supervisor feedback, M0 e-mail (PR #5) | Author (activity timestamps: 154 min in the project plus 30 min brainstorming) |
 | 2026-10-16 | 11:10–11:15 | 5 | Supervisor reply stored and summarised | Project messages |
-| 2026-10-17 | 08:48–09:10, 17:31–17:55 | 46 | Merge conflicts of PR #2 and #3 (PR #7), weekly plan, duplicate kinds and sources, matching core on SQLite | Project messages and commits (afternoon session still open) |
+| 2026-10-17 | 08:48–09:10, 17:31–18:16, 19:27–20:05 | 105 | Merge conflicts of PR #2 and #3 (PR #7), weekly plan, duplicate kinds and sources, matching core on SQLite, categorization design, review endpoints, dataset generator | Project messages and commits |
 
 ## Weekly totals
 
@@ -15,5 +15,5 @@ Time spent on the project, for the weekly-effort figure the supervisor asked for
 | --- | --- | --- |
 | 2026-09-28 – 10-04 | 15 | 0.25 |
 | 2026-10-05 – 10-11 | 240 | 4.0 |
-| 2026-10-12 – 10-18 | 51 | 0.85 |
-| **Total** | **306** | **5.1** |
+| 2026-10-12 – 10-18 | 110 | 1.8 |
+| **Total** | **365** | **6.1** |
