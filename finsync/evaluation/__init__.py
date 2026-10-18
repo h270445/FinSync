@@ -1,1 +1,1 @@
-"""Evaluation of matching: synthetic labelled datasets (generate.py); the runner follows."""
+"""Evaluation of matching: synthetic labelled datasets (generate.py) and the runner (runner.py, __main__.py)."""
