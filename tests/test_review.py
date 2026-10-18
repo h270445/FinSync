@@ -37,9 +37,9 @@ class ReviewTest(unittest.TestCase):
         return self.service.create_manual_transaction("user-1", "group-1", row)
 
     def _uncertain_pair(self):
-        """A notification and a date-only manual entry that only shares the description: needs_review."""
+        """A notification and a date-only manual entry whose description does not name the shop: needs_review."""
         notification = self.service.ingest_notification("user-1", "group-1", NOTIFICATION)
-        manual = self._manual(happened_at="2026-09-05", merchant=None, description="Tesco weekly shop")
+        manual = self._manual(happened_at="2026-09-05", merchant=None, description="Weekly shop")
         self.assertEqual(manual.match_outcome, "needs_review")
         [review] = self.service.list_open_reviews("user-1", "group-1")
         return notification, manual, review
@@ -73,7 +73,7 @@ class ReviewTest(unittest.TestCase):
     def test_reject_keeps_two_events_and_is_not_proposed_again(self) -> None:
         notification = self.service.ingest_notification("user-1", "group-1", NOTIFICATION)
         manual = self._manual(
-            happened_at="2026-09-05", merchant=None, description="Tesco weekly shop", source_ref="sheet-row-3"
+            happened_at="2026-09-05", merchant=None, description="Weekly shop", source_ref="sheet-row-3"
         )
         [review] = self.service.list_open_reviews("user-1", "group-1")
         self.service.reject_match("user-1", "group-1", review.decision_id)
@@ -83,7 +83,7 @@ class ReviewTest(unittest.TestCase):
         self.assertEqual({event.review_state for event in events}, {"clear"})
         # The same sheet row sent again stays with its own record, not with the rejected event.
         again = self._manual(
-            happened_at="2026-09-05", merchant=None, description="Tesco weekly shop", source_ref="sheet-row-3"
+            happened_at="2026-09-05", merchant=None, description="Weekly shop", source_ref="sheet-row-3"
         )
         self.assertEqual(again.match_outcome, "exact_duplicate")
         self.assertEqual(again.event_id, manual.event_id)
@@ -102,7 +102,7 @@ class ReviewTest(unittest.TestCase):
 
     def test_reviews_pointing_at_an_emptied_event_follow_its_record(self) -> None:
         notification, manual, review = self._uncertain_pair()
-        copy = self._manual(happened_at="2026-09-05", merchant=None, description="Tesco weekly shop")
+        copy = self._manual(happened_at="2026-09-05", merchant=None, description="Weekly shop")
         self.assertEqual(copy.match_outcome, "needs_review")  # identical row of the manual entry
 
         self.service.confirm_match("user-1", "group-1", review.decision_id)
@@ -123,7 +123,7 @@ class ReviewTest(unittest.TestCase):
         other = self.service.create_manual_transaction(
             "user-2",
             "group-1",
-            {"amount": "-4500", "currency": "HUF", "description": "Tesco weekly shop", "happened_at": "2026-09-05"},
+            {"amount": "-4500", "currency": "HUF", "description": "Weekly shop", "happened_at": "2026-09-05"},
         )
         self.assertEqual(other.event_id, manual.event_id)
 
@@ -221,7 +221,7 @@ class ReviewApiTest(unittest.TestCase):
         self._call(
             "POST",
             "/v1/transactions",
-            {"amount": "-4500", "currency": "HUF", "description": "Tesco weekly shop", "happened_at": "2026-09-05"},
+            {"amount": "-4500", "currency": "HUF", "description": "Weekly shop", "happened_at": "2026-09-05"},
         )
         status, body = self._call("GET", "/v1/matches/review")
         self.assertEqual(status, 200)

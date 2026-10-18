@@ -107,7 +107,7 @@ The new record is scored against each record in a candidate event; the best pair
 | --- | --- |
 | Amount `a` | 1.0 exact; 0.7 equal only after rounding |
 | Time `t` | 1 − Δt / window; 1.0 on the same local day when either side is day-precision |
-| Merchant `m` | Jaccard overlap of merchant token sets; 0.5 when one side has no merchant text |
+| Merchant `m` | Shared merchant tokens divided by the token count of the shorter name (so the bank's "MOL Töltőállomás" fully contains the typed "MOL"); 0.5 when one side has no merchant text. Version `rules-1` used Jaccard overlap, which halved such pairs ([results](../evaluation/results/2026-10-18-matching-rules-2.md)) |
 
 `S = 0.4·a + 0.3·t + 0.3·m` (starting weights).
 

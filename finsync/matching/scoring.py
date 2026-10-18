@@ -65,7 +65,8 @@ def merchant_score(new: MatchRecord, existing: MatchRecord) -> float:
     left, right = merchant_tokens(new.merchant_text), merchant_tokens(existing.merchant_text)
     if not left or not right:
         return 0.5
-    return len(left & right) / len(left | right)
+    # Shared tokens over the shorter name: a bank's "MOL Töltőállomás" fully contains the typed "MOL".
+    return len(left & right) / min(len(left), len(right))
 
 
 def score(new: MatchRecord, existing: MatchRecord) -> Features | None:
