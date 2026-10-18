@@ -1,7 +1,7 @@
 # 2026-10-22 — Köztes jelzés: a párosítás állása
 
 - Címzett: Dr. Bilicki Vilmos (válasz a 2026-10-16-i levélre)
-- Tag: nincs, köztes jelzés (commit: `23792697efd38d5f61bf56458c1ecaf2e0f45339`)
+- Tag: nincs, köztes jelzés (commit: *a mérési eredményeket tartalmazó main commit, küldés előtt kitöltendő*)
 - Státusz: vázlat
 
 ---
@@ -30,7 +30,7 @@ A tárolás SQLite-on maradt, a FastAPI/PostgreSQL-váltás az M1 után követke
 **Az ütemezés a pénteki és szombati munkanapok mellett**
 A sorrendet reálisnak tartom: a mag (párosítás és javítás) az első hétvégén elkészült, így a november 6-i határidőig a mérés finomítása és a javítások maradnak, és a belső céldátum (október 30.) előtt tartalék is van. Jelenleg egyik mellékszál sem tűnik túl soknak a novemberi maghoz. Az Android-próba és a webes felület váza nem a mag előfeltétele, ezért ha csúsznak, a mérés nem vár rájuk. A közvetlen Google Sheets-szkript továbbra is feltételes. Ha valamelyik szál veszélyeztetné a következő mérföldkövet, időben jelzem.
 
-A repository: https://github.com/h270445/FinSync (commit: `23792697efd38d5f61bf56458c1ecaf2e0f45339`)
+A repository: https://github.com/h270445/FinSync (commit: *a mérési eredményeket tartalmazó main commit, küldés előtt kitöltendő*)
 
 Üdvözlettel:
 Varga Bence
