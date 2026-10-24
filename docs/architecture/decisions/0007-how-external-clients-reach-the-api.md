@@ -1,6 +1,6 @@
 # 0007. How the Google Sheets script and the Android app reach the API
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-24
 
 ## Context

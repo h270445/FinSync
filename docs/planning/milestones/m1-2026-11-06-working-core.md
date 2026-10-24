@@ -34,6 +34,6 @@ A banking notification and a manual entry for the same purchase arrive through t
 - [x] Review and correction endpoints (planned for Nov 2–8, done early on Oct 17).
 - [x] Synthetic dataset v1 (~100 labelled records) and its description.
 - [x] Evaluation runner and first results (Oct 18).
-- [ ] Side tracks: Android notification-listener spike on a real device; ADR for how the Sheets script reaches the API.
+- [ ] Side tracks: Android notification-listener spike on a real device; ADR for how the Sheets script reaches the API (done 2026-10-24, [ADR 0007](../../architecture/decisions/0007-how-external-clients-reach-the-api.md)).
 - [ ] Docs updated (API reference, storage README, design status → Accepted).
 - [ ] Release notes, tag `v0.2.0`, e-mail.
