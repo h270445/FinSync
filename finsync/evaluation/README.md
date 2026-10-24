@@ -5,8 +5,8 @@ Tooling for the evaluation in [docs/evaluation/](../../docs/evaluation/README.md
 | File | Contents |
 | --- | --- |
 | `generate.py` | Scenario-based generator of the synthetic matching dataset (`python -m finsync.evaluation.generate`) |
-
-Planned: the runner (`python -m finsync.evaluation`) that replays a split through the service and reports the metrics against the store-every-row baseline.
+| `runner.py` | Replays a split through a fresh database, scores the events against the labels, and the store-every-row baseline |
+| `__main__.py` | The report (`python -m finsync.evaluation [--out docs/evaluation/results/<date>-matching.md]`): threshold sweep on dev, test split at the chosen threshold in arrival and reverse order, false merges and missed duplicates listed |
 
 ## Rules for this folder
 

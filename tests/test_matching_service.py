@@ -83,8 +83,15 @@ class MatchingServiceTest(unittest.TestCase):
         self.tearDown()
         self.setUp()
         self.service.ingest_notification("user-1", "group-1", NOTIFICATION)
-        # Without a merchant only the description overlaps, so a person decides.
-        description_only = self._manual(happened_at="2026-09-05", merchant=None, description="Tesco weekly shop")
+        # Without a merchant, a description that names the shop is enough to link.
+        names_the_shop = self._manual(happened_at="2026-09-05", merchant=None, description="Tesco weekly shop")
+        self.assertEqual(names_the_shop.match_outcome, "auto_linked")
+
+        self.tearDown()
+        self.setUp()
+        self.service.ingest_notification("user-1", "group-1", NOTIFICATION)
+        # A description that does not name the shop leaves only amount and day, so a person decides.
+        description_only = self._manual(happened_at="2026-09-05", merchant=None, description="Weekly shop")
         self.assertEqual(description_only.match_outcome, "needs_review")
         events = self._events()
         self.assertEqual(len(events), 2)
@@ -165,7 +172,7 @@ class MatchingServiceTest(unittest.TestCase):
         self._manual()
         decisions = self.storage.list_decisions("group-1")
         self.assertEqual([d["outcome"] for d in decisions], ["separate", "auto_linked"])
-        self.assertTrue(all(d["matcher_version"] == "rules-1" for d in decisions))
+        self.assertTrue(all(d["matcher_version"] == "rules-2" for d in decisions))
 
 
 class MigrationTest(unittest.TestCase):
