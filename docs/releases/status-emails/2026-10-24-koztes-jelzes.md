@@ -1,4 +1,4 @@
-# 2026-10-22 — Köztes jelzés: a párosítás állása
+# 2026-10-24 — Köztes jelzés: a párosítás állása
 
 - Címzett: Dr. Bilicki Vilmos (válasz a 2026-10-16-i levélre)
 - Tag: nincs, köztes jelzés (commit: `d7c3a0bb593f2e66270bfcfb70d93509e02294eb`)
@@ -10,7 +10,7 @@
 
 Tisztelt Dr. Bilicki Vilmos!
 
-Köszönöm a válaszát. A javasolt október 22-i köztes jelzést küldöm: a párosítás működik, megvan az első mérési eredmény, és a technológiai tartaléktervvel éltem.
+Köszönöm a válaszát. Az október 22-re javasolt köztes jelzést néhány nap késéssel küldöm: a párosítás működik, megvan az első mérési eredmény, és a technológiai tartaléktervvel éltem.
 
 **A párosítás állása**
 - A beérkező feljegyzésekből vásárlási esemény lesz. Mindhárom bemeneti út (értesítés, kézi és tömeges rögzítés) ugyanazon a párosításon megy át egy adatbázis-tranzakcióban; minden döntés (pontszám, jellemzők, szabályverzió) naplózva van, az eredeti adat megmarad.
