@@ -17,7 +17,7 @@ A banking notification and a manual entry for the same purchase arrive through t
 
 - [x] Ingest → normalize → match → store runs in one database transaction for notification, manual and bulk input.
 - [x] Every stored record has an `event_id`; every matching outcome has a `match_decisions` row with score, features and `matcher_version`.
-- [ ] Service tests cover the scenarios in the [matching design](../../design/transaction-matching.md#testing-and-evaluation) that do not need the review endpoints.
+- [x] Service tests cover the scenarios in the [matching design](../../design/transaction-matching.md#testing-and-evaluation) that do not need the review endpoints.
 - [x] `python -m finsync.evaluation` runs on dataset v1 and prints precision, recall, false-merge rate, missed-duplicate rate and review rate.
 - [x] The same run reports the naive store-every-row baseline, and wrongly merged separate purchases are reported separately from missed duplicates.
 - [x] Hand-decided examples pass: repeated submission, reverse arrival order, date-only manual entry, two separate purchases with the same amount.

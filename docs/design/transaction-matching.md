@@ -173,23 +173,23 @@ Every endpoint keeps `ensure_authorized(user_id, group_id)`; every lookup by id 
 ## Testing and evaluation
 
 - **Unit tests** (`tests/test_matching.py`): normalisation, fingerprint stability, each blocking gate, score boundaries at 0.60 and 0.85, runner-up margin.
-- **Service tests** (`tests/test_matching_service.py`), one per scenario:
+- **Service tests** (`tests/test_matching_service.py`, `tests/test_review.py`), one per scenario:
 
-| Scenario | Expected |
-| --- | --- |
-| Notification, then manual entry for the same purchase, same day | `auto_linked`, one event |
-| Manual first, notification later | Same (order independent) |
-| Two notifications, same amount and merchant, 5 min apart | `separate` (same channel) |
-| Same notification text twice | `exact_duplicate` |
-| Two members log the same dinner manually | `auto_linked` or `needs_review` by score |
-| Manual 1235 HUF vs notification −1234.56 HUF | Candidate via rounding, a = 0.7 |
-| Manual without merchant vs two same-amount notifications | `needs_review` |
-| Same amount and merchant, 4 days apart | `separate` |
-| Same purchase in two groups | `separate` |
-| Wrong auto-link, then split | Two events, `split` supersedes |
-| Rejected pair re-imported | Not proposed again |
-| Bulk import with invalid row 3 | Nothing stored, error names row 3 |
-| Group B member confirms group A's decision | 404, nothing written |
+| Scenario | Expected | Test |
+| --- | --- | --- |
+| Notification, then manual entry for the same purchase, same day | `auto_linked`, one event | `test_matching_service`: `test_arrival_order_does_not_change_the_result` |
+| Manual first, notification later | Same (order independent) | same test |
+| Two notifications, same amount and merchant, 5 min apart | `separate` (same channel) | `test_matching_service`: `test_two_same_amount_notifications_stay_separate` |
+| Same notification text twice | `exact_duplicate` | `test_matching_service`: `test_repeated_notification_is_an_exact_duplicate` |
+| Two members log the same dinner manually | `auto_linked` or `needs_review` by score | `test_matching_service`: `test_two_members_log_the_same_dinner` |
+| Manual 1235 HUF vs notification −1234.56 HUF | Candidate via rounding, a = 0.7 | `test_matching_service`: `test_rounded_manual_amount_is_a_candidate` |
+| Manual without merchant vs two same-amount notifications | `needs_review` | `test_matching_service`: `test_manual_without_merchant_between_two_notifications_needs_review` |
+| Same amount and merchant, 4 days apart | `separate` | `test_matching_service`: `test_four_days_apart_is_separate` |
+| Same purchase in two groups | `separate` | `test_matching_service`: `test_matching_never_crosses_groups` |
+| Wrong auto-link, then split | Two events, `split` supersedes | `test_review`: `test_split_undoes_a_wrong_link` |
+| Rejected pair re-imported | Not proposed again | `test_review`: `test_reject_keeps_two_events_and_is_not_proposed_again` |
+| Bulk import with invalid row 3 | Nothing stored (no records, events or decisions), error names the row (`Row 2`, zero-based) | `test_matching_service`: `test_bulk_with_an_invalid_third_row_stores_nothing` |
+| Group B member confirms group A's decision | 404, nothing written | `test_review`: `test_other_group_cannot_see_or_decide` |
 
 - **Evaluation dataset and metrics:** see [evaluation-plan.md](../evaluation/evaluation-plan.md#1-transaction-matching).
 
