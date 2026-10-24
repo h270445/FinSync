@@ -20,7 +20,7 @@ The evaluation will measure:
 
 **Baseline:** the same metrics for a naive system that stores every incoming row separately (the current behaviour). The difference shows how many double-counted expenses matching removes and at what cost in false merges and review effort.
 
-The runner (`python -m finsync.evaluation`, planned) replays a split in timestamp order through a fresh in-memory database, sweeps the auto-link threshold from 0.70 to 0.95 in steps of 0.05, and replays the test split in a second order to check that results do not depend on arrival order. The evaluation also considers the ability to trace and correct matching decisions.
+The runner (`python -m finsync.evaluation`) replays a split in arrival order through a fresh temporary SQLite database, sweeps the auto-link threshold on the development split from 0.70 to 0.95 in steps of 0.05, and picks the threshold with the fewest false merges, then the highest recall, then the lowest review rate (ties go to the higher threshold). It reports the test split at that threshold in arrival order and in reverse order, to show how much the result depends on arrival order. A true pair split across two events counts as caught, not missed, only when one record waits for review against the other record's event. Every false merge and every missed duplicate is listed by record id. The evaluation also considers the ability to trace and correct matching decisions.
 
 ## 2. Transaction categorization
 

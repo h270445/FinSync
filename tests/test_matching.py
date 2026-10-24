@@ -86,6 +86,14 @@ class ScoreTest(unittest.TestCase):
         assert features is not None
         self.assertEqual(features.merchant, 0.5)
 
+    def test_merchant_overlap_is_measured_against_the_shorter_name(self) -> None:
+        cases = (("MOL Töltőállomás", "MOL", 1.0), ("IKEA Budaörs", "IKEA", 1.0),
+                 ("TESCO Áruház 41021", "Tesco weekly shop", 0.5), ("Spar", "Tesco", 0.0))
+        for bank, typed, expected in cases:
+            features = score(_record(merchant_text=typed), _record(merchant_text=bank))
+            assert features is not None
+            self.assertEqual(features.merchant, expected, (bank, typed))
+
 
 class DecideTest(unittest.TestCase):
     def test_thresholds(self) -> None:
