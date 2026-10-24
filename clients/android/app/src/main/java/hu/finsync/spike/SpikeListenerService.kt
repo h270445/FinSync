@@ -1,6 +1,7 @@
 package hu.finsync.spike
 
 import android.app.Notification
+import android.content.pm.ApplicationInfo
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import org.json.JSONObject
@@ -34,9 +35,16 @@ class SpikeListenerService : NotificationListenerService() {
         }
     }
 
-    /** Bank apps, plus this app's own test notifications. Anything else is ignored without being read. */
+    private val isDebugBuild by lazy { applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0 }
+
+    /**
+     * Bank apps, this app's own test notifications and, in debug builds only, notifications
+     * posted with adb (simulated bank text). Anything else is ignored without being read.
+     */
     private fun isWatched(packageName: String): Boolean =
-        BankApps.isBank(packageName) || packageName == this.packageName
+        BankApps.isBank(packageName) ||
+            packageName == this.packageName ||
+            (isDebugBuild && packageName == BankApps.ADB_SHELL)
 
     private fun toRecord(type: String, sbn: StatusBarNotification): JSONObject {
         val notification = sbn.notification
@@ -44,6 +52,7 @@ class SpikeListenerService : NotificationListenerService() {
         return JSONObject()
             .put("type", type)
             .put("package", sbn.packageName)
+            .put("simulated", !BankApps.isBank(sbn.packageName))
             .put("key", sbn.key)
             .put("id", sbn.id)
             .put("tag", sbn.tag ?: JSONObject.NULL)

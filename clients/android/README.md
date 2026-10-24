@@ -13,6 +13,8 @@ The spike watches only the bank apps listed in [`BankApps.kt`](app/src/main/java
 | OTP Bank | `hu.otpbank.mobile` (to be confirmed from the Play Store link) |
 | Revolut | `com.revolut.revolut` |
 
+Debug builds also watch `com.android.shell`, the sender of notifications posted with adb, so simulated bank text can be tested without a purchase (see below). Release builds never do. Every record carries `simulated: true` unless it came from a bank app.
+
 Android delivers every notification to a listener; the spike drops anything from another app before reading its content, so nothing about other apps is stored, not even their names.
 
 | Data | Where | Content |
@@ -33,6 +35,17 @@ Samsung phone on the latest Android (`compileSdk` and `targetSdk` 36, `minSdk` 2
 3. **Real phone:** enable developer options and USB debugging on the Samsung, connect it and press **Run** with the phone selected. Repeat the access step. The bank apps only produce real notifications on the phone where the accounts are signed in, so questions 1–6 of the findings are answered here, not on the emulator.
 4. The main screen shows whether OTP and Revolut are installed and how many of their notifications were captured. Make a few small card purchases; also try a phone restart and a day with the app closed.
 5. **Export** shares the log as text; anonymise it before pasting anything into the findings document.
+
+## Simulated bank notifications (debug builds)
+
+With the emulator or the phone connected, post any text; it is captured as `simulated`:
+
+```bash
+adb shell cmd notification post -t "OTP Bank" sim-1 "Kártyás vásárlás: -4 500 HUF, Teszt Bolt, 2026.10.24 13:45"
+adb shell cmd notification post -S bigtext -t "Revolut" sim-2 "Paid 4 500 HUF at Test Shop"
+```
+
+Reposting with the same tag (`sim-1`) updates the notification under the same key, which is how question 3 (updates versus new posts) can be rehearsed. Simulated text only tests the pipeline; the real formats, times and delays come from the bank apps on the phone.
 
 ## Rules for this folder
 

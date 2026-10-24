@@ -11,5 +11,8 @@ object BankApps {
         "com.revolut.revolut" to "Revolut",
     )
 
+    /** Sender of `adb shell cmd notification post`; watched only in debug builds, for simulated bank notifications. */
+    const val ADB_SHELL = "com.android.shell"
+
     fun isBank(packageName: String): Boolean = packageName in packages
 }
