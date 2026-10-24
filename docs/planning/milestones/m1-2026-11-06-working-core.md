@@ -18,10 +18,10 @@ A banking notification and a manual entry for the same purchase arrive through t
 - [x] Ingest → normalize → match → store runs in one database transaction for notification, manual and bulk input.
 - [x] Every stored record has an `event_id`; every matching outcome has a `match_decisions` row with score, features and `matcher_version`.
 - [ ] Service tests cover the scenarios in the [matching design](../../design/transaction-matching.md#testing-and-evaluation) that do not need the review endpoints.
-- [ ] `python -m finsync.evaluation` runs on dataset v1 and prints precision, recall, false-merge rate, missed-duplicate rate and review rate.
-- [ ] The same run reports the naive store-every-row baseline, and wrongly merged separate purchases are reported separately from missed duplicates.
+- [x] `python -m finsync.evaluation` runs on dataset v1 and prints precision, recall, false-merge rate, missed-duplicate rate and review rate.
+- [x] The same run reports the naive store-every-row baseline, and wrongly merged separate purchases are reported separately from missed duplicates.
 - [x] Hand-decided examples pass: repeated submission, reverse arrival order, date-only manual entry, two separate purchases with the same amount.
-- [ ] First results are saved in `docs/evaluation/results/` with the commit id.
+- [x] First results are saved in `docs/evaluation/results/` with the commit id.
 
 ## Checklist
 
@@ -33,7 +33,7 @@ A banking notification and a manual entry for the same purchase arrive through t
 - [x] `GET /v1/events`.
 - [x] Review and correction endpoints (planned for Nov 2–8, done early on Oct 17).
 - [x] Synthetic dataset v1 (~100 labelled records) and its description.
-- [ ] Evaluation runner and first results.
+- [x] Evaluation runner and first results (Oct 18).
 - [ ] Side tracks: Android notification-listener spike on a real device; ADR for how the Sheets script reaches the API.
 - [ ] Docs updated (API reference, storage README, design status → Accepted).
 - [ ] Release notes, tag `v0.2.0`, e-mail.
