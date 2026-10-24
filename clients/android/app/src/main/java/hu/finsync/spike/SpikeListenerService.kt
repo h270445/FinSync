@@ -6,7 +6,7 @@ import android.service.notification.StatusBarNotification
 import org.json.JSONObject
 
 /**
- * Logs notifications of the selected bank app so the spike can answer:
+ * Logs notifications of the bank apps in [BankApps] so the spike can answer:
  * which fields carry the purchase text, how the printed time relates to `postTime`,
  * whether one purchase produces several posts (updates, group summaries), and
  * whether the listener survives restarts and battery optimisation.
@@ -23,18 +23,20 @@ class SpikeListenerService : NotificationListenerService() {
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
-        if (!store.isAllowed(sbn.packageName)) {
-            store.countSeen(sbn.packageName)
-            return
+        if (isWatched(sbn.packageName)) {
+            store.append(toRecord("posted", sbn))
         }
-        store.append(toRecord("posted", sbn))
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification) {
-        if (store.isAllowed(sbn.packageName)) {
+        if (isWatched(sbn.packageName)) {
             store.append(JSONObject().put("type", "removed").put("key", sbn.key))
         }
     }
+
+    /** Bank apps, plus this app's own test notifications. Anything else is ignored without being read. */
+    private fun isWatched(packageName: String): Boolean =
+        BankApps.isBank(packageName) || packageName == this.packageName
 
     private fun toRecord(type: String, sbn: StatusBarNotification): JSONObject {
         val notification = sbn.notification

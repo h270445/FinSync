@@ -21,9 +21,10 @@ The main risk of the Android client is not its UI but reading another app's bank
 
 | Item | Value |
 | --- | --- |
-| Phone, Android version | – |
-| Bank app and version | – |
+| Phone, Android version | Samsung, latest Android (exact model and version recorded at the first run) |
+| Bank apps and versions | OTP Bank, Revolut (versions recorded at the first run) |
 | Test period | – |
+| Scope | Only the two bank apps' notifications are read (package-name allowlist); the emulator is used only for the self-sent test notification |
 
 ## Observations
 

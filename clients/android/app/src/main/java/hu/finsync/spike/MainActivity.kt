@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.ComponentName
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -15,19 +16,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationCompat
@@ -51,12 +50,9 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun SpikeScreen(@Suppress("UNUSED_PARAMETER") tick: Int) {
-        var allowed by remember(tick) { mutableStateOf(store.allowedPackages()) }
-        val seen = remember(tick) { store.seenPackages() }
         val records = remember(tick) { store.readAll() }
-        val candidates = (seen.keys + allowed).sorted()
 
-        Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.fillMaxSize().safeDrawingPadding().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(if (hasListenerAccess()) "Listener access: granted" else "Listener access: NOT granted")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = { startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) }) { Text("Access") }
@@ -68,17 +64,10 @@ class MainActivity : ComponentActivity() {
                 Button(onClick = { store.clear(); refresh++ }) { Text("Clear") }
             }
 
-            Text("Apps seen (tick the bank app to log its content):")
-            LazyColumn(Modifier.weight(1f)) {
-                items(candidates) { pkg ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = pkg in allowed, onCheckedChange = { checked ->
-                            store.setAllowed(pkg, checked)
-                            allowed = store.allowedPackages()
-                        })
-                        Text("$pkg (${seen[pkg] ?: 0})")
-                    }
-                }
+            Text("Watched bank apps:")
+            BankApps.packages.forEach { (pkg, name) ->
+                val count = records.count { it.optString("package") == pkg && it.optString("type") == "posted" }
+                Text("$name ($pkg): ${if (isInstalled(pkg)) "installed" else "not installed"}, $count captured")
             }
 
             Text("Captured records: ${records.size}")
@@ -89,6 +78,14 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    private fun isInstalled(packageName: String): Boolean =
+        try {
+            packageManager.getPackageInfo(packageName, 0)
+            true
+        } catch (_: PackageManager.NameNotFoundException) {
+            false
+        }
 
     private fun hasListenerAccess(): Boolean {
         val flat = Settings.Secure.getString(contentResolver, "enabled_notification_listeners").orEmpty()
