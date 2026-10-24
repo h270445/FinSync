@@ -1,6 +1,6 @@
 # Transaction matching and duplicate detection
 
-- Status: **Partially implemented** (matching steps 1–5 and the review endpoints on SQLite since 2026-10-17; evaluation pending)
+- Status: **Implemented on SQLite** (matching steps 1–5 and the review endpoints since 2026-10-17; dataset v1, evaluation runner and first results since 2026-10-18, [results](../evaluation/results/2026-10-18-matching-rules-2.md)); acceptance pending the author's review for M1
 - Date: 2026-10-09
 - Decision record: [ADR 0004](../architecture/decisions/0004-event-based-transaction-matching.md)
 
@@ -212,4 +212,4 @@ Each step is a separate pull request with its tests; dates are in the [roadmap](
 2. ~~`finsync/matching/` with normalisation, fingerprint, blocking, scoring and decision, plus unit tests.~~ Done 2026-10-17.
 3. ~~Wire matching into the three ingest paths; atomic bulk import; `event_id` and `match_outcome` in responses.~~ Done 2026-10-17, with `GET /v1/events`.
 4. ~~Review and correction endpoints with service and permission tests.~~ Done 2026-10-17.
-5. Synthetic evaluation dataset and the evaluation runner; tune on the development split, report on the test split.
+5. ~~Synthetic evaluation dataset and the evaluation runner; tune on the development split, report on the test split.~~ Done 2026-10-18 (`rules-2`, auto-link threshold 0.85).
