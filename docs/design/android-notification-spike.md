@@ -1,6 +1,6 @@
 # Android notification-listener spike
 
-- Status: In progress
+- Status: In progress (emulator rounds done 2026-10-26; test on the author's Samsung phone with real OTP Bank and Revolut notifications planned for 2026-10-27)
 - Date: 2026-10-24
 - Code: [clients/android/](../../clients/android/README.md)
 
