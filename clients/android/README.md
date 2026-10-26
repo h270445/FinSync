@@ -30,7 +30,7 @@ Samsung phone on the latest Android (`compileSdk` and `targetSdk` 36, `minSdk` 2
 
 ## Running it
 
-1. Install [Android Studio](https://developer.android.com/studio) (it brings the SDK and JDK), open `clients/android/` and let Gradle sync. Accept any suggested Android Gradle Plugin update.
+1. Install [Android Studio](https://developer.android.com/studio) (it brings the SDK), open `clients/android/` and let Gradle sync. Gradle 8.11.1 runs on JDK 17–23, not on the JDK 25 bundled with recent Android Studio versions: from the command line set `JAVA_HOME` to such a JDK (for example one downloaded in Android Studio under *Settings → Build Tools → Gradle → Gradle JDK*). The first `gradlew assembleDebug` downloads Gradle and the SDK platform and took about 13 minutes.
 2. **Emulator first:** create a virtual device with the latest Android image and press **Run**. Press **Access**, allow notification access for *FinSync notification spike*, then **Test**: a notification in the FinSync format appears and is logged. This checks the listener without a bank app.
 3. **Real phone:** enable developer options and USB debugging on the Samsung, connect it and press **Run** with the phone selected. Repeat the access step. The bank apps only produce real notifications on the phone where the accounts are signed in, so questions 1–6 of the findings are answered here, not on the emulator.
 4. The main screen shows whether OTP and Revolut are installed and how many of their notifications were captured. Make a few small card purchases; also try a phone restart and a day with the app closed.
@@ -43,6 +43,12 @@ With the emulator or the phone connected, post any text; it is captured as `simu
 ```bash
 adb shell cmd notification post -t "OTP Bank" sim-1 "Kártyás vásárlás: -4 500 HUF, Teszt Bolt, 2026.10.24 13:45"
 adb shell cmd notification post -S bigtext -t "Revolut" sim-2 "Paid 4 500 HUF at Test Shop"
+```
+
+On Windows (PowerShell) pass the whole command as one string, otherwise the quotes are split:
+
+```powershell
+adb shell "cmd notification post -t 'OTP Bank' sim-1 'Kartyas vasarlas: -4500 HUF, Teszt Bolt'"
 ```
 
 Reposting with the same tag (`sim-1`) updates the notification under the same key, which is how question 3 (updates versus new posts) can be rehearsed. Simulated text only tests the pipeline; the real formats, times and delays come from the bank apps on the phone.

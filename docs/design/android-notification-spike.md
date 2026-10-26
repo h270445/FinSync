@@ -30,6 +30,15 @@ The main risk of the Android client is not its UI but reading another app's bank
 
 Anonymised examples and notes per question are added here as the spike runs.
 
+### 2026-10-26: emulator, simulated notifications
+
+Debug build on an Android 17 (API 37) emulator without Play Store, notifications posted with `adb shell cmd notification post` (synthetic text only). This checks the pipeline, not the bank formats.
+
+- The listener received all three posted notifications with title and text intact (`package` `com.android.shell`, `simulated: true`).
+- **Question 3 (rehearsal):** posting twice with the same tag gives two `posted` records with the same `key` (`0|com.android.shell|2020|sim-1|2000`) and different `post_time_ms`. An update is therefore not distinguishable from a re-post by the key alone; the M2 app must derive `source_ref` from the key plus the content, or treat a same-key, same-text post as a re-delivery.
+- Android added system **group summary** posts (`group_summary: true`, tag ending in `Aggregate_AlertingSection`, no title or text) with the same post time. The parser must drop group summaries and posts without text.
+- The emulator's zone was GMT (`device_zone`), so time-zone behaviour (question 2) can only be judged on the phone.
+
 ## Consequences
 
 To be written when the questions are answered: the supported format, the `source_ref` rule, the time-zone decision and any reliability limits for the M2 app.
