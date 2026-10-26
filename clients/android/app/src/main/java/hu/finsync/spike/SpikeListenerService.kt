@@ -2,8 +2,10 @@ package hu.finsync.spike
 
 import android.app.Notification
 import android.content.pm.ApplicationInfo
+import android.os.Bundle
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import org.json.JSONArray
 import org.json.JSONObject
 
 /**
@@ -29,9 +31,15 @@ class SpikeListenerService : NotificationListenerService() {
         }
     }
 
-    override fun onNotificationRemoved(sbn: StatusBarNotification) {
+    override fun onNotificationRemoved(sbn: StatusBarNotification, rankingMap: RankingMap, reason: Int) {
         if (isWatched(sbn.packageName)) {
-            store.append(JSONObject().put("type", "removed").put("key", sbn.key))
+            store.append(
+                JSONObject()
+                    .put("type", "removed")
+                    .put("key", sbn.key)
+                    .put("reason", reason)
+                    .put("reason_name", REMOVAL_REASONS[reason] ?: "other")
+            )
         }
     }
 
@@ -67,5 +75,52 @@ class SpikeListenerService : NotificationListenerService() {
             .put("big_text", extras.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString() ?: JSONObject.NULL)
             .put("sub_text", extras.getCharSequence(Notification.EXTRA_SUB_TEXT)?.toString() ?: JSONObject.NULL)
             .put("ticker", notification.tickerText?.toString() ?: JSONObject.NULL)
+            .put("group_key", sbn.groupKey ?: JSONObject.NULL)
+            .put("group", notification.group ?: JSONObject.NULL)
+            .put("sort_key", notification.sortKey ?: JSONObject.NULL)
+            .put("extras", textExtras(extras))
+    }
+
+    /**
+     * Every extra with a text value, under its own key, so a bank that uses InboxStyle
+     * (`android.textLines`), MessagingStyle (`android.messages`), summary or info text is not
+     * lost. Non-text extras (icons, pending intents) are recorded by type name only.
+     */
+    @Suppress("DEPRECATION")
+    private fun textExtras(extras: Bundle): JSONObject {
+        val result = JSONObject()
+        for (key in extras.keySet()) {
+            result.put(key, describe(extras.get(key)))
+        }
+        return result
+    }
+
+    @Suppress("DEPRECATION")
+    private fun describe(value: Any?): Any = when (value) {
+        null -> JSONObject.NULL
+        is CharSequence -> value.toString()
+        is Boolean, is Int, is Long -> value
+        is Array<*> -> JSONArray(value.map { describe(it) })
+        is Bundle -> JSONObject().also { json ->
+            // MessagingStyle messages arrive as bundles with "text", "sender" and "time".
+            for (key in value.keySet()) json.put(key, describe(value.get(key)))
+        }
+        else -> "<${value.javaClass.simpleName}>"
+    }
+
+    private companion object {
+        val REMOVAL_REASONS = mapOf(
+            NotificationListenerService.REASON_CLICK to "click",
+            NotificationListenerService.REASON_CANCEL to "user_dismissed",
+            NotificationListenerService.REASON_CANCEL_ALL to "user_dismissed_all",
+            NotificationListenerService.REASON_APP_CANCEL to "app_cancelled",
+            NotificationListenerService.REASON_APP_CANCEL_ALL to "app_cancelled_all",
+            NotificationListenerService.REASON_GROUP_SUMMARY_CANCELED to "group_summary_cancelled",
+            NotificationListenerService.REASON_PACKAGE_BANNED to "package_blocked",
+            NotificationListenerService.REASON_CHANNEL_BANNED to "channel_blocked",
+            NotificationListenerService.REASON_SNOOZED to "snoozed",
+            NotificationListenerService.REASON_TIMEOUT to "timeout",
+            NotificationListenerService.REASON_LISTENER_CANCEL to "listener_cancelled",
+        )
     }
 }

@@ -19,7 +19,8 @@ Android delivers every notification to a listener; the spike drops anything from
 
 | Data | Where | Content |
 | --- | --- | --- |
-| Notifications of the watched bank apps and the app's own test notifications | `captures.jsonl` in app-private storage | package, key, id, tag, `postTime`, `when`, channel, category, group-summary and ongoing flags, title, text, big text, sub text, ticker; device time and time zone |
+| Notifications of the watched bank apps and the app's own test notifications | `captures.jsonl` in app-private storage | package, key, id, tag, `postTime`, `when`, channel, category, group-summary and ongoing flags, title, text, big text, sub text, ticker, group key, group, sort key; every extra under its own key (text values in full, for example InboxStyle lines and MessagingStyle messages; icons and other objects by type name only); device time and time zone |
+| Removed notifications | `captures.jsonl` | key and removal reason (click, user dismissed, app cancelled, ...) |
 | Listener connect and disconnect | `captures.jsonl` | type and device time |
 
 Nothing leaves the phone unless **Export** is pressed. Exported data contains real personal data and is **never committed**: only anonymised format descriptions (made-up amounts, merchants and names) go into the repository.
@@ -50,6 +51,8 @@ On Windows (PowerShell) pass the whole command as one string, otherwise the quot
 ```powershell
 adb shell "cmd notification post -t 'OTP Bank' sim-1 'Kartyas vasarlas: -4500 HUF, Teszt Bolt'"
 ```
+
+`adb shell cmd notification help` lists the other styles (`-S inbox`, `-S messaging`) and their options. The parser must ignore group summaries (`group_summary: true`, no text), which Android adds on its own.
 
 Reposting with the same tag (`sim-1`) updates the notification under the same key, which is how question 3 (updates versus new posts) can be rehearsed. Simulated text only tests the pipeline; the real formats, times and delays come from the bank apps on the phone.
 
