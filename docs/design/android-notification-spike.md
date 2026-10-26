@@ -39,6 +39,24 @@ Debug build on an Android 17 (API 37) emulator without Play Store, notifications
 - Android added system **group summary** posts (`group_summary: true`, tag ending in `Aggregate_AlertingSection`, no title or text) with the same post time. The parser must drop group summaries and posts without text.
 - The emulator's zone was GMT (`device_zone`), so time-zone behaviour (question 2) can only be judged on the phone.
 
+### 2026-10-26: emulator, notification styles and listener restarts
+
+Debug build with lossless capture (all extras, group key, removal reason) on an Android 16 (API 36) emulator, 4 GB RAM, host GPU; first half repeated on API 37 with the same results. Synthetic text only.
+
+| Case | Observation | Consequence for the M2 app |
+| --- | --- | --- |
+| Big-text style | Text in `android.text`, `android.template` = `Notification$BigTextStyle`; `android.bigText` empty because adb sets only the content text | Parser reads `android.bigText` first, then `android.text` |
+| Inbox style, three lines | Lines in the `android.textLines` array; `android.text` holds only the summary | A bank that groups transactions needs one record per line |
+| Messaging style | Messages in `android.messages[]` with `text`, `sender`, `time`; `android.text` is only the last message | Same as inbox: read every message |
+| Accented text (á, ő, ű) | Arrives intact | Encoding is not a risk; on Windows pass the whole adb command as one string |
+| Repost with the same tag | Same `key`, new text and `post_time_ms`, no `removed` in between | An update is a new version under the same key: `source_ref` = key plus content hash |
+| Removal | Snooze: reason 18 `snoozed`; *Clear all*: reason 3 `user_dismissed_all` for every notification and the group summary; single swipe not triggered on the emulator | Removal says nothing about the purchase; ignore it except for diagnostics |
+| Group summary | Re-posted with its old post time on every regrouping, `group_summary: true`, no text | Drop |
+| Force-stop, then reopen | No `listener_disconnected` (process killed); the post during the stop and one right after reopening were lost; later posts arrived | Missed posts are not replayed by Android; read `activeNotifications` on connect (added to the spike) and accept that dismissed ones are lost |
+| Reboot | Listener reconnected by itself without new permission, but only 1–2 minutes after boot; a post 20 s after boot was lost | Same as above; on the phone, watch how long Samsung takes |
+
+The emulator was CPU-bound (listener delays of 1–7 s), so delays measured here say nothing about real delivery times (question 6).
+
 ## Consequences
 
 To be written when the questions are answered: the supported format, the `source_ref` rule, the time-zone decision and any reliability limits for the M2 app.

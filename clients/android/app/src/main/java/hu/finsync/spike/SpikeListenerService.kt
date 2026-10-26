@@ -19,6 +19,11 @@ class SpikeListenerService : NotificationListenerService() {
 
     override fun onListenerConnected() {
         store.append(JSONObject().put("type", "listener_connected"))
+        // Notifications posted while the listener was down (force-stop, reboot, battery saving)
+        // are not replayed by Android; those still in the shade are caught here.
+        activeNotifications.orEmpty()
+            .filter { isWatched(it.packageName) }
+            .forEach { store.append(toRecord("active_on_connect", it)) }
     }
 
     override fun onListenerDisconnected() {
