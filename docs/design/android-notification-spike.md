@@ -57,6 +57,14 @@ Debug build with lossless capture (all extras, group key, removal reason) on an 
 
 The emulator was CPU-bound (listener delays of 1–7 s), so delays measured here say nothing about real delivery times (question 6).
 
+### 2026-10-26: lightweight emulator, missed posts recovered on connect
+
+Android 16 (API 36) image without Google services, 2.5 GB RAM; boot in about 20 s, notifications delivered within 0.2–0.5 s. Debug build with `active_on_connect` (commit `be267c0`).
+
+- **Force-stop:** Android rebound the listener by itself within about 2 s, before the app was reopened, and every notification still in the shade was recorded as `active_on_connect` (including the group summary). The post made during the stop arrived as a normal `posted` record. In the earlier, overloaded run the rebind waited until the app was reopened, so the rebind delay depends on system load.
+- **Reboot:** a notification posted about 2.7 s before `listener_connected` was not delivered as `posted` but was recovered as `active_on_connect`; later posts arrived normally. No new permission was needed.
+- **For the parser:** `active_on_connect` repeats notifications that were already recorded (same `key` and `post_time_ms`), so `key` plus `post_time_ms` identifies one post; group summaries keep reappearing and are dropped. A notification that was posted and dismissed while the listener was down is lost; this is an Android limit.
+
 ## Consequences
 
 To be written when the questions are answered: the supported format, the `source_ref` rule, the time-zone decision and any reliability limits for the M2 app.
