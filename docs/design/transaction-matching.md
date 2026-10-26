@@ -1,6 +1,6 @@
 # Transaction matching and duplicate detection
 
-- Status: **Implemented on SQLite** (matching steps 1–5 and the review endpoints since 2026-10-17; dataset v1, evaluation runner and first results since 2026-10-18, [results](../evaluation/results/2026-10-18-matching-rules-2.md)); acceptance pending the author's review for M1
+- Status: **Implemented on SQLite** (matching steps 1–5 and the review endpoints since 2026-10-17; dataset v1, evaluation runner and first results since 2026-10-18, [results](../evaluation/results/2026-10-18-matching-rules-2.md)); **Accepted** by the author on 2026-10-26
 - Date: 2026-10-09
 - Decision record: [ADR 0004](../architecture/decisions/0004-event-based-transaction-matching.md)
 
