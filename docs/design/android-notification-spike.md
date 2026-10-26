@@ -23,7 +23,7 @@ The main risk of the Android client is not its UI but reading another app's bank
 | --- | --- |
 | Phone, Android version | Samsung, latest Android (exact model and version recorded at the first run) |
 | Bank apps and versions | OTP Bank, Revolut (versions recorded at the first run) |
-| Test period | – |
+| Test period | From 2026-10-27 (USB install and first real purchases) |
 | Scope | Only the two bank apps' notifications are read (package-name allowlist); the emulator is used only for the self-sent test notification |
 
 ## Observations
@@ -64,6 +64,16 @@ Android 16 (API 36) image without Google services, 2.5 GB RAM; boot in about 20 
 - **Force-stop:** Android rebound the listener by itself within about 2 s, before the app was reopened, and every notification still in the shade was recorded as `active_on_connect` (including the group summary). The post made during the stop arrived as a normal `posted` record. In the earlier, overloaded run the rebind waited until the app was reopened, so the rebind delay depends on system load.
 - **Reboot:** a notification posted about 2.7 s before `listener_connected` was not delivered as `posted` but was recovered as `active_on_connect`; later posts arrived normally. No new permission was needed.
 - **For the parser:** `active_on_connect` repeats notifications that were already recorded (same `key` and `post_time_ms`), so `key` plus `post_time_ms` identifies one post; group summaries keep reappearing and are dropped. A notification that was posted and dismissed while the listener was down is lost; this is an Android limit.
+
+## Next: real device (2026-10-27)
+
+The USB install and the live test on the Samsung are moved to 2026-10-27. The emulator answered what it can; the checks below need the real phone and bank apps.
+
+- Install the debug build over USB (README, *Running it*, step 3), grant notification access and record the phone model, Android and bank app versions in *Setup*; confirm the OTP Bank package name.
+- Questions 1, 2 and 6 from a few small card purchases: which extras carry the text (`android.bigText`, `android.textLines`, `android.messages`), the printed time against `post_time_ms`, and the delay after paying.
+- Question 4 cheaply: a transfer between family members in the mobile bank shows the transfer format on both sides (outgoing and incoming) without a purchase; these are the records the planned `transfer` direction must recognise ([categorization](categorization.md#money-transfers)).
+- Question 5: a phone restart and a day with the app closed; check how long after boot `listener_connected` and `active_on_connect` appear, and whether Samsung's battery management stops the listener.
+- A single swipe dismissal (not triggered on the emulator), to see its removal reason.
 
 ## Consequences
 
