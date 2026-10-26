@@ -19,9 +19,10 @@ class CaptureStore(context: Context) {
         captures.appendText(record.toString() + "\n")
     }
 
+    /** Skips lines that are not valid JSON, such as a record cut off when the process or phone died mid-write. */
     fun readAll(): List<JSONObject> =
         if (!captures.exists()) emptyList()
-        else captures.readLines().filter { it.isNotBlank() }.map { JSONObject(it) }
+        else captures.readLines().filter { it.isNotBlank() }.mapNotNull { runCatching { JSONObject(it) }.getOrNull() }
 
     /** Copies the log to [dir] (the FileProvider's export folder) and returns the copy. */
     @Synchronized

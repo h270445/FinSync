@@ -123,7 +123,7 @@ class MainActivity : ComponentActivity() {
         val snapshot = store.exportSnapshot(File(cacheDir, "exports"))
         val uri = FileProvider.getUriForFile(this, "$packageName.exports", snapshot)
         val intent = Intent(Intent.ACTION_SEND)
-            .setType("application/json")
+            .setType("text/plain")
             .putExtra(Intent.EXTRA_STREAM, uri)
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         startActivity(Intent.createChooser(intent, "Export captures"))
