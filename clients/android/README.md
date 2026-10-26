@@ -35,7 +35,7 @@ Samsung phone on the latest Android (`compileSdk` and `targetSdk` 36, `minSdk` 2
 2. **Emulator first:** create a virtual device with the latest Android image and press **Run**. Press **Access**, allow notification access for *FinSync notification spike*, then **Test**: a notification in the FinSync format appears and is logged. This checks the listener without a bank app.
 3. **Real phone:** enable developer options and USB debugging on the Samsung, connect it and press **Run** with the phone selected. Repeat the access step. The bank apps only produce real notifications on the phone where the accounts are signed in, so questions 1–6 of the findings are answered here, not on the emulator.
 4. The main screen shows whether OTP and Revolut are installed and how many of their notifications were captured. Make a few small card purchases; also try a phone restart and a day with the app closed.
-5. **Export** shares the log as text; anonymise it before pasting anything into the findings document.
+5. **Export** shares a snapshot of the log as a `captures.jsonl` file (through a FileProvider, so long logs do not hit the intent size limit); anonymise it before pasting anything into the findings document.
 
 ## Simulated bank notifications (debug builds)
 

@@ -23,7 +23,14 @@ class CaptureStore(context: Context) {
         if (!captures.exists()) emptyList()
         else captures.readLines().filter { it.isNotBlank() }.map { JSONObject(it) }
 
-    fun exportText(): String = if (captures.exists()) captures.readText() else ""
+    /** Copies the log to [dir] (the FileProvider's export folder) and returns the copy. */
+    @Synchronized
+    fun exportSnapshot(dir: File): File {
+        dir.mkdirs()
+        val snapshot = File(dir, "captures.jsonl")
+        if (captures.exists()) captures.copyTo(snapshot, overwrite = true) else snapshot.writeText("")
+        return snapshot
+    }
 
     @Synchronized
     fun clear() {

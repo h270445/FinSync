@@ -31,6 +31,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.FileProvider
+import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -113,10 +115,17 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Shares a snapshot of the log as a file. Putting the text itself into the intent would fail
+     * with TransactionTooLargeException once the log passes the ~1 MB Binder limit.
+     */
     private fun share() {
+        val snapshot = store.exportSnapshot(File(cacheDir, "exports"))
+        val uri = FileProvider.getUriForFile(this, "$packageName.exports", snapshot)
         val intent = Intent(Intent.ACTION_SEND)
-            .setType("text/plain")
-            .putExtra(Intent.EXTRA_TEXT, store.exportText())
+            .setType("application/json")
+            .putExtra(Intent.EXTRA_STREAM, uri)
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         startActivity(Intent.createChooser(intent, "Export captures"))
     }
 
