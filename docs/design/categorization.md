@@ -93,6 +93,18 @@ Totals: category totals sum the lines of split events and the whole amount of th
 
 Automatic splitting from receipts (photo, e-receipt) is out of scope.
 
+## Money transfers
+
+Decided by the author on 2026-10-26; scheduled for M2 (Nov 23–27).
+
+A transfer between members of the same group (for example within a family, through mobile banking) is neither spending nor income for the group: today it is stored as an expense on the sender's side and as income on the receiver's side, which inflates the group's totals.
+
+- Each group keeps a list of **own accounts and counterparties**: account numbers or IBANs and the names that appear in notifications and exports (for example the members' names as the bank prints them).
+- A record whose counterparty matches the list gets the direction **`transfer`** instead of `expense` or `income`, and is left out of spending and income totals. Its category is `transfer`; the categorizer is not asked.
+- A member can mark a record as a transfer, or undo it, in the web app; the correction is logged like a category correction.
+- The two sides of one transfer (−X at one member, +X at another) stay two separate events this semester. Linking them into one event is a matching extension (opposite signs, two members) left for Szakdolgozat II.
+- The matching direction gate treats `transfer` like a direction of its own, so a transfer is never linked to a purchase of the same amount.
+
 ## Review in the web app
 
 - The event list shows `low` categories in a lighter style with a "suggestion" marker; one tap confirms or changes it.
