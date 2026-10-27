@@ -65,6 +65,22 @@ Android 16 (API 36) image without Google services, 2.5 GB RAM; boot in about 20 
 - **Reboot:** a notification posted about 2.7 s before `listener_connected` was not delivered as `posted` but was recovered as `active_on_connect`; later posts arrived normally. No new permission was needed.
 - **For the parser:** `active_on_connect` repeats notifications that were already recorded (same `key` and `post_time_ms`), so `key` plus `post_time_ms` identifies one post; group summaries keep reappearing and are dropped. A notification that was posted and dismissed while the listener was down is lost; this is an Android limit.
 
+### 2026-10-27: first real notification (OTP Bank, outgoing transfer)
+
+Galaxy A13, Android 14. Content was never read in clear text: the summary below was produced on the author's machine with every letter replaced by `a`/`A` and every digit by `9`.
+
+| Field | Masked value or observation |
+| --- | --- |
+| Channel, category | `otp-mobile-bank`, none; not a group summary, not ongoing |
+| Style | Big text; only `android.title`, `android.text` and `android.bigText` carry text, `text` equals `bigText` |
+| `title` | `Aaaaaaaa aaaaaaaa` (two words) |
+| `text` | `-9 999 Aa, Aaaaa Aaaaaa Aaaaaa`: signed amount with a space as thousands separator, a two-letter currency (presumably `Ft`), a comma, then the counterparty name |
+| Time | No time in the text; `post_time_ms` and `when_ms` differ by 0.04 s |
+| `tag` | `AAA-Aaaaaaaaaaaa:999999999`, apparently a transaction id |
+| Repeats | One post, no update, no group summary |
+
+First answers: question 1 (OTP transfer): one `text` field carries amount, direction (sign), currency and counterparty. Question 2: the notification prints no time, so `happened_at` must come from `post_time_ms`, an absolute instant; this simplifies the time-zone decision. Question 3: the `tag` looks like a stable transaction id and is the best `source_ref` candidate, to be confirmed with more notifications. No Revolut notification was recorded for this transfer.
+
 ## Next: real device (2026-10-27)
 
 The USB install and the live test on the Samsung are moved to 2026-10-27. The emulator answered what it can; the checks below need the real phone and bank apps.
