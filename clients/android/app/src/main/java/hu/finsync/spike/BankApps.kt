@@ -7,7 +7,7 @@ package hu.finsync.spike
  */
 object BankApps {
     val packages: Map<String, String> = mapOf(
-        "hu.otpbank.mobile" to "OTP Bank",
+        "hu.otpbank.mobile" to "OTP Bank", // confirmed on the test phone, 2026-10-27
         "com.revolut.revolut" to "Revolut",
     )
 

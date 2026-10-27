@@ -10,7 +10,7 @@ The spike watches only the bank apps listed in [`BankApps.kt`](app/src/main/java
 
 | App | Package |
 | --- | --- |
-| OTP Bank | `hu.otpbank.mobile` (to be confirmed from the Play Store link) |
+| OTP Bank | `hu.otpbank.mobile` |
 | Revolut | `com.revolut.revolut` |
 
 Debug builds also watch `com.android.shell`, the sender of notifications posted with adb, so simulated bank text can be tested without a purchase (see below). Release builds never do. Every record carries `simulated: true` unless it came from a bank app.
@@ -27,7 +27,7 @@ Nothing leaves the phone unless **Export** is pressed. Exported data contains re
 
 ## Target device
 
-Samsung phone on the latest Android (`compileSdk` and `targetSdk` 36, `minSdk` 26). Samsung's battery management may stop background listeners: if records stop arriving, add the app under *Settings → Battery → Background usage limits → Never sleeping apps* and note it in the findings.
+Samsung Galaxy A13 on Android 14 / One UI 6.1 (`compileSdk` and `targetSdk` 36, `minSdk` 26). Samsung's battery management may stop background listeners: if records stop arriving, add the app under *Settings → Battery → Background usage limits → Never sleeping apps* and note it in the findings.
 
 ## Running it
 
