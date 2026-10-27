@@ -1,8 +1,8 @@
-# 2026-10-27 — Köztes jelzés: a párosítás állása
+# 2026-10-28 — Köztes jelzés: a párosítás állása
 
 - Címzett: Dr. Bilicki Vilmos (válasz a 2026-10-16-i levélre)
 - Tag: nincs, köztes jelzés (commit: a 2026-10-26-i munka merge-commitja, küldés előtt kitöltendő)
-- Státusz: vázlat, küldés 2026-10-27-én
+- Státusz: vázlat, küldés 2026-10-28-án este, a vásárlási teszt után
 
 ---
 
@@ -28,7 +28,7 @@ Köszönöm a válaszát. A javasolt október 22-i köztes jelzést néhány nap
 **Android-próba**
 - Elkészült egy kis próbaalkalmazás (Kotlin), amely csak az OTP Bank és a Revolut értesítéseit olvassa; minden más alkalmazás értesítését tartalom nélkül eldobja. A rögzített adat a telefonon marad, a repositoryba csak anonimizált formátumleírás kerül.
 - Emulátoron, kitalált értesítésekkel már kipróbáltam: többféle értesítésstílus, frissítés ugyanazzal az azonosítóval, törlés, az alkalmazás leállítása és a telefon újraindítása. A legfontosabb tanulság, hogy a figyelő újraindulás után magától visszakapcsol, de a kiesés alatt érkezett értesítéseket az Android nem küldi újra; ezért újracsatlakozáskor a még látható értesítéseket is beolvassa.
-- A valódi banki értesítésekkel a saját telefonomon október 27-én tesztelek. Ebből derül ki a pontos szövegformátum, és hogy a bank helyi időt ír-e (erről külön döntést rögzítek).
+- Október 27-én a saját telefonomon (Android 14) megérkezett az első valódi OTP-értesítés egy saját utalásról. Egyetlen szövegmezőben jön az előjeles összeg, a pénznem és a partner neve; időpontot nem tartalmaz, ezért az értesítés rendszeridejét használom, a bank pedig tranzakcióazonosítónak tűnő értéket is küld, ami a duplikátumszűrés kulcsa lehet. A vásárlási értesítések formátumát október 28-án teszteltem: <vásárlási teszt eredménye, küldés előtt kitöltendő>.
 
 **Két új döntés**
 - A Google Sheets-szkript és az Android-alkalmazás egy HTTPS-alagúton (például Cloudflare Tunnel) éri el a gépemen futó API-t, és csak a teszteléshez és a bemutatóhoz indítom el, miután a tokenes hitelesítés elkészült. Állandó szerver így nem kell.
