@@ -12,6 +12,7 @@ The spike watches only the bank apps listed in [`BankApps.kt`](app/src/main/java
 | --- | --- |
 | OTP Bank | `hu.otpbank.mobile` |
 | Revolut | `com.revolut.revolut` |
+| K&H | `hu.kh.smartbanking` (added 2026-10-27) |
 
 Debug builds also watch `com.android.shell`, the sender of notifications posted with adb, so simulated bank text can be tested without a purchase (see below). Release builds never do. Every record carries `simulated: true` unless it came from a bank app.
 

@@ -9,6 +9,7 @@ object BankApps {
     val packages: Map<String, String> = mapOf(
         "hu.otpbank.mobile" to "OTP Bank", // confirmed on the test phone, 2026-10-27
         "com.revolut.revolut" to "Revolut",
+        "hu.kh.smartbanking" to "K&H", // added 2026-10-27, seen on the test phone
     )
 
     /** Sender of `adb shell cmd notification post`; watched only in debug builds, for simulated bank notifications. */
