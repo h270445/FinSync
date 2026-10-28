@@ -81,6 +81,25 @@ Galaxy A13, Android 14. Content was never read in clear text: the summary below 
 
 First answers: question 1 (OTP transfer): one `text` field carries amount, direction (sign), currency and counterparty. Question 2: the notification prints no time, so `happened_at` must come from `post_time_ms`, an absolute instant; this simplifies the time-zone decision. Question 3: the `tag` looks like a stable transaction id and is the best `source_ref` candidate, to be confirmed with more notifications. No Revolut notification was recorded for this transfer.
 
+### 2026-10-28: first real card purchase (OTP Bank) and a day of listening
+
+Masked the same way (letters `a`/`A`, digits `9`); content never read in clear text.
+
+| Field | Purchase | Transfer (2026-10-27) |
+| --- | --- | --- |
+| Channel, style | `otp-mobile-bank`, big text | same |
+| `title` | `Aaaaaaa aaaaaaaa!` | `Aaaaaaaa aaaaaaaa` |
+| `text` (= `bigText`) | `-9 999 Aa aaaaaaaa aaaaaaaaa aaaaaaaaaa a AAAAAAAAAA AAAAAA 99. aaaaaaaaaaaa.` | `-9 999 Aa, Aaaaa Aaaaaa Aaaaaa` |
+| `tag` | `AAA-Aaaaaaaaaaaa:999999999` | same pattern; `id` is always 0 |
+| Time | none in the text; `when` equals `post_time_ms` (5 ms) | same |
+| Repeats | one post, no update, no group summary | same |
+
+- **Question 1:** both kinds start with the signed amount and the currency; the transaction kind follows from the title, and the merchant (upper case, inside a sentence) or the counterparty (after a comma) needs a pattern per kind. One OTP parser with two patterns covers both.
+- **Question 2:** no printed time; `happened_at` comes from `post_time_ms`, an absolute instant.
+- **Question 3:** the tag ends in a nine-digit number in both kinds, most likely a transaction id: the `source_ref` candidate. `active_on_connect` after each reinstall repeated a notification still in the shade with the same `key` and `post_time_ms`, so those two fields deduplicate it.
+- **Question 5:** no disconnect for about 22 hours (from the reinstall on Oct 27, 23:09 to the evening of Oct 28), without the *Never sleeping apps* setting; the purchase arrived normally.
+- **Revolut:** one notification that is not a transaction (a name in the title, a date, no amount); the parser must reject it. Revolut puts the whole notification text into the `tag`, so the `key` carries content: keys must not be logged or stored unmasked.
+
 ## Next: real device (2026-10-27)
 
 The USB install and the live test on the Samsung are moved to 2026-10-27. The emulator answered what it can; the checks below need the real phone and bank apps.
