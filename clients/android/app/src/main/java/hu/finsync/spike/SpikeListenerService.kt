@@ -80,6 +80,7 @@ class SpikeListenerService : NotificationListenerService() {
             .put("type", type)
             .put("kind", "other")
             .put("package", sbn.packageName)
+            .put("simulated", !BankApps.isBank(sbn.packageName))
             .put("key_hash", TransactionFilter.hash(sbn.key))
             .put("post_time_ms", sbn.postTime)
             .put("channel", notification.channelId ?: JSONObject.NULL)

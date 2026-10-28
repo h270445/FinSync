@@ -12,6 +12,8 @@ Time spent on the project, for the weekly-effort figure the supervisor asked for
 | 2026-10-24 | 13:41–13:52 | 11 | Interim note updated with the `rules-2` results, PR #10 | Project messages and commits |
 | 2026-10-24 | 13:50–14:07, 14:21–14:56 | 52 | Daily plan from the roadmap; Android spike app (Kotlin, Compose), limited to OTP Bank and Revolut; ADR 0007 (HTTPS tunnel); service test per matching scenario; Android Studio set-up questions | Project messages and commits |
 | 2026-10-26 | 14:21–14:23, 19:19–19:23, 19:48–21:35, 21:57–22:10 | 126 | Claude CLI and Remote Control set-up on Windows; first build of the spike; emulator rounds (notification styles, removal reasons, force-stop, reboot) on three emulator images; lossless capture and missed-post recovery; transfer decision; interim note updated | Project messages and commits |
+| 2026-10-27 | 18:39–18:44, 22:30–23:21 | 56 | Expected behaviour of the spike on the phone; USB set-up of the Samsung, install, first real OTP notification (masked analysis); K&H added; read-only security check of phone and PC; interim note moved to Oct 28 | Project messages and commits |
+| 2026-10-28 | 22:28–22:50 | 22 | First real OTP card purchase (masked analysis); handling of bank marketing notifications in the spike and the M2 rule | Project messages and commits |
 
 ## Weekly totals
 
@@ -21,5 +23,5 @@ Time spent on the project, for the weekly-effort figure the supervisor asked for
 | 2026-10-05 – 10-11 | 240 | 4.0 |
 | 2026-10-12 – 10-18 | 123 | 2.1 |
 | 2026-10-19 – 10-25 | 63 | 1.1 |
-| 2026-10-26 – 11-01 | 126 | 2.1 |
-| **Total** | **567** | **9.5** |
+| 2026-10-26 – 11-01 | 204 | 3.4 |
+| **Total** | **645** | **10.8** |
