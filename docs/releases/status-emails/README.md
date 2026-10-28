@@ -35,15 +35,19 @@ Tisztelt <megszólítás>!
 <1–2 mondat: mit tartalmaz ez a mérföldkő.>
 
 **Elkészült**
+
 - ...
 
 **Hogyan ellenőrizhető**
+
 - ...
 
 **Eltérések a tervtől, kockázatok**
+
 - ...
 
 **Következő lépések (<következő határidő>)**
+
 - ...
 
 A repository: https://github.com/h270445/FinSync (tag: `<tag>`, commit: https://github.com/h270445/FinSync/commit/<teljes commit azonosító>)
