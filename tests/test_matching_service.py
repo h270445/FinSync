@@ -160,6 +160,19 @@ class MatchingServiceTest(unittest.TestCase):
         self.assertEqual(len(batch_ids), 1)
         self.assertIsNotNone(batch_ids.pop())
 
+    def test_bulk_with_an_invalid_third_row_stores_nothing(self) -> None:
+        self.service.ingest_notification("user-1", "group-1", NOTIFICATION)
+        rows = [
+            {"amount": "-4500", "currency": "HUF", "description": "Tesco", "happened_at": "2026-09-05"},
+            {"amount": "-900", "currency": "HUF", "description": "Bus ticket", "happened_at": "2026-09-05"},
+            {"amount": "abc", "currency": "HUF", "description": "Broken", "happened_at": "2026-09-05"},
+        ]
+        with self.assertRaisesRegex(ValueError, "Row 2"):
+            self.service.bulk_create_manual_transactions("user-1", "group-1", rows)
+        self.assertEqual(len(self.service.list_group_transactions("user-1", "group-1")), 1)
+        self.assertEqual(len(self._events()), 1)
+        self.assertEqual([d["outcome"] for d in self.storage.list_decisions("group-1")], ["separate"])
+
     def test_direction_overrides_the_typed_sign(self) -> None:
         self.service.ingest_notification("user-1", "group-1", NOTIFICATION)
         result = self._manual(amount="4500", direction="expense")

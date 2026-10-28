@@ -1,6 +1,6 @@
 # Semester roadmap (Szakdolgozat I., autumn 2026)
 
-- Last updated: 2026-10-09
+- Last updated: 2026-10-26
 - Owner: Bence Varga
 
 This roadmap turns the course deadlines into concrete, verifiable steps. Each deadline has a target file in [milestones/](milestones/README.md) with acceptance criteria and a checklist.
@@ -82,7 +82,7 @@ Goal: the main technical risk, telling duplicates from look-alike purchases, has
 | Week | Main track | Side track |
 | --- | --- | --- |
 | Oct 12–18 | Stack switch on top of the existing backend ([ADR 0006](../architecture/decisions/0006-framework-based-stack.md)): FastAPI routes, SQLAlchemy and Alembic on PostgreSQL, Docker Compose, CI; existing parsing, categorization and tests carried over. First Alembic migration: `events`, `match_decisions`, traceability columns. Time-zone decision (ADR). Matching normalization and fingerprint. | Synthetic matching dataset generator. Figma wireframes for the event list, review queue and Android setup. |
-| Oct 19–25 | Interim note to the supervisor by Oct 22 (matching status, whether the SQLite fallback was needed). Blocking, scoring and decision; matching wired into all ingest paths in one transaction; `event_id`, `match_outcome`; `GET /v1/events`. | Android spike: notification listener on a real device logging the supported formats. |
+| Oct 19–25 | Interim note to the supervisor by Oct 22 (matching status, whether the SQLite fallback was needed). Blocking, scoring and decision; matching wired into all ingest paths in one transaction; `event_id`, `match_outcome`; `GET /v1/events`. | Android spike: notification listener on a real device logging the supported formats. Spike app and emulator rounds done on Oct 24–26 ([findings](../design/android-notification-spike.md)); the phone test with OTP Bank and Revolut moved to Oct 27. |
 | Oct 26–30 | Dataset v1 (~100 records), evaluation runner, first results file. **M1 content complete.** | ADR for how the Sheets script reaches the API. Web app skeleton (React, Vite, generated API types) with a read-only event list. |
 
 ### Phase 2 — Integrated prototype (2026-11-02 → internal target 2026-11-27, M2 due 2026-12-04)
@@ -94,7 +94,7 @@ Goal: every committed component exists and works together with proper data handl
 | Nov 2–8 | Authentication with per-user API tokens (hashed); review and correction endpoints already done on Oct 17. M1 submitted from `main` (tag `v0.2.0`). | Labelled categorization dataset. Styled screens in Figma. |
 | Nov 9–15 | Web app: sign-in, review queue, event detail with split. Request size limits; cross-group tests on every endpoint. | Android app (one bank format): token setup, sending to `/v1/notifications/ingest`, retry without duplicates. |
 | Nov 16–22 | File import of spreadsheet exports with `source_ref` and `import_batch_id`; grow the matching dataset to 200–300 records. | Google Sheets script posting rows to `/v1/transactions/bulk`, if on schedule. Web app overview and manual entry. |
-| Nov 23–27 | LLM categorizer behind the categorizer interface with output validation; category correction with the "mixed" flag and category lines (API and web app, [design](../design/categorization.md#mixed-baskets)); end-to-end demo. **M2 content complete.** | |
+| Nov 23–27 | LLM categorizer behind the categorizer interface with output validation; category correction with the "mixed" flag and category lines (API and web app, [design](../design/categorization.md#mixed-baskets)); money transfers between the group's own accounts (`transfer` direction, [design](../design/categorization.md#money-transfers)); end-to-end demo. **M2 content complete.** | |
 
 ### Phase 3 — Evaluation, hardening and preliminary package (2026-11-30 → internal target 2027-01-08, M3 due 2027-01-15)
 
@@ -143,3 +143,6 @@ The detailed plan is written in M3.
 | 2026-10-09 | Added the web app as committed item 4 (main user interface, built before the Android app); Figma wireframes and web app work added to Phases 1–2 ([ADR 0005](../architecture/decisions/0005-web-client-first.md)). |
 | 2026-10-09 | Supervisor feedback: core first, build on the existing backend, adjust client scope. Priority order changed (authentication and measurement moved up, naive baseline and category correction added, Android and Sheets reduced); the framework-based stack (FastAPI, PostgreSQL, React, Docker Compose) stays this semester, built on the existing backend logic ([ADR 0006](../architecture/decisions/0006-framework-based-stack.md)). |
 | 2026-10-16 | Supervisor accepted the commitment and schedule ([feedback](supervisor-feedback.md#2026-10-16--reply-to-the-m0-e-mail)); added the Oct 22 interim note, the baseline and hand-decided examples to M1, and carrying over the PR #2 and #3 fixes. |
+| 2026-10-26 | Android spike: emulator rounds done, phone test moved to Oct 27; ADR 0007 accepted (HTTPS tunnel for the Sheets script and the Android app). The Oct 22 interim note was not sent on time and goes out with these updates. |
+| 2026-10-27 | First real OTP notification captured on the phone; purchase test on Oct 28, the interim note goes out that evening with its result. |
+| 2026-10-26 | Author's decision: transfers between the group's own or family accounts are booked as `transfer`, not as expense or income, using a per-group list of own accounts and counterparties (M2, Nov 23–27); linking the two sides into one event is left for Szakdolgozat II. |

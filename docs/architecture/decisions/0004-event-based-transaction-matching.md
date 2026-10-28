@@ -1,6 +1,6 @@
 # 0004. Event-based, rule-scored transaction matching
 
-- Status: Proposed
+- Status: Accepted (2026-10-26)
 - Date: 2026-10-09
 
 ## Context

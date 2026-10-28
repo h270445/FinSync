@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">FinSync spike</string>
+    <string name="listener_label">FinSync notification spike</string>
+</resources>
