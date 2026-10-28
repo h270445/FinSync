@@ -1,8 +1,8 @@
 # 2026-10-28 — Köztes jelzés: a párosítás állása
 
 - Címzett: Dr. Bilicki Vilmos (válasz a 2026-10-16-i levélre)
-- Tag: nincs, köztes jelzés (commit: a PR #11 merge-commitja, küldés előtt kitöltendő)
-- Státusz: vázlat, küldés 2026-10-28-án este, a vásárlási teszt után
+- Tag: nincs, köztes jelzés (commit: `4f545c2d46e7493726ee337bab75817bdb118798`)
+- Státusz: elküldve (2026-10-28)
 
 ---
 
@@ -46,7 +46,9 @@ A sorrendet reálisnak tartom: a mag (párosítás és javítás) az első hétv
 - November első hetében a tokenes hitelesítés, amely a csoporttagságot igazolt felhasználóhoz köti, a másik csoport adataihoz való hozzáférés automatikus próbáival.
 - A saját döntéseimet és ellenőrzéseimet továbbra is az MI-használati naplóban vezetem.
 
-A repository: https://github.com/h270445/FinSync (commit: `<a PR #11 merge-commitja, küldés előtt kitöltendő>`)
+A repository: https://github.com/h270445/FinSync (commit: https://github.com/h270445/FinSync/commit/4f545c2d46e7493726ee337bab75817bdb118798)
 
-Üdvözlettel:
-Varga Bence
+Üdvözlettel:  
+Varga Bence Tamás  
+<Neptun-kód>  
+Gazdaságinformatikus nappali hallgató
