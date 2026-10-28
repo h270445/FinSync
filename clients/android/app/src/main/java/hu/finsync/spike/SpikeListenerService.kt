@@ -38,10 +38,12 @@ class SpikeListenerService : NotificationListenerService() {
 
     override fun onNotificationRemoved(sbn: StatusBarNotification, rankingMap: RankingMap, reason: Int) {
         if (isWatched(sbn.packageName)) {
+            // Only a hash of the key: some apps (Revolut) put the whole notification text into it.
             store.append(
                 JSONObject()
                     .put("type", "removed")
-                    .put("key", sbn.key)
+                    .put("package", sbn.packageName)
+                    .put("key_hash", TransactionFilter.hash(sbn.key))
                     .put("reason", reason)
                     .put("reason_name", REMOVAL_REASONS[reason] ?: "other")
             )
@@ -59,7 +61,49 @@ class SpikeListenerService : NotificationListenerService() {
             packageName == this.packageName ||
             (isDebugBuild && packageName == BankApps.ADB_SHELL)
 
+    /**
+     * A transaction candidate is recorded in full; anything else (marketing, news) only as a
+     * masked shape with its channel, so the filter can be checked without keeping the content.
+     */
     private fun toRecord(type: String, sbn: StatusBarNotification): JSONObject {
+        val texts = texts(sbn.notification.extras)
+        return if (TransactionFilter.looksLikeTransaction(texts)) {
+            fullRecord(type, sbn).put("kind", "transaction_candidate")
+        } else {
+            maskedRecord(type, sbn, texts)
+        }
+    }
+
+    private fun maskedRecord(type: String, sbn: StatusBarNotification, texts: List<String>): JSONObject {
+        val notification = sbn.notification
+        return JSONObject()
+            .put("type", type)
+            .put("kind", "other")
+            .put("package", sbn.packageName)
+            .put("key_hash", TransactionFilter.hash(sbn.key))
+            .put("post_time_ms", sbn.postTime)
+            .put("channel", notification.channelId ?: JSONObject.NULL)
+            .put("category", notification.category ?: JSONObject.NULL)
+            .put("group_summary", notification.flags and Notification.FLAG_GROUP_SUMMARY != 0)
+            .put("extras_keys", JSONArray(notification.extras.keySet().sorted()))
+            .put("masked_texts", JSONArray(texts.map { TransactionFilter.mask(it) }))
+    }
+
+    /** Title, texts, InboxStyle lines and MessagingStyle messages, in that order. */
+    @Suppress("DEPRECATION")
+    private fun texts(extras: Bundle): List<String> {
+        val result = mutableListOf<String>()
+        for (key in listOf(Notification.EXTRA_TITLE, Notification.EXTRA_TEXT, Notification.EXTRA_BIG_TEXT, Notification.EXTRA_SUB_TEXT)) {
+            extras.getCharSequence(key)?.toString()?.let { result += it }
+        }
+        extras.getCharSequenceArray(Notification.EXTRA_TEXT_LINES)?.forEach { result += it.toString() }
+        extras.getParcelableArray(Notification.EXTRA_MESSAGES)?.forEach { message ->
+            (message as? Bundle)?.getCharSequence("text")?.let { result += it.toString() }
+        }
+        return result
+    }
+
+    private fun fullRecord(type: String, sbn: StatusBarNotification): JSONObject {
         val notification = sbn.notification
         val extras = notification.extras
         return JSONObject()
@@ -67,6 +111,7 @@ class SpikeListenerService : NotificationListenerService() {
             .put("package", sbn.packageName)
             .put("simulated", !BankApps.isBank(sbn.packageName))
             .put("key", sbn.key)
+            .put("key_hash", TransactionFilter.hash(sbn.key))
             .put("id", sbn.id)
             .put("tag", sbn.tag ?: JSONObject.NULL)
             .put("post_time_ms", sbn.postTime)

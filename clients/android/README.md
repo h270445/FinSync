@@ -20,8 +20,9 @@ Android delivers every notification to a listener; the spike drops anything from
 
 | Data | Where | Content |
 | --- | --- | --- |
-| Notifications of the watched bank apps and the app's own test notifications | `captures.jsonl` in app-private storage | package, key, id, tag, `postTime`, `when`, channel, category, group-summary and ongoing flags, title, text, big text, sub text, ticker, group key, group, sort key; every extra under its own key (text values in full, for example InboxStyle lines and MessagingStyle messages; icons and other objects by type name only); device time and time zone |
-| Removed notifications | `captures.jsonl` | key and removal reason (click, user dismissed, app cancelled, ...) |
+| Notifications of the watched bank apps that look like transactions (an amount with a currency), and the app's own test notifications | `captures.jsonl` in app-private storage | package, key, id, tag, `postTime`, `when`, channel, category, group-summary and ongoing flags, title, text, big text, sub text, ticker, group key, group, sort key; every extra under its own key (text values in full, for example InboxStyle lines and MessagingStyle messages; icons and other objects by type name only); device time and time zone |
+| Other bank notifications (marketing, news) | `captures.jsonl`, `kind: "other"` | channel, category, extras keys and masked texts only (letters `a`/`A`, digits `9`); key as a hash |
+| Removed notifications | `captures.jsonl` | key hash and removal reason (click, user dismissed, app cancelled, ...) |
 | Listener connect and disconnect | `captures.jsonl` | type and device time; on connect, every watched notification still in the shade is recorded as `active_on_connect`, so posts missed while the listener was down are not lost |
 
 Nothing leaves the phone unless **Export** is pressed. Exported data contains real personal data and is **never committed**: only anonymised format descriptions (made-up amounts, merchants and names) go into the repository.

@@ -13,7 +13,7 @@ The main risk of the Android client is not its UI but reading another app's bank
 | 1 | Which fields (title, text, big text, sub text, ticker) carry the purchase details, and in what wording? | Parser format for one bank | – |
 | 2 | Is the time printed in the text local time, and how does it relate to `postTime`? Is there a time at all? | Time-zone ADR; `happened_at` for matching | – |
 | 3 | Does one purchase produce several posts (updates of the same key, group summaries, re-posts after restart)? | Stable `source_ref`, re-delivery vs. new purchase | – |
-| 4 | Do declined payments, refunds, transfers or balance messages arrive in a similar format? | What the parser must reject or support | – |
+| 4 | Do declined payments, refunds, transfers or balance messages arrive in a similar format? | What the parser must reject or support | Partly: OTP transfer and purchase share the amount-first format; Revolut also posts marketing on the same channel (2026-10-28), see [non-transaction notifications](#non-transaction-notifications) |
 | 5 | Does the listener keep running after a restart, with battery optimisation on, and with the app closed for a day? | Whether background collection is reliable | – |
 | 6 | How long after the purchase does the notification arrive? | Matching time window | – |
 
@@ -109,6 +109,18 @@ The USB install and the live test on the Samsung are moved to 2026-10-27. The em
 - Question 4 cheaply: a transfer between family members in the mobile bank shows the transfer format on both sides (outgoing and incoming) without a purchase; these are the records the planned `transfer` direction must recognise ([categorization](categorization.md#money-transfers)).
 - Question 5: a phone restart and a day with the app closed; check how long after boot `listener_connected` and `active_on_connect` appear, and whether Samsung's battery management stops the listener.
 - A single swipe dismissal (not triggered on the emulator), to see its removal reason.
+
+## Non-transaction notifications
+
+Bank apps also post marketing, news and security messages; the Revolut notification of 2026-10-28 was one, on the same channel as transactions and with the whole text repeated in its `tag` and `key`. Decided by the author on 2026-10-28 for this pull request:
+
+**In the spike (from 2026-10-28):** every bank notification is still recorded, because question 4 needs to see what else the banks send, but only a likely transaction is kept in full. A notification is a *transaction candidate* when any of its texts contains an amount with a currency (`-4 500 Ft`, `1,234.56 HUF`, `€4.50`; [`TransactionFilter.kt`](../../clients/android/app/src/main/java/hu/finsync/spike/TransactionFilter.kt)). Anything else is stored as `kind: "other"` with its channel, category, extras keys and masked texts only (letters `a`/`A`, digits `9`); its key is stored only as a hash. Removal records also carry only the key hash.
+
+**In the M2 app (rule):**
+- Accept, do not reject: a notification is forwarded only when it matches a known pattern of that bank (signed amount and currency plus a known title per transaction kind). Everything else is dropped on the phone and never reaches the API. A list of marketing phrases is not kept, because new wording would slip through silently.
+- The channel is a cheap pre-filter where a bank separates marketing from transactions; Revolut does not, so the pattern decides.
+- Of dropped notifications only counts per bank and channel are kept. If a bank sends notifications but none matches for days, its format probably changed and the pattern needs an update; the status screen shows this.
+- The server parser keeps rejecting unsupported text with `400`; the app treats that as "not a transaction" and does not retry.
 
 ## Consequences
 
