@@ -112,7 +112,7 @@ The USB install and the live test on the Samsung are moved to 2026-10-27. The em
 
 ## Non-transaction notifications
 
-Bank apps also post marketing, news and security messages; the Revolut notification of 2026-10-28 was one, on the same channel as transactions and with the whole text repeated in its `tag` and `key`. Decided by the author on 2026-10-28 for this pull request:
+Bank apps also post marketing, news and security messages; the Revolut notification of 2026-10-28 was one, on the same channel as transactions and with the whole text repeated in its `tag` and `key`. Proposed on 2026-10-28; the author asked for it in this pull request:
 
 **In the spike (from 2026-10-28):** every bank notification is still recorded, because question 4 needs to see what else the banks send, but only a likely transaction is kept in full. A notification is a *transaction candidate* when any of its texts contains an amount with a currency (`-4 500 Ft`, `1,234.56 HUF`, `€4.50`; [`TransactionFilter.kt`](../../clients/android/app/src/main/java/hu/finsync/spike/TransactionFilter.kt)). Anything else is stored as `kind: "other"` with its channel, category, extras keys and masked texts only (letters `a`/`A`, digits `9`); its key is stored only as a hash. Removal records also carry only the key hash.
 
