@@ -50,5 +50,5 @@ A repository: https://github.com/h270445/FinSync (commit: https://github.com/h27
 
 Üdvözlettel:  
 Varga Bence Tamás  
-DE4S8V  
+<Neptun-kód>  
 Gazdaságinformatikus nappali hallgató

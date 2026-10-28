@@ -5,7 +5,7 @@ The text of every progress e-mail sent to the thesis supervisor, one file per e-
 - The English release notes in [releases/](../README.md) remain the official description of each milestone; the e-mail is a short Hungarian summary that points to the tag.
 - File name: `YYYY-MM-DD-<milestone or topic>.md`, for example `2026-10-09-m0.md`.
 - Commit the text in the same pull request as the release notes, before sending. After sending, set `Státusz: elküldve` and the send date; later corrections go into a new e-mail, not into the sent one.
-- No personal data beyond the supervisor's name and the author's sign-off (name, Neptun code, programme); no e-mail addresses, passwords, tokens or real financial data.
+- No personal data beyond the supervisor's name and the author's name and programme. The Neptun code stays a `<Neptun-kód>` placeholder and is filled in only in the e-mail itself. No e-mail addresses, passwords, tokens or real financial data.
 - Sign-off: full name, Neptun code, and programme with mode of study, each on its own line (see the template).
 - Layout: one blank line between paragraphs, before and after each bold section heading, and around each list; one short paragraph or list per section. Check that the text keeps its paragraphs when pasted into Gmail before sending.
 - Link the commit with its full URL, so the supervisor can open it from the e-mail.
@@ -50,6 +50,6 @@ A repository: https://github.com/h270445/FinSync (tag: `<tag>`, commit: https://
 
 Üdvözlettel:  
 Varga Bence Tamás  
-DE4S8V  
+<Neptun-kód>  
 Gazdaságinformatikus nappali hallgató
 ```
