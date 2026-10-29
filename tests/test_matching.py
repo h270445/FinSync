@@ -98,8 +98,8 @@ class ScoreTest(unittest.TestCase):
 class DecideTest(unittest.TestCase):
     def test_thresholds(self) -> None:
         self.assertEqual(decide({}).outcome, "separate")
-        self.assertEqual(decide({1: _features(0.85)}).outcome, "auto_linked")
-        self.assertEqual(decide({1: _features(0.8499)}).outcome, "needs_review")
+        self.assertEqual(decide({1: _features(0.95)}).outcome, "auto_linked")
+        self.assertEqual(decide({1: _features(0.9499)}).outcome, "needs_review")
         self.assertEqual(decide({1: _features(0.60)}).outcome, "needs_review")
         self.assertEqual(decide({1: _features(0.5999)}).outcome, "separate")
 

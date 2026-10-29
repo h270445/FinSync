@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from finsync.matching.scoring import Features
 
 MATCHER_VERSION = "rules-3"
-AUTO_LINK_THRESHOLD = 0.85
+AUTO_LINK_THRESHOLD = 0.95
 REVIEW_THRESHOLD = 0.60
 RUNNER_UP_MARGIN = 0.10
 

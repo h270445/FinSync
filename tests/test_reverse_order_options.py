@@ -14,13 +14,15 @@ from finsync.storage import FinSyncStorage
 
 
 @contextmanager
-def options(strict: bool = False, reopen: bool = False) -> Iterator[None]:
-    saved = decision_rules.STRICT_POOR_GATE, decision_rules.REOPEN_CONTESTED
+def options(strict: bool = False, reopen: bool = False, auto_link: float = 0.85) -> Iterator[None]:
+    """The options at the rules-2 threshold, where they were compared; rules-3 links at 0.95."""
+    saved = decision_rules.STRICT_POOR_GATE, decision_rules.REOPEN_CONTESTED, decision_rules.AUTO_LINK_THRESHOLD
     decision_rules.STRICT_POOR_GATE, decision_rules.REOPEN_CONTESTED = strict, reopen
+    decision_rules.AUTO_LINK_THRESHOLD = auto_link
     try:
         yield
     finally:
-        decision_rules.STRICT_POOR_GATE, decision_rules.REOPEN_CONTESTED = saved
+        decision_rules.STRICT_POOR_GATE, decision_rules.REOPEN_CONTESTED, decision_rules.AUTO_LINK_THRESHOLD = saved
 
 
 class StrictGateDecisionTest(unittest.TestCase):
