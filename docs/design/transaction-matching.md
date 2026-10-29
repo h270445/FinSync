@@ -119,6 +119,11 @@ The new record is scored against each record in a candidate event; the best pair
 | Best S in [0.60, 0.85), or two candidates within 0.10 | `needs_review`; the record gets its own event until a member decides |
 | Best S < 0.60, or no candidate | `separate`, new event |
 
+Two further rules since `rules-3` (2026-10-29), for the order dependence the evaluation found ([options compared](../evaluation/results/2026-10-29-matching-rules-3.md)):
+
+- **Strict gate for information-poor pairs (A).** When the best pair has a date-only side or a merchant score of 0.5, `auto_linked` needs S ≥ 0.95; otherwise the record goes to `needs_review`.
+- **Reopen a contested link (B).** When an event is blocked for the new record because its channel is taken, but the record fits the event's other records with S ≥ 0.60 and no more than 0.10 below the event's weakest automatic link, the event competes like a candidate but can only lead to `needs_review`. The decision carries `"contested": true`, and the event it points at is flagged `needs_review` too. Nothing is moved, and an event whose links a person made (confirmed) is never reopened; rejecting the review clears both flags. To fix a wrong link the member splits the record out of the event.
+
 Weights, window and thresholds are starting values, tuned on a development split of the evaluation dataset and reported on a held-out split.
 
 ## Data model changes
