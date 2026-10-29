@@ -4,6 +4,37 @@ Summary of each letter from the thesis supervisor (Dr. Bilicki Vilmos) and what 
 
 Each entry lists the points as actions; ticked actions link to where they were done.
 
+## 2026-10-29 — Reply to the Oct 28 interim note
+
+**Assessment**
+
+- The late interim note is fine. The supervisor reviewed commit `4f545c2` and the design, evaluation and AI-usage documents, and judged the work on track for M1 (2026-11-06, `v0.2.0`).
+- Volume (code, tests, data, documentation) and algorithmic depth are both sufficient; the backend does not need to be made more complex.
+- The user interface is the M2 focus: no web screen is implemented yet. For 2026-12-04, token authentication plus the core web screens W3 (event list with uncertain categories), W4 (event detail with sources, decision history and split) and W5 (review workbench with score components), with W1, W6 and W7 (sign-in, manual and file input preview). Over both semesters, 6–8 domain screen families.
+
+**Decisions approved**
+
+- SQLite kept until M1; the FastAPI/PostgreSQL switch after M1 is low risk, but keep it in a strict time box so it does not take time from authentication and W3–W5.
+- Notification time: store the Android `post_time_ms` as a UTC instant and project it to the Europe/Budapest calendar day when comparing with date-only manual entries. Record it in the time-zone ADR.
+- Marketing filtering by positive transaction patterns (allow-list), silence as a format-change signal, reading active notifications on reconnect, and on-phone masking.
+- `transfer` direction excluded from M2 totals, linking both sides left for Szakdolgozat II.; the HTTPS tunnel started only temporarily and only after token authentication.
+
+**Reverse-order limitation (IKEA case)**
+
+Compare two directions on the development split:
+
+1. A stricter gate for information-poor records: when one side is date-only or the merchant information is weak, require more for `auto_linked`, so the record goes to `needs_review` more easily.
+2. Reopen a contested link: when a later candidate from the same channel scores higher than, or within the runner-up margin of, an automatic link that no person has confirmed, do not move the old record silently; open the event for review (`needs_review`) and log it in the decision log. Invariant: automation never overrides a decision a person confirmed or rejected.
+
+Literature for the thesis: the three-zone decision model is a domain adaptation of Fellegi and Sunter, "A Theory for Record Linkage" (JASA, 1969); for incremental and order-dependent entity resolution, Christophides et al., https://arxiv.org/abs/1905.06397.
+
+**Actions**
+
+- [ ] M1 (2026-11-06): the reverse-order case investigated with both directions compared on the development split, the time-zone ADR, and an updated evaluation summary ([M1](milestones/m1-2026-11-06-working-core.md)).
+- [ ] M2 (2026-12-04): token authentication and web screens W3, W4, W5, then W1, W6, W7 ([user interface](../design/user-interface.md)).
+- [ ] Turn one recurring, discipline-heavy FinSync workflow into a versioned agent skill in the repository, with clear input, output, prohibitions and mandatory human checkpoints. Candidates: a bank-notification anonymiser and parser checker that guarantees no personal financial data reaches tests or docs, or an evaluation skill that enforces the dev/test split. Log what it sped up, where it failed and how it was refined, for the methods chapter.
+- [ ] Keep documentation in step with development. By the end of Szakdolgozat I. the six design views form one coherent frame: use-case diagram, W1–W8 and A1–A2 page flow, matching and review flowchart, event and decision state diagram, layered architecture diagram, and a security diagram of token authentication and group isolation.
+
 ## 2026-10-16 — Reply to the M0 e-mail
 
 **Decisions**
@@ -21,12 +52,12 @@ Each entry lists the points as actions; ticked actions link to where they were d
 
 **Actions**
 
-- [ ] Hand-decided examples first, at least: repeated submission, reverse arrival order, date-only manual entry, two separate purchases with the same amount ([matching design](../design/transaction-matching.md#testing-and-evaluation)).
-- [ ] M1 results: matching vs. naive baseline on the same data, false merges reported separately ([M1](milestones/m1-2026-11-06-working-core.md)).
+- [x] Hand-decided examples first, at least: repeated submission, reverse arrival order, date-only manual entry, two separate purchases with the same amount ([matching design](../design/transaction-matching.md#testing-and-evaluation)) (Oct 17).
+- [x] M1 results: matching vs. naive baseline on the same data, false merges reported separately ([M1](milestones/m1-2026-11-06-working-core.md)) (Oct 18, [results](../evaluation/results/)).
 - [ ] Totals follow confirm, reject and split (test and web app).
 - [x] Carry over the fixes from PR #2 (whole-word categorization) and PR #3 (atomic bulk import, amount validation) (PR #7).
-- [ ] Interim note to the supervisor by 2026-10-22: state of matching, and whether the SQLite fallback was needed. Not an official deadline.
-- [ ] Answer the supervisor's question: is this order realistic with Friday and Saturday as working days, and is any side track too much for the November core?
+- [x] Interim note to the supervisor by 2026-10-22: state of matching, and whether the SQLite fallback was needed. Not an official deadline. Sent late, on 2026-10-28 ([e-mail](../releases/status-emails/2026-10-28-koztes-jelzes.md)).
+- [x] Answer the supervisor's question: is this order realistic with Friday and Saturday as working days, and is any side track too much for the November core? Answered in the Oct 28 e-mail.
 - Contact: progress e-mails with repository link and commit id, sent directly from Gmail.
 
 ## 2026-10-04 — Topic feedback (before M0)
