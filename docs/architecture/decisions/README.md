@@ -13,6 +13,7 @@ Each significant, hard-to-reverse decision gets one short record: the context, t
 | [0005](0005-web-client-first.md) | Web app as the main user interface, built before the Android app | Proposed |
 | [0006](0006-framework-based-stack.md) | Framework-based stack: FastAPI, PostgreSQL, React | Proposed |
 | [0007](0007-how-external-clients-reach-the-api.md) | How the Google Sheets script and the Android app reach the API | Accepted |
+| [0008](0008-notification-time-and-calendar-day.md) | Notification time and the calendar day | Proposed |
 
 ## Template
 
