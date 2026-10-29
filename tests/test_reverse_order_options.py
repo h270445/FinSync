@@ -29,7 +29,8 @@ class StrictGateDecisionTest(unittest.TestCase):
         no_merchant = Features(amount=1.0, time=1.0, merchant=0.5, delta="0d", score=0.85)
         minute_pair = Features(amount=1.0, time=0.5, merchant=1.0, delta="24.00h", score=0.85)
         same_day = Features(amount=1.0, time=1.0, merchant=1.0, delta="0d", score=1.0)
-        self.assertEqual(decide({1: day_late}).outcome, "auto_linked")
+        with options():
+            self.assertEqual(decide({1: day_late}).outcome, "auto_linked")
         with options(strict=True):
             self.assertEqual(decide({1: day_late}).outcome, "needs_review")
             self.assertEqual(decide({1: no_merchant}).outcome, "needs_review")
@@ -79,7 +80,8 @@ class ReverseOrderIkeaTest(unittest.TestCase):
         return {event.id: event.review_state for event in self.service.list_group_events("user-a", "group-1")}
 
     def test_without_either_option_the_late_entry_is_merged_silently(self) -> None:
-        late_entry, first_notification = self._replay()
+        with options():
+            late_entry, first_notification = self._replay()
         self.assertEqual(late_entry.match_outcome, "auto_linked")
         self.assertEqual(first_notification.match_outcome, "separate")
         self.assertEqual(set(self._review_states().values()), {"clear"})

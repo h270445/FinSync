@@ -18,7 +18,9 @@ from finsync.evaluation.runner import (
 )
 from finsync.matching import decision as decision_rules
 
-DATASET = Path("tests/data/matching_eval.csv")
+DATASET = Path("tests/data/matching_eval_v2.csv")
+# The auto-link threshold of rules-2, where the reverse-order options were compared (2026-10-29).
+COMPARE_AT = 0.85
 
 
 def evaluate(rows: Sequence[Row], dataset: Path) -> str:
@@ -34,7 +36,7 @@ def evaluate(rows: Sequence[Row], dataset: Path) -> str:
     for name, (strict, reopen) in OPTIONS.items():
         with options(strict, reopen):
             for split in compared:
-                compared[split] += [run_matcher(by_split[split], split, order, threshold, name) for order in ORDERS]
+                compared[split] += [run_matcher(by_split[split], split, order, COMPARE_AT, name) for order in ORDERS]
 
     lines = [
         "# Matching evaluation",
@@ -82,13 +84,14 @@ def evaluate(rows: Sequence[Row], dataset: Path) -> str:
         lines.append("None.")
     lines += [
         "",
-        f"## 5. Reverse-order options at {threshold:.2f}",
+        f"## 5. Reverse-order options at {COMPARE_AT:.2f}",
         "",
         "A: an information-poor pair (a date-only side, or a merchant score of 0.5) needs "
         f"{decision_rules.POOR_PAIR_AUTO_LINK:.2f} to link automatically. "
         "B: a record whose channel is taken in an automatically linked event, and that fits the event as well "
         "as its weakest automatic link, opens that event for review; nothing is moved. "
-        "Both are off in `rules-2`.",
+        "Both are on in `rules-3`; `rules-2` had neither. They are compared at the `rules-2` threshold, "
+        "because at the stricter-gate score or above option A changes nothing.",
         "",
         "### Development split",
         "",

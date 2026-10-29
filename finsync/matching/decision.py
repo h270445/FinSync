@@ -4,19 +4,19 @@ from dataclasses import dataclass
 
 from finsync.matching.scoring import Features
 
-MATCHER_VERSION = "rules-2"
+MATCHER_VERSION = "rules-3"
 AUTO_LINK_THRESHOLD = 0.85
 REVIEW_THRESHOLD = 0.60
 RUNNER_UP_MARGIN = 0.10
 
-# Two candidate fixes for the reverse-order case, off by default until one is chosen
-# (supervisor feedback of 2026-10-29). The evaluation runner switches them on to compare them.
+# Two fixes for the reverse-order case (supervisor feedback of 2026-10-29), both on since rules-3
+# (author's decision, 2026-10-29). The evaluation runner switches them off to compare.
 # A: an information-poor pair (see `information_poor`) needs this score to link automatically.
-STRICT_POOR_GATE = False
+STRICT_POOR_GATE = True
 POOR_PAIR_AUTO_LINK = 0.95
 # B: a later record that would fit an automatically linked, unconfirmed event as well as its weakest
 # automatic link does reopens that event for review instead of being kept apart silently.
-REOPEN_CONTESTED = False
+REOPEN_CONTESTED = True
 
 
 @dataclass(frozen=True)

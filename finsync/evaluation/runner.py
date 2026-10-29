@@ -22,8 +22,8 @@ from finsync.storage import FinSyncStorage
 SWEEP = (0.70, 0.75, 0.80, 0.85, 0.90, 0.95)
 ORDERS = ("arrival", "reverse")
 # The two candidate fixes for the reverse-order case (decision.STRICT_POOR_GATE, decision.REOPEN_CONTESTED).
-OPTIONS = {"rules-2": (False, False), "A strict gate": (True, False), "B reopen": (False, True),
-           "A+B": (True, True)}
+OPTIONS = {"neither (rules-2)": (False, False), "A strict gate": (True, False), "B reopen": (False, True),
+           "A+B (rules-3)": (True, True)}
 
 
 @dataclass(frozen=True)
