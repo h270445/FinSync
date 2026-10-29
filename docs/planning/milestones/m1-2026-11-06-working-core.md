@@ -27,7 +27,7 @@ A banking notification and a manual entry for the same purchase arrive through t
 
 - [x] Fixes from PR #2 (whole-word categorization) and PR #3 (atomic bulk import, amount validation) carried over to the current layout.
 - [x] Schema versioning and migration (`events`, `match_decisions`, new columns).
-- [ ] Notification time-zone decision recorded ([ADR 0008](../../architecture/decisions/0008-notification-time-and-calendar-day.md), proposed 2026-10-29).
+- [x] Notification time-zone decision recorded ([ADR 0008](../../architecture/decisions/0008-notification-time-and-calendar-day.md), accepted 2026-10-29).
 - [x] `finsync/matching/` with unit tests.
 - [x] Matching wired into all ingest paths; `event_id`, `match_outcome` in responses.
 - [x] `GET /v1/events`.
