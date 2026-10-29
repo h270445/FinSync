@@ -7,16 +7,25 @@ import tempfile
 import unittest
 
 from finsync.core import FinSyncService
-from finsync.evaluation.generate import GROUP_ID, MEMBERS, SCENARIOS, generate, read_csv
+from finsync.evaluation.generate import GROUP_ID, MEMBERS, SCENARIOS, generate, generate_v2, read_csv
 from finsync.storage import FinSyncStorage
 
 DATASET = Path(__file__).parent / "data" / "matching_eval.csv"
+DATASET_V2 = Path(__file__).parent / "data" / "matching_eval_v2.csv"
 
 
 class MatchingDatasetTest(unittest.TestCase):
     def test_committed_dataset_matches_the_generator(self) -> None:
         # Regenerate with: python -m finsync.evaluation.generate
         self.assertEqual(read_csv(DATASET), generate(100, 2026))
+        # Regenerate with: python -m finsync.evaluation.generate --version 2
+        self.assertEqual(read_csv(DATASET_V2), generate_v2(100, 2026))
+
+    def test_version_2_keeps_version_1_record_for_record(self) -> None:
+        v1, v2 = read_csv(DATASET), read_csv(DATASET_V2)
+        self.assertEqual(v2[: len(v1)], v1)
+        self.assertEqual(len({row.record_id for row in v2}), len(v2))
+        self.assertEqual(len({row.true_event for row in v2}), len({row.true_event for row in v1}) + 16)
 
     def test_generation_is_reproducible_and_seed_dependent(self) -> None:
         self.assertEqual(generate(60, 7), generate(60, 7))
