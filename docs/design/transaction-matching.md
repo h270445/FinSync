@@ -1,6 +1,6 @@
 # Transaction matching and duplicate detection
 
-- Status: **Implemented on SQLite** (matching steps 1–5 and the review endpoints since 2026-10-17; dataset v1, evaluation runner and first results since 2026-10-18, [results](../evaluation/results/2026-10-18-matching-rules-2.md)); **Accepted** by the author on 2026-10-26
+- Status: **Implemented on SQLite** (matching steps 1–5 and the review endpoints since 2026-10-17; dataset v1, evaluation runner and first results since 2026-10-18, [results](../evaluation/results/2026-10-18-matching-rules-2.md); `rules-3` and dataset v2 since 2026-10-29, [results](../evaluation/results/2026-10-29-matching-rules-3.md)); **Accepted** by the author on 2026-10-26
 - Date: 2026-10-09
 - Decision record: [ADR 0004](../architecture/decisions/0004-event-based-transaction-matching.md)
 
@@ -115,8 +115,8 @@ The new record is scored against each record in a candidate event; the best pair
 
 | Condition | Outcome |
 | --- | --- |
-| Best S ≥ 0.85 and no runner-up within 0.10 | `auto_linked` to that event |
-| Best S in [0.60, 0.85), or two candidates within 0.10 | `needs_review`; the record gets its own event until a member decides |
+| Best S ≥ 0.95 and no runner-up within 0.10 | `auto_linked` to that event |
+| Best S in [0.60, 0.95), or two candidates within 0.10 | `needs_review`; the record gets its own event until a member decides |
 | Best S < 0.60, or no candidate | `separate`, new event |
 
 Two further rules since `rules-3` (2026-10-29), for the order dependence the evaluation found ([options compared](../evaluation/results/2026-10-29-matching-rules-3.md)):
@@ -124,7 +124,7 @@ Two further rules since `rules-3` (2026-10-29), for the order dependence the eva
 - **Strict gate for information-poor pairs (A).** When the best pair has a date-only side or a merchant score of 0.5, `auto_linked` needs S ≥ 0.95; otherwise the record goes to `needs_review`.
 - **Reopen a contested link (B).** When an event is blocked for the new record because its channel is taken, but the record fits the event's other records with S ≥ 0.60 and no more than 0.10 below the event's weakest automatic link, the event competes like a candidate but can only lead to `needs_review`. The decision carries `"contested": true`, and the event it points at is flagged `needs_review` too. Nothing is moved, and an event whose links a person made (confirmed) is never reopened; rejecting the review clears both flags. To fix a wrong link the member splits the record out of the event.
 
-Weights, window and thresholds are starting values, tuned on a development split of the evaluation dataset and reported on a held-out split.
+The threshold was 0.85 in `rules-2`; `rules-3` uses 0.95, chosen on the development split of dataset v2. Weights, window and thresholds are starting values, tuned on a development split of the evaluation dataset and reported on a held-out split.
 
 ## Data model changes
 
@@ -177,7 +177,7 @@ Every endpoint keeps `ensure_authorized(user_id, group_id)`; every lookup by id 
 
 ## Testing and evaluation
 
-- **Unit tests** (`tests/test_matching.py`): normalisation, fingerprint stability, each blocking gate, score boundaries at 0.60 and 0.85, runner-up margin.
+- **Unit tests** (`tests/test_matching.py`): normalisation, fingerprint stability, each blocking gate, score boundaries at 0.60 and 0.95, runner-up margin; the `rules-3` options in `tests/test_reverse_order_options.py`.
 - **Service tests** (`tests/test_matching_service.py`, `tests/test_review.py`), one per scenario:
 
 | Scenario | Expected | Test |
@@ -217,4 +217,4 @@ Each step is a separate pull request with its tests; dates are in the [roadmap](
 2. ~~`finsync/matching/` with normalisation, fingerprint, blocking, scoring and decision, plus unit tests.~~ Done 2026-10-17.
 3. ~~Wire matching into the three ingest paths; atomic bulk import; `event_id` and `match_outcome` in responses.~~ Done 2026-10-17, with `GET /v1/events`.
 4. ~~Review and correction endpoints with service and permission tests.~~ Done 2026-10-17.
-5. ~~Synthetic evaluation dataset and the evaluation runner; tune on the development split, report on the test split.~~ Done 2026-10-18 (`rules-2`, auto-link threshold 0.85).
+5. ~~Synthetic evaluation dataset and the evaluation runner; tune on the development split, report on the test split.~~ Done 2026-10-18 (`rules-2`, auto-link threshold 0.85). Since 2026-10-29 `rules-3` with dataset v2, the strict gate, contested-link reopening and threshold 0.95 ([results](../evaluation/results/2026-10-29-matching-rules-3.md)).
