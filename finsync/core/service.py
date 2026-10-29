@@ -444,7 +444,7 @@ class FinSyncService:
 def _contested(session: StorageSession, blocked_by_event: dict[int, Any]) -> dict[int, Any]:
     """Events whose channel slot is taken but which the record fits as well as their weakest automatic link.
 
-    Only links made by the matcher can be contested: an event whose links a person made is never reopened.
+    Only links made by the matcher can be contested: an event holding a link a person confirmed is never reopened.
     """
     contested = {}
     for event_id, features in blocked_by_event.items():
@@ -503,6 +503,8 @@ def _retarget_reviews(session: StorageSession, group_id: str, emptied_event: int
             decided_by="system",
             supersedes_id=int(review["id"]),
         )
+    # A retargeted contested review flags its new candidate event too.
+    session.refresh_review_state(new_event)
 
 
 def _store_new_event(

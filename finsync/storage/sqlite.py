@@ -474,7 +474,19 @@ class StorageSession:
         return row is not None
 
     def automatic_link_scores(self, event_id: int) -> list[float]:
-        """Scores of the automatic links that put a current record into this event and no person has decided."""
+        """Scores of the automatic links that put a current record into this event.
+
+        Empty when a person confirmed a link into the event: such an event is never reopened.
+        """
+        if self._connection.execute(
+            """
+            SELECT 1 FROM match_decisions d JOIN transactions t ON t.id = d.transaction_id
+            WHERE t.event_id = ? AND d.candidate_event_id = ? AND d.outcome = 'confirmed'
+              AND NOT EXISTS (SELECT 1 FROM match_decisions later WHERE later.supersedes_id = d.id)
+            """,
+            (event_id, event_id),
+        ).fetchone():
+            return []
         rows = self._connection.execute(
             """
             SELECT d.score FROM match_decisions d JOIN transactions t ON t.id = d.transaction_id

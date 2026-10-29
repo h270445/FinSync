@@ -124,6 +124,19 @@ class ReverseOrderIkeaTest(unittest.TestCase):
         self.assertEqual(self._review_states()[founder.event_id], "clear")
         self.assertNotIn("contested", self.storage.list_decisions("group-1")[-1]["features"] or {})
 
+    def test_an_event_with_a_confirmed_link_is_not_reopened_by_its_automatic_links(self) -> None:
+        with options(strict=True, reopen=True):
+            founder = self._manual("user-b", "2026-09-06")
+            self.assertEqual(self._notification("2026-09-06 09:37").match_outcome, "auto_linked")
+            self._manual("user-a", "2026-09-05")
+            [review] = self.service.list_open_reviews("user-a", "group-1")
+            self.service.confirm_match("user-a", "group-1", review.decision_id)
+            # The notification channel is taken by an automatic link, but the event also holds a person's link.
+            later = self._notification("2026-09-05 11:20")
+        self.assertNotEqual(later.event_id, founder.event_id)
+        self.assertNotIn("contested", self.storage.list_decisions("group-1")[-1]["features"] or {})
+        self.assertEqual(self._review_states()[founder.event_id], "clear")
+
 
 if __name__ == "__main__":
     unittest.main()
