@@ -27,7 +27,7 @@ A banking notification and a manual entry for the same purchase arrive through t
 
 - [x] Fixes from PR #2 (whole-word categorization) and PR #3 (atomic bulk import, amount validation) carried over to the current layout.
 - [x] Schema versioning and migration (`events`, `match_decisions`, new columns).
-- [ ] Notification time-zone decision recorded ([ADR 0008](../../architecture/decisions/0008-notification-time-and-calendar-day.md), proposed 2026-10-29).
+- [x] Notification time-zone decision recorded ([ADR 0008](../../architecture/decisions/0008-notification-time-and-calendar-day.md), accepted 2026-10-29).
 - [x] `finsync/matching/` with unit tests.
 - [x] Matching wired into all ingest paths; `event_id`, `match_outcome` in responses.
 - [x] `GET /v1/events`.
@@ -36,4 +36,5 @@ A banking notification and a manual entry for the same purchase arrive through t
 - [x] Evaluation runner and first results (Oct 18).
 - [ ] Side tracks: Android notification-listener spike on a real device (spike app and emulator rounds done 2026-10-26, [findings](../../design/android-notification-spike.md); phone test 2026-10-27); ADR for how the Sheets script reaches the API (done 2026-10-24, [ADR 0007](../../architecture/decisions/0007-how-external-clients-reach-the-api.md)).
 - [x] Docs updated (API reference, storage README, design status → Accepted on 2026-10-26).
+- [x] Reverse-order case investigated as the supervisor asked: two fixes compared on the development split of dataset v2, `rules-3` with both on and threshold 0.95 (2026-10-29, [results](../../evaluation/results/2026-10-29-matching-rules-3.md)).
 - [ ] Release notes, tag `v0.2.0`, e-mail.

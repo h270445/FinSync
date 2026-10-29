@@ -258,6 +258,24 @@ class _Builder:
         self.manual(event, "very_late_manual", "B", when + timedelta(days=5), amount, description,
                     merchant=name, date_only=True, arrives=when + timedelta(days=5))
 
+    def same_amount_neighbour_days(self) -> None:
+        """Two same-amount purchases in one shop two days apart, each with a date-only manual entry.
+
+        Member A logs the first one a day late, on the day between the two purchases, so in reverse
+        order the late entry fits the second purchase as well as its own (the 2026-10-18 IKEA case).
+        """
+        when = self._moment()
+        bank, name, description, amounts = self._merchant()
+        amount = -Decimal(self.rng.choice(amounts))
+        first, second = self._new_event(), self._new_event()
+        self.notification(first, "same_amount_neighbour_days", "B", when, bank, amount)
+        self.manual(first, "same_amount_neighbour_days", "B", when + timedelta(days=1), amount, description,
+                    merchant=name, member=MEMBERS[0], date_only=True, arrives=when + timedelta(days=1))
+        later = when + timedelta(days=2, minutes=self.rng.randint(-120, 120))
+        self.notification(second, "same_amount_neighbour_days", "B", later, bank, amount)
+        self.manual(second, "same_amount_neighbour_days", "B", later, amount, description, merchant=name,
+                    member=MEMBERS[1], date_only=True)
+
 
 # Relative frequency of each scenario. Singletons dominate, as in a real household.
 SCENARIOS: tuple[tuple[str, int], ...] = (
@@ -301,6 +319,25 @@ def generate(records: int = 100, seed: int = 2026) -> list[Row]:
     return [Row(**{**asdict(row), "record_id": f"R{index:04d}"}) for index, row in enumerate(ordered, start=1)]
 
 
+# Version 2 adds cases of these scenarios to version 1, which stays unchanged record for record.
+V2_ADDITIONS: tuple[tuple[str, int], ...] = (("same_amount_neighbour_days", 8),)
+
+
+def generate_v2(records: int = 100, seed: int = 2026) -> list[Row]:
+    """Version 1 followed by the V2_ADDITIONS cases, numbered after it and drawn from their own seed."""
+    base = generate(records, seed)
+    builder = _Builder(seed + 1)
+    builder._cases = len({row.case for row in base})
+    builder._events = len({row.true_event for row in base})
+    for name, count in V2_ADDITIONS:
+        for _ in range(count):
+            builder.start_case()
+            getattr(builder, name)()
+    added = sorted(builder.rows, key=lambda row: (row.arrives_at, row.true_event))
+    return base + [Row(**{**asdict(row), "record_id": f"R{index:04d}"})
+                   for index, row in enumerate(added, start=len(base) + 1)]
+
+
 def write_csv(rows: list[Row], path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as handle:
@@ -318,9 +355,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Generate the synthetic matching dataset.")
     parser.add_argument("--records", type=int, default=100)
     parser.add_argument("--seed", type=int, default=2026)
-    parser.add_argument("--out", type=Path, default=Path("tests/data/matching_eval.csv"))
+    parser.add_argument("--version", type=int, choices=(1, 2), default=2)
+    parser.add_argument("--out", type=Path)
     args = parser.parse_args()
-    rows = generate(args.records, args.seed)
+    rows = (generate_v2 if args.version == 2 else generate)(args.records, args.seed)
+    args.out = args.out or Path("tests/data/matching_eval_v2.csv" if args.version == 2 else "tests/data/matching_eval.csv")
     write_csv(rows, args.out)
     events = len({row.true_event for row in rows})
     print(f"Wrote {len(rows)} records describing {events} purchases to {args.out}")

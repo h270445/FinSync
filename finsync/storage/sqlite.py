@@ -433,15 +433,19 @@ class StorageSession:
         )
 
     def refresh_review_state(self, event_id: int) -> None:
-        """needs_review while a record of the event has an undecided review; empty once all records left."""
+        """needs_review while a record of the event has an undecided review, or a later record contests one of
+        its automatic links; empty once all records left."""
         if not self._connection.execute("SELECT 1 FROM transactions WHERE event_id = ?", (event_id,)).fetchone():
             state = "empty"
         elif self._connection.execute(
             f"""
             SELECT 1 FROM match_decisions d JOIN transactions t ON t.id = d.transaction_id
             WHERE t.event_id = ? AND {_OPEN_REVIEW}
+            UNION ALL
+            SELECT 1 FROM match_decisions d
+            WHERE d.candidate_event_id = ? AND json_extract(d.features, '$.contested') = 1 AND {_OPEN_REVIEW}
             """,
-            (event_id,),
+            (event_id, event_id),
         ).fetchone():
             state = "needs_review"
         else:
@@ -468,6 +472,31 @@ class StorageSession:
             "SELECT 1 FROM match_decisions WHERE supersedes_id = ?", (decision_id,)
         ).fetchone()
         return row is not None
+
+    def automatic_link_scores(self, event_id: int) -> list[float]:
+        """Scores of the automatic links that put a current record into this event.
+
+        Empty when a person confirmed a link into the event: such an event is never reopened.
+        """
+        if self._connection.execute(
+            """
+            SELECT 1 FROM match_decisions d JOIN transactions t ON t.id = d.transaction_id
+            WHERE t.event_id = ? AND d.candidate_event_id = ? AND d.outcome = 'confirmed'
+              AND NOT EXISTS (SELECT 1 FROM match_decisions later WHERE later.supersedes_id = d.id)
+            """,
+            (event_id, event_id),
+        ).fetchone():
+            return []
+        rows = self._connection.execute(
+            """
+            SELECT d.score FROM match_decisions d JOIN transactions t ON t.id = d.transaction_id
+            WHERE t.event_id = ? AND t.duplicate_of_id IS NULL
+              AND d.candidate_event_id = ? AND d.outcome = 'auto_linked'
+              AND NOT EXISTS (SELECT 1 FROM match_decisions later WHERE later.supersedes_id = d.id)
+            """,
+            (event_id, event_id),
+        ).fetchall()
+        return [float(row["score"]) for row in rows if row["score"] is not None]
 
     def link_decision_id(self, transaction_id: int, event_id: int) -> int | None:
         """The latest decision that put this record into this event, if the record's own decision did."""

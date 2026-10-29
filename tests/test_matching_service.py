@@ -185,7 +185,7 @@ class MatchingServiceTest(unittest.TestCase):
         self._manual()
         decisions = self.storage.list_decisions("group-1")
         self.assertEqual([d["outcome"] for d in decisions], ["separate", "auto_linked"])
-        self.assertTrue(all(d["matcher_version"] == "rules-2" for d in decisions))
+        self.assertTrue(all(d["matcher_version"] == "rules-3" for d in decisions))
 
 
 class MigrationTest(unittest.TestCase):

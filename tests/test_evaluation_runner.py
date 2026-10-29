@@ -5,7 +5,7 @@ import unittest
 
 from finsync.evaluation.__main__ import evaluate
 from finsync.evaluation.generate import Row, read_csv
-from finsync.evaluation.runner import choose_threshold, run_baseline, run_matcher, score_events, thresholds
+from finsync.evaluation.runner import choose_threshold, options, run_baseline, run_matcher, score_events, thresholds
 from finsync.matching import decision as decision_rules
 
 DATASET = Path(__file__).parent / "data" / "matching_eval.csv"
@@ -81,8 +81,12 @@ class DatasetRunTest(unittest.TestCase):
     def test_late_decathlon_entry_goes_to_review_instead_of_the_other_purchase(self) -> None:
         # R0096 is logged five days after its notification and has the same amount as a later Decathlon purchase.
         self.assertEqual(run_matcher(self.dev, "dev").outcomes["R0096"], "needs_review")
-        lowered = run_matcher(self.dev, "dev", auto_link=0.80)
+        with options(strict=False, reopen=False):
+            lowered = run_matcher(self.dev, "dev", auto_link=0.80)
         self.assertIn(("R0083", "R0088", "R0096"), [merge.record_ids for merge in lowered.false_merges])
+        # The strict gate (rules-3) keeps the date-only late entries out even at the lower threshold.
+        lowered = run_matcher(self.dev, "dev", auto_link=0.80)
+        self.assertNotIn(("R0083", "R0088", "R0096"), [merge.record_ids for merge in lowered.false_merges])
 
     def test_report_is_deterministic(self) -> None:
         self.assertEqual(evaluate(self.rows, DATASET), evaluate(self.rows, DATASET))

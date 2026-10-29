@@ -1,6 +1,6 @@
 # 0008. Notification time and the calendar day
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-29
 
 ## Context
