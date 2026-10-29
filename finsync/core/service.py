@@ -18,6 +18,7 @@ from finsync.matching import (
     fingerprint,
     score,
 )
+from finsync.matching import decision as decision_rules
 from finsync.matching.scoring import DAY_WINDOW_DAYS
 from finsync.storage import (
     EventRecord,
@@ -196,6 +197,7 @@ class FinSyncService:
         new = _match_record(record, channel)
         start, end = candidate_time_range(record["happened_at"], DAY_WINDOW_DAYS + 1)
         best_by_event: dict[int, Any] = {}
+        blocked_by_event: dict[int, Any] = {}
         channels_by_event: dict[int, set[str]] = {}
         for existing in session.candidate_records(group_id, record["currency"], start, end):
             if existing.event_id is None or existing.event_id in rejected:
@@ -204,19 +206,27 @@ class FinSyncService:
                 channels_by_event[existing.event_id] = {
                     _channel(item.source, item.user_id) for item in session.event_originals(existing.event_id)
                 }
-            if channel in channels_by_event[existing.event_id]:
+            blocked = channel in channels_by_event[existing.event_id]
+            if blocked and (not decision_rules.REOPEN_CONTESTED or _channel(existing.source, existing.user_id) == channel):
                 continue
             features = score(new, _match_record_of(existing))
             if features is None:
                 continue
-            current = best_by_event.get(existing.event_id)
+            target = blocked_by_event if blocked else best_by_event
+            current = target.get(existing.event_id)
             if current is None or features.score > current.score:
-                best_by_event[existing.event_id] = features
+                target[existing.event_id] = features
 
-        decision = decide(best_by_event)
+        contested = _contested(session, blocked_by_event)
+        decision = decide(best_by_event, contested)
         details = None
         if decision.features is not None:
             details = {**decision.features.as_dict(), "runner_up": decision.runner_up}
+        if decision.event_id in contested:
+            details["contested"] = True
+            result = _store_new_event(session, record, decision.outcome, decision.event_id, details)
+            session.refresh_review_state(decision.event_id)
+            return result
         if decision.outcome == "auto_linked" and decision.event_id is not None:
             transaction_id = session.insert_record(**record, event_id=decision.event_id)
             session.refresh_event(decision.event_id)
@@ -305,8 +315,9 @@ class FinSyncService:
                 decided_by=user_id,
                 supersedes_id=decision_id,
             )
-            if record.event_id is not None:
-                session.refresh_review_state(record.event_id)
+            # A contested review also flags the event it points at.
+            for event_id in {record.event_id, decision["candidate_event_id"]} - {None}:
+                session.refresh_review_state(int(event_id))
         return StoreResult(record.id, int(record.event_id or 0), "rejected")
 
     def split_event(self, user_id: str, group_id: str, event_id: int, transaction_id: int) -> StoreResult:
@@ -428,6 +439,21 @@ class FinSyncService:
             direction=direction,
             source_ref=source_ref,
         )
+
+
+def _contested(session: StorageSession, blocked_by_event: dict[int, Any]) -> dict[int, Any]:
+    """Events whose channel slot is taken but which the record fits as well as their weakest automatic link.
+
+    Only links made by the matcher can be contested: an event whose links a person made is never reopened.
+    """
+    contested = {}
+    for event_id, features in blocked_by_event.items():
+        scores = session.automatic_link_scores(event_id)
+        if not scores or features.score < decision_rules.REVIEW_THRESHOLD:
+            continue
+        if round(min(scores) - features.score, 4) < decision_rules.RUNNER_UP_MARGIN:
+            contested[event_id] = features
+    return contested
 
 
 def _channel(source: str, user_id: str) -> str:

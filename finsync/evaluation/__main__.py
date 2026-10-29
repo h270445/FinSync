@@ -13,7 +13,9 @@ import subprocess
 from typing import Sequence
 
 from finsync.evaluation.generate import Row, read_csv
-from finsync.evaluation.runner import ORDERS, SWEEP, Result, choose_threshold, run_baseline, run_matcher
+from finsync.evaluation.runner import (
+    OPTIONS, ORDERS, SWEEP, Result, choose_threshold, options, run_baseline, run_matcher,
+)
 from finsync.matching import decision as decision_rules
 
 DATASET = Path("tests/data/matching_eval.csv")
@@ -28,6 +30,11 @@ def evaluate(rows: Sequence[Row], dataset: Path) -> str:
     test = [run_baseline(by_split["test"], "test")]
     test += [run_matcher(by_split["test"], "test", order, threshold) for order in ORDERS]
     labels = {row.record_id: row for row in rows}
+    compared = {split: [] for split in ("dev", "test")}
+    for name, (strict, reopen) in OPTIONS.items():
+        with options(strict, reopen):
+            for split in compared:
+                compared[split] += [run_matcher(by_split[split], split, order, threshold, name) for order in ORDERS]
 
     lines = [
         "# Matching evaluation",
@@ -61,15 +68,7 @@ def evaluate(rows: Sequence[Row], dataset: Path) -> str:
         "",
     ]
     merges = [(result, merge) for result in [*sweep, *test[1:]] for merge in result.false_merges]
-    if merges:
-        lines += ["| Run | Records | Scenarios | Purchases | Outcome per record |", "| --- | --- | --- | --- | --- |"]
-        lines += [
-            f"| {_run(result)} | {', '.join(merge.record_ids)} | {', '.join(merge.scenarios)} | "
-            f"{', '.join(merge.true_events)} | {', '.join(merge.outcomes)} |"
-            for result, merge in merges
-        ]
-    else:
-        lines.append("None.")
+    lines += _merge_table(merges)
     lines += ["", f"## 4. Missed duplicates on the test split at {threshold:.2f}", ""]
     missed = [(result, pair) for result in test[1:] for pair in result.missed]
     if missed:
@@ -81,7 +80,43 @@ def evaluate(rows: Sequence[Row], dataset: Path) -> str:
         ]
     else:
         lines.append("None.")
+    lines += [
+        "",
+        f"## 5. Reverse-order options at {threshold:.2f}",
+        "",
+        "A: an information-poor pair (a date-only side, or a merchant score of 0.5) needs "
+        f"{decision_rules.POOR_PAIR_AUTO_LINK:.2f} to link automatically. "
+        "B: a record whose channel is taken in an automatically linked event, and that fits the event as well "
+        "as its weakest automatic link, opens that event for review; nothing is moved. "
+        "Both are off in `rules-2`.",
+        "",
+        "### Development split",
+        "",
+        *_table(compared["dev"]),
+        "",
+        "### Test split",
+        "",
+        *_table(compared["test"]),
+        "",
+        "### False merges of the options",
+        "",
+    ]
+    lines += _merge_table([(result, merge) for split in ("dev", "test") for result in compared[split]
+                           for merge in result.false_merges])
     return "\n".join(lines) + "\n"
+
+
+def _merge_table(merges: Sequence[tuple[Result, object]]) -> list[str]:
+    if not merges:
+        return ["None."]
+    rows = ["| Run | Records | Scenarios | Purchases | Outcome per record | In review |",
+            "| --- | --- | --- | --- | --- | --- |"]
+    rows += [
+        f"| {_run(result)} | {', '.join(merge.record_ids)} | {', '.join(merge.scenarios)} | "
+        f"{', '.join(merge.true_events)} | {', '.join(merge.outcomes)} | {'yes' if merge.in_review else 'no'} |"
+        for result, merge in merges
+    ]
+    return rows
 
 
 def _table(results: Sequence[Result]) -> list[str]:
