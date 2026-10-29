@@ -1,6 +1,6 @@
 # Android notification-listener spike
 
-- Status: In progress (emulator rounds done 2026-10-26; phone test with real OTP Bank, Revolut and K&H notifications started 2026-10-27)
+- Status: **Done for M1** (2026-10-29): emulator rounds 2026-10-26, phone test with real OTP Bank and Revolut notifications 2026-10-27–28; the open checks below move to the M2 Android app
 - Date: 2026-10-24
 - Code: [clients/android/](../../clients/android/README.md)
 
@@ -10,12 +10,12 @@ The main risk of the Android client is not its UI but reading another app's bank
 
 | # | Question | Why it matters | Answer |
 | --- | --- | --- | --- |
-| 1 | Which fields (title, text, big text, sub text, ticker) carry the purchase details, and in what wording? | Parser format for one bank | – |
-| 2 | Is the time printed in the text local time, and how does it relate to `postTime`? Is there a time at all? | Time-zone ADR; `happened_at` for matching | – |
-| 3 | Does one purchase produce several posts (updates of the same key, group summaries, re-posts after restart)? | Stable `source_ref`, re-delivery vs. new purchase | – |
-| 4 | Do declined payments, refunds, transfers or balance messages arrive in a similar format? | What the parser must reject or support | Partly: OTP transfer and purchase share the amount-first format; Revolut also posts marketing on the same channel (2026-10-28), see [non-transaction notifications](#non-transaction-notifications) |
-| 5 | Does the listener keep running after a restart, with battery optimisation on, and with the app closed for a day? | Whether background collection is reliable | – |
-| 6 | How long after the purchase does the notification arrive? | Matching time window | – |
+| 1 | Which fields (title, text, big text, sub text, ticker) carry the purchase details, and in what wording? | Parser format for one bank | OTP Bank: `title` names the kind, `text` (= `bigText`) starts with the signed amount and currency; the merchant follows in a sentence, the counterparty after a comma. One parser, two patterns ([2026-10-28](#2026-10-28-first-real-card-purchase-otp-bank-and-a-day-of-listening)) |
+| 2 | Is the time printed in the text local time, and how does it relate to `postTime`? Is there a time at all? | Time-zone ADR; `happened_at` for matching | No time in the text; `post_time_ms` is the time ([ADR 0008](../architecture/decisions/0008-notification-time-and-calendar-day.md)) |
+| 3 | Does one purchase produce several posts (updates of the same key, group summaries, re-posts after restart)? | Stable `source_ref`, re-delivery vs. new purchase | One post per OTP transaction, no update or group summary; re-reads on reconnect repeat `key` and `post_time_ms`. The nine-digit number at the end of the `tag` is the `source_ref` candidate |
+| 4 | Do declined payments, refunds, transfers or balance messages arrive in a similar format? | What the parser must reject or support | Partly: OTP transfer and purchase share the amount-first format; Revolut also posts marketing on the same channel (2026-10-28), see [non-transaction notifications](#non-transaction-notifications). No declined payment, refund, incoming transfer or K&H notification was captured |
+| 5 | Does the listener keep running after a restart, with battery optimisation on, and with the app closed for a day? | Whether background collection is reliable | Partly: on the emulator it reconnects after a restart and recovers still-visible posts; on the phone about 22 hours without a disconnect under default battery settings. A phone restart was not tested |
+| 6 | How long after the purchase does the notification arrive? | Matching time window | Not measured: the text has no purchase time to compare with. Open for M2 (against the statement time) |
 
 ## Setup
 
@@ -100,15 +100,15 @@ Masked the same way (letters `a`/`A`, digits `9`); content never read in clear t
 - **Question 5:** no disconnect for about 22 hours (from the reinstall on Oct 27, 23:09 to the evening of Oct 28), without the *Never sleeping apps* setting; the purchase arrived normally.
 - **Revolut:** one notification that is not a transaction (a name in the title, a date, no amount); the parser must reject it. Revolut puts the whole notification text into the `tag`, so the `key` carries content: keys must not be logged or stored unmasked.
 
-## Next: real device (2026-10-27)
+## Real device checks (from 2026-10-27)
 
-The USB install and the live test on the Samsung are moved to 2026-10-27. The emulator answered what it can; the checks below need the real phone and bank apps.
+Done on 2026-10-27–28 unless marked open; the open checks move to the M2 Android app.
 
-- Install the debug build over USB (README, *Running it*, step 3), grant notification access and record the phone model, Android and bank app versions in *Setup*; confirm the OTP Bank package name.
-- Questions 1, 2 and 6 from a few small card purchases: which extras carry the text (`android.bigText`, `android.textLines`, `android.messages`), the printed time against `post_time_ms`, and the delay after paying.
-- Question 4 cheaply: a transfer between family members in the mobile bank shows the transfer format on both sides (outgoing and incoming) without a purchase; these are the records the planned `transfer` direction must recognise ([categorization](categorization.md#money-transfers)).
-- Question 5: a phone restart and a day with the app closed; check how long after boot `listener_connected` and `active_on_connect` appear, and whether Samsung's battery management stops the listener.
-- A single swipe dismissal (not triggered on the emulator), to see its removal reason.
+- Done: install the debug build over USB (README, *Running it*, step 3), grant notification access and record the phone model, Android and bank app versions in *Setup*; confirm the OTP Bank package name.
+- Done for 1 and 2, open for 6: questions 1, 2 and 6 from a few small card purchases: which extras carry the text (`android.bigText`, `android.textLines`, `android.messages`), the printed time against `post_time_ms`, and the delay after paying.
+- Half done (outgoing side only): question 4 cheaply, a transfer between family members in the mobile bank shows the transfer format on both sides (outgoing and incoming) without a purchase; these are the records the planned `transfer` direction must recognise ([categorization](categorization.md#money-transfers)).
+- Open (a day of listening done, restart not): question 5, a phone restart and a day with the app closed; check how long after boot `listener_connected` and `active_on_connect` appear, and whether Samsung's battery management stops the listener.
+- Open: a single swipe dismissal (not triggered on the emulator), to see its removal reason.
 
 ## Non-transaction notifications
 
@@ -124,4 +124,10 @@ Bank apps also post marketing, news and security messages; the Revolut notificat
 
 ## Consequences
 
-To be written when the questions are answered: the supported format, the `source_ref` rule, the time-zone decision and any reliability limits for the M2 app.
+For the M2 Android app (one bank format, Nov 9–15):
+
+- **Supported format:** OTP Bank, outgoing transfer and card purchase, parsed from `title` and `text`: signed amount and currency first, merchant or counterparty by a pattern per kind. Anything that does not match a known pattern is dropped on the phone (see above).
+- **`source_ref` (proposed):** the transaction number at the end of the notification `tag`; `key` plus `post_time_ms` identifies a re-read of the same post.
+- **Time:** `posted_at` from `post_time_ms`, stored as UTC and compared by Europe/Budapest calendar day ([ADR 0008](../architecture/decisions/0008-notification-time-and-calendar-day.md)).
+- **Reliability:** read still-visible notifications on every reconnect; show the last `listener_connected` time and per-bank counts on the status screen. Not yet known: behaviour after a phone restart, Samsung's battery management over several days, the delay after paying, and the formats of incoming transfers, refunds, declined payments and K&H.
+- **Privacy:** in the spike, only notifications without an amount and currency are stored masked; an amount-bearing non-transaction (for example a referral offer with "€10") passes the heuristic and is kept in full on the phone. The M2 app's known-pattern rule closes this. Captures never leave the phone, and nothing from it enters the repository except masked formats.

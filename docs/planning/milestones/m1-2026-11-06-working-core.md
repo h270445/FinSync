@@ -34,7 +34,7 @@ A banking notification and a manual entry for the same purchase arrive through t
 - [x] Review and correction endpoints (planned for Nov 2–8, done early on Oct 17).
 - [x] Synthetic dataset v1 (~100 labelled records) and its description.
 - [x] Evaluation runner and first results (Oct 18).
-- [ ] Side tracks: Android notification-listener spike on a real device (spike app and emulator rounds done 2026-10-26, [findings](../../design/android-notification-spike.md); phone test 2026-10-27); ADR for how the Sheets script reaches the API (done 2026-10-24, [ADR 0007](../../architecture/decisions/0007-how-external-clients-reach-the-api.md)).
+- [x] Side tracks: Android notification-listener spike on a real device (spike app and emulator rounds done 2026-10-26, phone test 2026-10-27–28, closed for M1 on 2026-10-29, [findings](../../design/android-notification-spike.md)); ADR for how the Sheets script reaches the API (done 2026-10-24, [ADR 0007](../../architecture/decisions/0007-how-external-clients-reach-the-api.md)).
 - [x] Docs updated (API reference, storage README, design status → Accepted on 2026-10-26).
 - [x] Reverse-order case investigated as the supervisor asked: two fixes compared on the development split of dataset v2, `rules-3` with both on and threshold 0.95 (2026-10-29, [results](../../evaluation/results/2026-10-29-matching-rules-3.md)).
 - [ ] Release notes, tag `v0.2.0`, e-mail.
