@@ -15,13 +15,13 @@ The core flows committed for the semester work together, with proper data handli
 - [ ] Demo: a notification on the phone and the same purchase imported from a spreadsheet appear as one event, while two separate purchases of the same amount on the same day stay two events.
 - [ ] Uncertain matches can be listed, confirmed and rejected in the web app; a wrong link can be split; every action is logged and supersedes the previous decision.
 - [ ] Requests are authenticated: per-user API tokens for the Android app (and Sheets script), password login with a secure session cookie and CSRF protection for the web app; client-supplied identity headers are no longer trusted.
-- [ ] Every endpoint has a cross-group access test (403/404, nothing written).
+- [x] Every endpoint has a cross-group access test (403/404, nothing written) (`tests/test_auth.py`, 2026-11-02).
 - [ ] Malformed input, oversized bodies and failing bulk imports leave the database unchanged and return a clear 400.
 - [ ] The LLM categorizer runs behind the same interface as the rule-based one and its output is validated against the category list.
 
 ## Checklist
 
-- [ ] Authentication and request size limits.
+- [ ] Authentication and request size limits (API tokens done 2026-11-02, [ADR 0009](../../architecture/decisions/0009-api-tokens.md); web password login and size limits open).
 - [ ] Review and correction endpoints with tests.
 - [ ] Web app: event list, event detail with split and category correction, review queue (manual entry, file import and token management if time allows).
 - [ ] Android app (notification listener, token setup, sending, retry) with its README.

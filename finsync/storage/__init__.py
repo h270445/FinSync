@@ -1,6 +1,7 @@
 """Persistence layer. The current backend is SQLite."""
 
 from finsync.storage.sqlite import (
+    ApiTokenRecord,
     EventRecord,
     FinSyncStorage,
     StorageSession,
@@ -8,4 +9,4 @@ from finsync.storage.sqlite import (
     candidate_time_range,
 )
 
-__all__ = ["EventRecord", "FinSyncStorage", "StorageSession", "TransactionRecord", "candidate_time_range"]
+__all__ = ["ApiTokenRecord", "EventRecord", "FinSyncStorage", "StorageSession", "TransactionRecord", "candidate_time_range"]

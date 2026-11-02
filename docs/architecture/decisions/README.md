@@ -14,6 +14,7 @@ Each significant, hard-to-reverse decision gets one short record: the context, t
 | [0006](0006-framework-based-stack.md) | Framework-based stack: FastAPI, PostgreSQL, React | Proposed |
 | [0007](0007-how-external-clients-reach-the-api.md) | How the Google Sheets script and the Android app reach the API | Accepted |
 | [0008](0008-notification-time-and-calendar-day.md) | Notification time and the calendar day | Accepted |
+| [0009](0009-api-tokens.md) | API tokens: one member, one group, stored as a hash | Proposed |
 
 ## Template
 

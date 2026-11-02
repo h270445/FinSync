@@ -8,17 +8,17 @@ A single Python process using only the standard library:
 
 ```text
 HTTP client
-    │  X-User-Id / X-Group-Id headers, JSON body
+    │  Authorization: Bearer <API token>, JSON body
     ▼
 finsync.api          ThreadingHTTPServer + FinSyncRequestHandler
     │
     ▼
-finsync.core         FinSyncService: authorization check, validation, use cases
+finsync.core         TokenService: token → member and group; FinSyncService: membership check, validation, use cases
     │
     ├──► finsync.ingestion       notification text parser
     ├──► finsync.categorization  keyword rules
     ├──► finsync.matching        normalise, fingerprint, score, decide (pure rules)
-    └──► finsync.storage         SQLite: group_memberships, transactions, events, match_decisions
+    └──► finsync.storage         SQLite: group_memberships, api_tokens, transactions, events, match_decisions
 ```
 
 Each incoming record is stored unchanged and linked to an event: an exact re-delivery joins its original, a confident cross-source match is linked, an uncertain one is flagged for review, anything else gets its own event. Every decision is logged, and a member can confirm, reject or split through the review endpoints.

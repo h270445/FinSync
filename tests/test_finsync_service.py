@@ -144,15 +144,11 @@ class FinSyncServiceTest(unittest.TestCase):
         import json
         import threading
 
-        # finsync.api opens a default database at import time; keep it inside the tempdir.
-        previous_cwd = os.getcwd()
-        os.chdir(self.tempdir.name)
-        try:
-            from finsync.api import FinSyncRequestHandler
-        finally:
-            os.chdir(previous_cwd)
+        from finsync.api import create_handler
+        from finsync.core import TokenService
 
-        handler = type("Handler", (FinSyncRequestHandler,), {"service": self.service})
+        token, _ = TokenService(self.storage).create("user-1", "group-1", "test")
+        handler = create_handler(self.storage)
         handler.log_message = lambda *args: None
         server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
         thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -163,7 +159,7 @@ class FinSyncServiceTest(unittest.TestCase):
                 "POST",
                 "/v1/transactions/bulk",
                 body=json.dumps({"rows": [self._row(), "oops"]}),
-                headers={"X-User-Id": "user-1", "X-Group-Id": "group-1", "Content-Type": "application/json"},
+                headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
             )
             response = connection.getresponse()
             body = json.loads(response.read())

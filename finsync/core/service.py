@@ -79,9 +79,6 @@ class FinSyncService:
     def __init__(self, storage: FinSyncStorage) -> None:
         self._storage = storage
 
-    def bootstrap_demo_membership(self) -> None:
-        self._storage.add_group_membership("demo-user", "demo-group")
-
     def ensure_authorized(self, user_id: str, group_id: str) -> None:
         if not self._storage.is_user_in_group(user_id, group_id):
             raise AuthorizationError("User is not authorized for this group")
