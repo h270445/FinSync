@@ -34,8 +34,11 @@ def main(argv: list[str] | None = None) -> int:
     tokens = TokenService(storage)
 
     if args.command == "create":
-        if args.user.strip() and args.group.strip():
-            storage.add_group_membership(args.user.strip(), args.group.strip())
+        # Validate everything before touching membership, so a rejected command changes nothing.
+        if not args.user.strip() or not args.group.strip() or not args.name.strip():
+            print("error: user, group and name are required", file=sys.stderr)
+            return 2
+        storage.add_group_membership(args.user.strip(), args.group.strip())
         try:
             token, record = tokens.create(args.user, args.group, args.name)
         except ValueError as error:

@@ -96,6 +96,17 @@ class TokenServiceTest(unittest.TestCase):
         token, _ = TokenService(FinSyncStorage(self.db_path)).create("user-a", "group-1", "phone")
         self.assertEqual(self.tokens.authenticate(f"Bearer {token}").user_id, "user-a")
 
+    def test_a_rejected_create_command_does_not_restore_membership(self) -> None:
+        from contextlib import redirect_stderr
+        import io
+
+        self.storage.remove_group_membership("user-a", "group-1")
+        with redirect_stderr(io.StringIO()):
+            code = tokens_cli(["--db", self.db_path, "create", "--user", "user-a", "--group", "group-1", "--name", " "])
+        self.assertEqual(code, 2)
+        self.assertFalse(self.storage.is_user_in_group("user-a", "group-1"))
+        self.assertEqual(self.tokens.list("user-a"), [])
+
     def test_command_line_creates_lists_and_revokes(self) -> None:
         from contextlib import redirect_stderr, redirect_stdout
         import io

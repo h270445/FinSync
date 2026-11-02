@@ -25,6 +25,7 @@ SHA-256 instead of Argon2: a slow password hash protects low-entropy secrets tha
 
 - No client can read or write another group's data by changing a header; the cross-group tests in `tests/test_auth.py` call every endpoint with another group's token and check that group 1 is unchanged.
 - Revoking a token, or removing the member from the group, stops the client at once, without touching other tokens.
+- Removing a member does not revoke their tokens: adding them back (for example with `tokens create`) makes old unrevoked tokens work again. A member who leaves for good should also have their tokens revoked; the web app's member removal will do both.
 - Each request updates the token's last use, one extra write per request; acceptable for the prototype.
 - The web app needs a second way in (password and session cookie with CSRF protection, M2); both resolve to the same member and group checks.
 - The tunnel may now be opened for tests and the demo, once request size limits are also in place (ADR 0007).
