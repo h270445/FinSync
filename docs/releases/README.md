@@ -8,7 +8,14 @@ One file per tagged milestone, plus the fix log for the final package.
 | `fix-log.md` (from M4) | Changes made in response to M3 feedback |
 | [status-emails/](status-emails/README.md) | Hungarian text of each progress e-mail to the supervisor |
 
-No release has been tagged yet. The tag plan is in [planning/milestones/](../planning/milestones/README.md).
+The tag plan is in [planning/milestones/](../planning/milestones/README.md).
+
+## Index
+
+| Tag | Milestone | Date | Notes |
+| --- | --- | --- | --- |
+| `0.1.0` | M0 — Semester commitment | 2026-10-09 | No release notes file; the M0 scope is in the [milestone](../planning/milestones/m0-2026-10-09-semester-commitment.md) and the [e-mail](status-emails/2026-10-09-m0.md). The tag was created without the `v` prefix. |
+| `v0.2.0` | M1 — Working core | 2026-11-02 | [v0.2.0.md](v0.2.0.md) |
 
 ## Release notes template
 

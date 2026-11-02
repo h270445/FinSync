@@ -16,6 +16,7 @@ The text of every progress e-mail sent to the thesis supervisor, one file per e-
 | --- | --- | --- | --- |
 | 2026-10-09 | [M0 — félévi vállalás](2026-10-09-m0.md) | `0.1.0` | Sent |
 | 2026-10-28 | [Köztes jelzés — a párosítás állása](2026-10-28-koztes-jelzes.md) (planned for Oct 22, sent later) | – | Sent |
+| 2026-11-02 | [M1 — működő mag](2026-11-02-m1.md) | `v0.2.0` | Draft |
 
 ## Template
 

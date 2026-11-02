@@ -1,8 +1,8 @@
 # M0 — Semester commitment
 
 - Deadline: 2026-10-09 23:59
-- Tag: `v0.1.0`
-- Status: in progress
+- Tag: `0.1.0` (planned as `v0.1.0`; created without the prefix)
+- Status: done
 
 ## Expected result (course)
 
@@ -20,6 +20,6 @@ Refined semester commitment: what the prototype will do, how it can be verified,
 
 - [x] Documentation structure under `docs/`, README in every code folder.
 - [x] Layered package layout ([ADR 0003](../../architecture/decisions/0003-layered-package-layout.md)).
-- [ ] Documentation pull request merged into `main`.
-- [ ] Tag `v0.1.0` created on that commit.
-- [ ] Milestone e-mail sent with the tag and commit id ([draft](../../releases/status-emails/2026-10-09-m0.md)).
+- [x] Documentation pull request merged into `main` (#6).
+- [x] Tag created on that commit (as `0.1.0`).
+- [x] Milestone e-mail sent with the tag and commit id ([draft](../../releases/status-emails/2026-10-09-m0.md)).
