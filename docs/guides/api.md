@@ -4,15 +4,17 @@ Status: describes the endpoints **implemented** in `finsync/api/server.py`.
 
 ## Common rules
 
-- Every request needs the `X-User-Id` and `X-Group-Id` headers; the user must be a member of the group.
+- Every request needs an API token: `Authorization: Bearer fs_...`. The token decides the member and the group; `X-User-Id` and `X-Group-Id` headers are ignored ([ADR 0009](../architecture/decisions/0009-api-tokens.md)).
+- Tokens are issued with `python -m finsync.api.tokens create --user <member> --group <group> --name <what for>` and revoked with `... revoke <id>`; see [getting started](getting-started.md#create-an-api-token).
 - Request and response bodies are JSON objects.
 
 | Status | When |
 | --- | --- |
 | `201` | Created |
 | `200` | Read succeeded |
-| `400` | Missing headers, invalid JSON, validation error (`{"error": "..."}`) |
-| `403` | User is not a member of the group |
+| `400` | Invalid JSON, validation error (`{"error": "..."}`) |
+| `401` | No token, or a malformed, unknown or revoked one (`WWW-Authenticate: Bearer`) |
+| `403` | The token's member is no longer in the group |
 | `404` | Unknown path, or an id that does not exist in the requested group |
 | `409` | A review action that no longer fits, such as answering a decision twice |
 

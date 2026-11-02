@@ -8,7 +8,7 @@ import json
 import sqlite3
 from typing import Any, Iterator
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 
 @dataclass(frozen=True)
@@ -30,6 +30,20 @@ class TransactionRecord:
     duplicate_of_id: int | None = None
     source_ref: str | None = None
     import_batch_id: str | None = None
+
+
+@dataclass(frozen=True)
+class ApiTokenRecord:
+    """An API token as stored: its SHA-256 hash, never the token itself."""
+
+    id: int
+    user_id: str
+    group_id: str
+    name: str
+    prefix: str
+    created_at: datetime
+    last_used_at: datetime | None
+    revoked_at: datetime | None
 
 
 @dataclass(frozen=True)
@@ -106,8 +120,11 @@ class FinSyncStorage:
                 """,
             )
             row = connection.execute("SELECT MAX(version) AS version FROM schema_version").fetchone()
-            if (row["version"] or 1) < 2:
+            version = row["version"] or 1
+            if version < 2:
                 self._migrate_to_2(connection)
+            if version < 3:
+                self._migrate_to_3(connection)
             connection.execute("COMMIT")
         except BaseException:
             connection.execute("ROLLBACK")
@@ -195,6 +212,27 @@ class FinSyncStorage:
             )
         connection.execute("INSERT INTO schema_version (version) VALUES (2)")
 
+    @staticmethod
+    def _migrate_to_3(connection: sqlite3.Connection) -> None:
+        """Add API tokens; each token belongs to one member of one group."""
+        _execute_script(
+            connection,
+            """
+            CREATE TABLE api_tokens (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL,
+                group_id TEXT NOT NULL,
+                name TEXT NOT NULL,
+                token_hash TEXT NOT NULL UNIQUE,
+                prefix TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                last_used_at TEXT,
+                revoked_at TEXT
+            );
+            """,
+        )
+        connection.execute("INSERT INTO schema_version (version) VALUES (3)")
+
     @contextmanager
     def transaction(self) -> Iterator["StorageSession"]:
         """One write unit: everything inside is committed together or rolled back.
@@ -228,6 +266,50 @@ class FinSyncStorage:
                 (user_id, group_id),
             ).fetchone()
         return row is not None
+
+    def remove_group_membership(self, user_id: str, group_id: str) -> None:
+        with self._connect() as connection:
+            connection.execute(
+                "DELETE FROM group_memberships WHERE user_id = ? AND group_id = ?", (user_id, group_id)
+            )
+
+    def insert_api_token(self, user_id: str, group_id: str, name: str, token_hash: str, prefix: str) -> int:
+        with self._connect() as connection:
+            cursor = connection.execute(
+                """
+                INSERT INTO api_tokens (user_id, group_id, name, token_hash, prefix, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (user_id, group_id, name, token_hash, prefix, _now()),
+            )
+        return int(cursor.lastrowid)
+
+    def find_api_token(self, token_hash: str) -> ApiTokenRecord | None:
+        with self._connect() as connection:
+            row = connection.execute("SELECT * FROM api_tokens WHERE token_hash = ?", (token_hash,)).fetchone()
+        return _row_to_api_token(row) if row else None
+
+    def touch_api_token(self, token_id: int) -> None:
+        with self._connect() as connection:
+            connection.execute("UPDATE api_tokens SET last_used_at = ? WHERE id = ?", (_now(), token_id))
+
+    def revoke_api_token(self, token_id: int) -> bool:
+        """Revoke a token; False if it does not exist or was already revoked."""
+        with self._connect() as connection:
+            cursor = connection.execute(
+                "UPDATE api_tokens SET revoked_at = ? WHERE id = ? AND revoked_at IS NULL", (_now(), token_id)
+            )
+        return cursor.rowcount == 1
+
+    def list_api_tokens(self, user_id: str | None = None) -> list[ApiTokenRecord]:
+        with self._connect() as connection:
+            if user_id is None:
+                rows = connection.execute("SELECT * FROM api_tokens ORDER BY id").fetchall()
+            else:
+                rows = connection.execute(
+                    "SELECT * FROM api_tokens WHERE user_id = ? ORDER BY id", (user_id,)
+                ).fetchall()
+        return [_row_to_api_token(row) for row in rows]
 
     def list_transactions(self, group_id: str) -> list[TransactionRecord]:
         with self._connect() as connection:
@@ -584,6 +666,23 @@ def _execute_script(connection: sqlite3.Connection, script: str) -> None:
 
 def candidate_time_range(happened_at: datetime, days: int) -> tuple[datetime, datetime]:
     return happened_at - timedelta(days=days), happened_at + timedelta(days=days)
+
+
+def _optional_time(value: Any) -> datetime | None:
+    return datetime.fromisoformat(str(value)) if value is not None else None
+
+
+def _row_to_api_token(row: sqlite3.Row) -> ApiTokenRecord:
+    return ApiTokenRecord(
+        id=int(row["id"]),
+        user_id=str(row["user_id"]),
+        group_id=str(row["group_id"]),
+        name=str(row["name"]),
+        prefix=str(row["prefix"]),
+        created_at=datetime.fromisoformat(str(row["created_at"])),
+        last_used_at=_optional_time(row["last_used_at"]),
+        revoked_at=_optional_time(row["revoked_at"]),
+    )
 
 
 def _decision_dict(row: sqlite3.Row) -> dict[str, Any]:

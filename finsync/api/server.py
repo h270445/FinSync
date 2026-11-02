@@ -7,12 +7,14 @@ import re
 from urllib.parse import urlparse
 
 from finsync.core import (
+    AuthenticationError,
     AuthorizationError,
     ConflictError,
     FinSyncService,
     NotFoundError,
     ReviewItem,
     StoreResult,
+    TokenService,
 )
 from finsync.storage import EventRecord, FinSyncStorage, TransactionRecord
 
@@ -22,8 +24,10 @@ _SPLIT = re.compile(r"^/v1/events/(?P<event_id>\d+)/split$")
 
 
 class FinSyncRequestHandler(BaseHTTPRequestHandler):
-    service = FinSyncService(FinSyncStorage())
-    service.bootstrap_demo_membership()
+    """Routes /v1 requests. ``service`` and ``tokens`` are set by ``create_handler``."""
+
+    service: FinSyncService
+    tokens: TokenService
 
     def _read_json(self) -> dict:
         content_length = int(self.headers.get("Content-Length", "0"))
@@ -37,11 +41,18 @@ class FinSyncRequestHandler(BaseHTTPRequestHandler):
         return parsed
 
     def _identity(self) -> tuple[str, str]:
-        user_id = self.headers.get("X-User-Id", "").strip()
-        group_id = self.headers.get("X-Group-Id", "").strip()
-        if not user_id or not group_id:
-            raise ValueError("X-User-Id and X-Group-Id headers are required")
-        return user_id, group_id
+        """The caller's member and group, from the API token only; client identity headers are ignored."""
+        principal = self.tokens.authenticate(self.headers.get("Authorization"))
+        return principal.user_id, principal.group_id
+
+    def _send_unauthorized(self, error: AuthenticationError) -> None:
+        data = json.dumps({"error": str(error)}).encode("utf-8")
+        self.send_response(HTTPStatus.UNAUTHORIZED.value)
+        self.send_header("WWW-Authenticate", 'Bearer realm="finsync"')
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
 
     def _send_json(self, status: HTTPStatus, payload: dict) -> None:
         data = json.dumps(payload).encode("utf-8")
@@ -104,6 +115,8 @@ class FinSyncRequestHandler(BaseHTTPRequestHandler):
                 return
 
             self._send_json(HTTPStatus.NOT_FOUND, {"error": "Not found"})
+        except AuthenticationError as error:
+            self._send_unauthorized(error)
         except AuthorizationError as error:
             self._send_json(HTTPStatus.FORBIDDEN, {"error": str(error)})
         except NotFoundError as error:
@@ -116,25 +129,25 @@ class FinSyncRequestHandler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802
         try:
             path = urlparse(self.path).path
+            user_id, group_id = self._identity()
             if path == "/v1/transactions":
-                user_id, group_id = self._identity()
                 transactions = self.service.list_group_transactions(user_id, group_id)
                 self._send_json(HTTPStatus.OK, {"transactions": [_transaction_json(tx) for tx in transactions]})
                 return
 
             if path == "/v1/matches/review":
-                user_id, group_id = self._identity()
                 items = self.service.list_open_reviews(user_id, group_id)
                 self._send_json(HTTPStatus.OK, {"reviews": [_review_json(item) for item in items]})
                 return
 
             if path == "/v1/events":
-                user_id, group_id = self._identity()
                 events = self.service.list_group_events(user_id, group_id)
                 self._send_json(HTTPStatus.OK, {"events": [_event_json(event) for event in events]})
                 return
 
             self._send_json(HTTPStatus.NOT_FOUND, {"error": "Not found"})
+        except AuthenticationError as error:
+            self._send_unauthorized(error)
         except AuthorizationError as error:
             self._send_json(HTTPStatus.FORBIDDEN, {"error": str(error)})
         except ValueError as error:
@@ -193,9 +206,18 @@ def _event_json(event: EventRecord) -> dict:
     }
 
 
-def run_server(host: str = "127.0.0.1", port: int = 8080) -> None:
-    server = ThreadingHTTPServer((host, port), FinSyncRequestHandler)
-    print(f"FinSync API running on http://{host}:{port}")
+def create_handler(storage: FinSyncStorage) -> type[FinSyncRequestHandler]:
+    """A handler class bound to one database."""
+    return type(
+        "BoundFinSyncRequestHandler",
+        (FinSyncRequestHandler,),
+        {"service": FinSyncService(storage), "tokens": TokenService(storage)},
+    )
+
+
+def run_server(host: str = "127.0.0.1", port: int = 8080, db_path: str = "finsync.db") -> None:
+    server = ThreadingHTTPServer((host, port), create_handler(FinSyncStorage(db_path)))
+    print(f"FinSync API running on http://{host}:{port} (database: {db_path})")
     server.serve_forever()
 
 

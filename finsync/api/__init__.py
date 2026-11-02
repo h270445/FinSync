@@ -1,5 +1,5 @@
-"""HTTP API layer: request handling, identity headers and JSON serialization."""
+"""HTTP API layer: request handling, token authentication and JSON serialization."""
 
-from finsync.api.server import FinSyncRequestHandler, run_server
+from finsync.api.server import FinSyncRequestHandler, create_handler, run_server
 
-__all__ = ["FinSyncRequestHandler", "run_server"]
+__all__ = ["FinSyncRequestHandler", "create_handler", "run_server"]
