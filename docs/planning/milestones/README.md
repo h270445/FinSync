@@ -4,7 +4,7 @@ One target file per course deadline. The course deadline is the latest submissio
 
 | Milestone | Deadline | Internal target | File | Tag |
 | --- | --- | --- | --- | --- |
-| M0 | 2026-10-09 | – | [Semester commitment](m0-2026-10-09-semester-commitment.md) | `v0.1.0` |
+| M0 | 2026-10-09 | – | [Semester commitment](m0-2026-10-09-semester-commitment.md) | `0.1.0` |
 | M1 | 2026-11-06 | 2026-10-30 | [Working core](m1-2026-11-06-working-core.md) | `v0.2.0` |
 | M2 | 2026-12-04 | 2026-11-27 | [Integrated prototype](m2-2026-12-04-integrated-prototype.md) | `v0.3.0` |
 | M3 | 2027-01-15 | 2027-01-08 | [Preliminary final package](m3-2027-01-15-preliminary-package.md) | `v0.9.0` |

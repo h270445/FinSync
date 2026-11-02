@@ -12,7 +12,7 @@ All deadlines are 23:59 Hungarian time. Each milestone is announced by e-mail wi
 | Deadline | Internal target | Milestone | Expected result | Tag |
 | --- | --- | --- | --- | --- |
 | 2026-10-02 | – | – | First status e-mail and repository sharing (done) | – |
-| 2026-10-09 | – | [M0](milestones/m0-2026-10-09-semester-commitment.md) | Semester commitment refined: what the prototype will do, how it is verified, what is done, next steps | `v0.1.0` |
+| 2026-10-09 | – | [M0](milestones/m0-2026-10-09-semester-commitment.md) | Semester commitment refined: what the prototype will do, how it is verified, what is done, next steps | `0.1.0` |
 | 2026-11-06 | 2026-10-30 | [M1](milestones/m1-2026-11-06-working-core.md) | Working core: one complete processing flow end to end; working experimental solution, test or measurement for the main technical risk | `v0.2.0` |
 | 2026-12-04 | 2026-11-27 | [M2](milestones/m2-2026-12-04-integrated-prototype.md) | Integrated prototype: committed core flows work together with proper data handling, basic error handling and tests | `v0.3.0` |
 | 2027-01-15 | 2027-01-08 | [M3](milestones/m3-2027-01-15-preliminary-package.md) | Preliminary final package: runnable system, test and measurement results, short report, known limitations, Szakdolgozat II. plan | `v0.9.0` |
