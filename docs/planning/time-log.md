@@ -16,6 +16,7 @@ Time spent on the project, for the weekly-effort figure the supervisor asked for
 | 2026-10-28 | 22:28–22:50 | 22 | First real OTP card purchase (masked analysis); handling of bank marketing notifications in the spike and the M2 rule | Project messages and commits |
 | 2026-10-29 | 19:13–20:46 | 60 | Supervisor's reply recorded; ADR 0008 accepted; two reverse-order fixes compared on dataset v2, `rules-3` with threshold 0.95 and new results; review fixes; Android spike closed for M1; v0.2.0 release notes drafted | Author |
 | 2026-11-02 | 10:59–11:12 | 13 | v0.2.0 release notes final, M1 e-mail draft, tag `v0.2.0`; per-member API tokens with hashed storage and cross-group tests (PR #17, ADR 0009) | Commits (earlier work in the session not visible; to be corrected by the author) |
+| 2026-11-07 | evening | 90 | Plan for Nov 7–8 and the week of Nov 9; M1 e-mail finalised; tests run on Windows (`tzdata`, closed SQLite connections); GitHub CLI set-up; Figma session plan (PR #19); HTTP layer on FastAPI with request size limits (PR #20) | Author |
 
 ## Weekly totals
 
@@ -26,5 +27,5 @@ Time spent on the project, for the weekly-effort figure the supervisor asked for
 | 2026-10-12 – 10-18 | 123 | 2.1 |
 | 2026-10-19 – 10-25 | 63 | 1.1 |
 | 2026-10-26 – 11-01 | 264 | 4.4 |
-| 2026-11-02 – 11-08 | 13 | 0.2 |
-| **Total** | **718** | **12.0** |
+| 2026-11-02 – 11-08 | 103 | 1.7 |
+| **Total** | **808** | **13.5** |
