@@ -44,6 +44,64 @@ Constraints:
   No complex charts beyond a simple bar chart.
 ```
 
+## Session plan for 2026-11-08
+
+The supervisor set the M2 order on 2026-10-29: W3, W4, W5 first, then W1, W6, W7 ([feedback](../planning/supervisor-feedback.md#2026-10-29--reply-to-the-oct-28-interim-note)). The screen prompts below were written in October; this plan adds what the implemented API now provides, so the screens do not invent data. A1 and A2 follow in the Android week.
+
+1. New Figma Make chat: paste the **base context**.
+2. Wireframes, one prompt per frame, in this order: W3, W4, W5. Each time paste the screen prompt from [Screen prompts](#screen-prompts) followed by the matching addition below and this line:
+
+   ```text
+   Greyscale low-fidelity wireframe only: no colours, placeholder boxes for icons,
+   focus on layout and information hierarchy. Desktop 1280 px frame and a 360 px
+   frame side by side.
+   ```
+
+3. Check each wireframe against the [review checklist](#review-checklist); fix with the iteration prompts.
+4. One styled screen: W5, with the prompt in step 2 of [Screen prompts](#screen-prompts). It fixes the visual language for the rest.
+5. If time allows: wireframes of W1, W6 and W7 with their screen prompts.
+6. Export approved frames to [ui/](ui/README.md) and add one line per batch to the [AI-usage log](../ai-usage.md).
+
+### Additions from the implemented API
+
+W3:
+
+```text
+Data actually available per event: date and time, merchant, amount, category,
+review state ("clear" or "needs_review") and the list of linked records with their
+source. Add a filter chip "Bizonytalan kategória" next to the other filters for
+events whose category FinSync was unsure about (the backend adds this with the
+category questions in M2; design it now). Do not show per-event scores in the
+list.
+```
+
+W4:
+
+```text
+Each decision in "Döntési előzmények" shows: outcome (új esemény, automatikus
+összekapcsolás, ellenőrzésre vár, megerősítve, elutasítva, szétválasztva), who decided
+(a member's name or "automatikus, rules-3"), when, and the score as a number like 0,97.
+A record that arrived twice shows one card with an "Ismételt beküldés (2×)" note, not
+two cards. The "Szétválasztás" button is hidden when the event has only one record.
+```
+
+W5:
+
+```text
+Each review item is one incoming record and the existing event it may belong to.
+The score breakdown has exactly these rows, with values 0–1:
+- Összeg: amount similarity, explanation like "azonos összeg"
+- Időpont: time similarity, explanation from the difference, like "4 perc eltérés"
+  or "ugyanaz a nap, a kézi tételnek nincs időpontja"
+- Kereskedő: merchant similarity, explanation like "SPAR BUDAPEST vs. Spar"
+- Összpontszám: the combined score, like 0,80
+Two extra notes appear only when they apply:
+- "Másik lehetséges esemény is van" when a second event scored close (runner-up).
+- "Vitatott összekapcsolás": a later record fits better than an automatic link made
+  earlier, so FinSync reopened the event instead of moving the record silently.
+Show one example of each note among the queue items.
+```
+
 ## Screen prompts
 
 Prompt order follows the design workflow: low-fidelity first, then one styled screen.
