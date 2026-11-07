@@ -38,5 +38,5 @@ A banking notification and a manual entry for the same purchase arrive through t
 - [x] Docs updated (API reference, storage README, design status → Accepted on 2026-10-26).
 - [x] Reverse-order case investigated as the supervisor asked: two fixes compared on the development split of dataset v2, `rules-3` with both on and threshold 0.95 (2026-10-29, [results](../../evaluation/results/2026-10-29-matching-rules-3.md)).
 - [x] Release notes ([v0.2.0.md](../../releases/v0.2.0.md)).
-- [ ] Tag `v0.2.0` created on the merge commit of the release notes.
-- [ ] Milestone e-mail sent with the tag and commit id ([draft](../../releases/status-emails/2026-11-02-m1.md)).
+- [x] Tag `v0.2.0` created on the merge commit of the release notes (`4fccf73`, 2026-11-02).
+- [ ] Milestone e-mail sent with the tag and commit id ([draft](../../releases/status-emails/2026-11-02-m1.md)); goes out late, on 2026-11-07.
