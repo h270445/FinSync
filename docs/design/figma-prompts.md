@@ -58,7 +58,18 @@ The supervisor set the M2 order on 2026-10-29: W3, W4, W5 first, then W1, W6, W7
    ```
 
 3. Check each wireframe against the [review checklist](#review-checklist); fix with the iteration prompts.
-4. One styled screen: W5, with the prompt in step 2 of [Screen prompts](#screen-prompts). It fixes the visual language for the rest.
+4. One styled screen: W5, from its approved wireframe, with this prompt. It fixes the visual language for the rest.
+
+   ```text
+   Turn the approved W5 wireframe into a styled screen. Keep the layout and content.
+   Apply the base context's visual rules: white background, light-grey panels, teal as
+   the only accent (primary buttons, links, focus rings), amber only for "needs review"
+   tags, system font stack, 8 px spacing grid, 40 px table rows, right-aligned tabular
+   amounts. Use shadcn/ui look: Card, Badge, Button, Separator, Progress for the score
+   bars, Toast for the undo message. Show the default state and one focused (keyboard)
+   state of the primary action.
+   ```
+
 5. If time allows: wireframes of W1, W6 and W7 with their screen prompts.
 6. Export approved frames to [ui/](ui/README.md) and add one line per batch to the [AI-usage log](../ai-usage.md).
 
@@ -80,27 +91,38 @@ W4:
 ```text
 Each decision in "Döntési előzmények" shows: outcome (új esemény, automatikus
 összekapcsolás, ellenőrzésre vár, megerősítve, elutasítva, szétválasztva), who decided
-(a member's name or "automatikus, rules-3"), when, and the score as a number like 0,97.
+(a member's name or "automatikus, rules-3"), when, and the score as a number like 0,97
+only when the decision has one: member decisions and splits have no score.
 A record that arrived twice shows one card with an "Ismételt beküldés (2×)" note, not
 two cards. The "Szétválasztás" button is hidden when the event has only one record.
 ```
+
+The decision history is stored but not yet returned by the API: W4 needs a new endpoint (planned with the web screens in M2). The rest of W4 comes from `GET /v1/events` and the split endpoint.
 
 W5:
 
 ```text
 Each review item is one incoming record and the existing event it may belong to.
-The score breakdown has exactly these rows, with values 0–1:
-- Összeg: amount similarity, explanation like "azonos összeg"
-- Időpont: time similarity, explanation from the difference, like "4 perc eltérés"
-  or "ugyanaz a nap, a kézi tételnek nincs időpontja"
-- Kereskedő: merchant similarity, explanation like "SPAR BUDAPEST vs. Spar"
-- Összpontszám: the combined score, like 0,80
-Two extra notes appear only when they apply:
+Two kinds of items:
+1) Scored match. The score breakdown has these rows, with values 0–1:
+   - Összeg: amount similarity, explanation like "azonos összeg"
+   - Időpont: time similarity, explanation from the difference, like "4 perc eltérés"
+     or "ugyanaz a nap, a kézi tételnek nincs időpontja"
+   - Kereskedő: merchant similarity, explanation like "SPAR BUDAPEST vs. Spar"
+   - Összpontszám: the combined score, like 0,80
+2) Identical manual entry: the same member entered the same row twice (could be two
+   bus tickets). No score and no breakdown; instead the note "Azonos kézi tétel már
+   rögzítve" and the two entries side by side.
+Notes that appear only when they apply:
 - "Másik lehetséges esemény is van" when a second event scored close (runner-up).
-- "Vitatott összekapcsolás": a later record fits better than an automatic link made
-  earlier, so FinSync reopened the event instead of moving the record silently.
-Show one example of each note among the queue items.
+- "Vitatott összekapcsolás": the event already holds a record from the same source
+  that is about as plausible as this one, so FinSync asks instead of choosing. The
+  "Ugyanaz a vásárlás" action is disabled here with the hint "Előbb válaszd le a másik
+  tételt az esemény oldalán" and a link to W4; "Két külön vásárlás" stays available.
+Show one example of each kind and each note among the queue items.
 ```
+
+The API marks these with `score: null` and `features.identical_row_of_id` (identical entry), `features.runner_up` and `features.contested`; confirming a contested item returns `409` until the other record is split out.
 
 ## Screen prompts
 
