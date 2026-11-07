@@ -7,6 +7,7 @@ Status: describes the endpoints **implemented** in `finsync/api/server.py`.
 - Every request needs an API token: `Authorization: Bearer fs_...`. The token decides the member and the group; `X-User-Id` and `X-Group-Id` headers are ignored ([ADR 0009](../architecture/decisions/0009-api-tokens.md)).
 - Tokens are issued with `python -m finsync.api.tokens create --user <member> --group <group> --name <what for>` and revoked with `... revoke <id>`; see [getting started](getting-started.md#create-an-api-token).
 - Request and response bodies are JSON objects. Bodies are limited to 64 KiB, and to 1 MiB for `/v1/transactions/bulk`.
+- Validation errors are `400`, not FastAPI's usual `422`.
 - The OpenAPI schema is served at `/openapi.json`, with an interactive page at `/docs`; `python -m finsync.api --openapi` prints it without starting the server.
 
 | Status | When |
@@ -18,7 +19,6 @@ Status: describes the endpoints **implemented** in `finsync/api/server.py`.
 | `403` | The token's member is no longer in the group |
 | `404` | Unknown path, or an id that does not exist in the requested group |
 | `409` | A review action that no longer fits, such as answering a decision twice |
-| `411` | A `POST` without `Content-Length` |
 | `413` | A body over the size limit |
 
 ## Endpoints

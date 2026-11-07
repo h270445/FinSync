@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import tempfile
@@ -8,7 +9,7 @@ import unittest
 from fastapi.testclient import TestClient
 
 from finsync.api import create_app
-from finsync.api.server import MAX_BODY_BYTES, MAX_BULK_BODY_BYTES
+from finsync.api.server import MAX_BODY_BYTES, MAX_BULK_BODY_BYTES, BodySizeLimit
 from finsync.core import TokenService
 from finsync.storage import FinSyncStorage
 
@@ -54,13 +55,46 @@ class RequestLimitTest(unittest.TestCase):
         self.assertEqual(self._post("/v1/transactions/bulk", too_big).status_code, 413)
         self.assertEqual(self._stored(), 20)
 
-    def test_a_body_without_content_length_is_refused_with_411(self) -> None:
-        def chunks():
-            yield json.dumps(ROW).encode()
+    def test_chunked_bodies_are_counted(self) -> None:
+        def chunks(body: bytes):
+            for start in range(0, len(body), 4096):
+                yield body[start : start + 4096]
 
-        response = self.client.post("/v1/transactions", content=chunks(), headers=self.headers)
-        self.assertEqual(response.status_code, 411)
-        self.assertEqual(self._stored(), 0)
+        small = json.dumps(ROW).encode()
+        response = self.client.post("/v1/transactions", content=chunks(small), headers=self.headers)
+        self.assertEqual(response.status_code, 201)
+
+        large = json.dumps({**ROW, "description": "x" * MAX_BODY_BYTES}).encode()
+        response = self.client.post("/v1/transactions", content=chunks(large), headers=self.headers)
+        self.assertEqual(response.status_code, 413)
+        self.assertEqual(self._stored(), 1)
+
+    def test_a_small_content_length_does_not_let_a_large_body_through(self) -> None:
+        """Content-Length 10 with a chunked body of 100 KiB: the bytes that arrive are what counts."""
+        reached_app = []
+
+        async def app(scope, receive, send):
+            reached_app.append(await receive())
+
+        chunk = b"x" * 1024
+        messages = [{"type": "http.request", "body": chunk, "more_body": True} for _ in range(100)]
+        sent = []
+
+        async def receive():
+            return messages.pop(0)
+
+        async def send(message):
+            sent.append(message)
+
+        scope = {
+            "type": "http",
+            "method": "POST",
+            "path": "/v1/transactions",
+            "headers": [(b"content-length", b"10"), (b"transfer-encoding", b"chunked")],
+        }
+        asyncio.run(BodySizeLimit(app)(scope, receive, send))
+        self.assertEqual(reached_app, [])
+        self.assertEqual(sent[0]["status"], 413)
 
     def test_malformed_requests_get_a_clear_400(self) -> None:
         cases = {
@@ -84,10 +118,18 @@ class RequestLimitTest(unittest.TestCase):
         self.assertEqual(response.status_code, 404)
         self.assertIn("error", response.json())
 
-    def test_the_openapi_schema_describes_every_route(self) -> None:
+    def test_the_openapi_schema_describes_what_the_api_does(self) -> None:
         schema = self.client.get("/openapi.json").json()
-        self.assertIn("/v1/events", schema["paths"])
         self.assertIn("EventOut", schema["components"]["schemas"])
+        for path, operations in schema["paths"].items():
+            for method, operation in operations.items():
+                with self.subTest(path=path, method=method):
+                    # Validation errors are answered with 400, never 422.
+                    self.assertNotIn("422", operation["responses"])
+                    # Every route takes the bearer token, so /docs and generated clients send it.
+                    self.assertEqual(operation["security"], [{"HTTPBearer": []}])
+        bulk = schema["components"]["schemas"]["BulkIn"]["properties"]["rows"]
+        self.assertEqual(bulk["items"], {"$ref": "#/components/schemas/ManualTransactionIn"})
 
 
 if __name__ == "__main__":

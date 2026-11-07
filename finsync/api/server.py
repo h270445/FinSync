@@ -1,10 +1,11 @@
 from decimal import Decimal
 from typing import Annotated, Any, Literal
 
-from fastapi import Depends, FastAPI, Header, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, StrictInt
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from pydantic import BaseModel, StrictInt, WithJsonSchema
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
@@ -46,7 +47,12 @@ class ManualTransactionIn(BaseModel):
 
 
 class BulkIn(BaseModel):
-    rows: list[Any]
+    # Rows are validated one by one by the service, so a bad row is reported with its index and
+    # the whole import is refused; the schema still tells clients that each row is a manual entry.
+    rows: Annotated[
+        list[Any],
+        WithJsonSchema({"type": "array", "items": {"$ref": "#/components/schemas/ManualTransactionIn"}}),
+    ]
 
 
 class SplitIn(BaseModel):
@@ -121,16 +127,18 @@ class ReviewsOut(BaseModel):
     reviews: list[ReviewOut]
 
 
+# "4XX" also replaces FastAPI's default 422 entry: validation errors are answered with 400.
 _ERRORS: dict[int | str, dict[str, Any]] = {
-    status: {"model": ErrorOut} for status in (400, 401, 403, 404, 409, 411, 413)
+    status: {"model": ErrorOut} for status in (400, 401, 403, 404, 409, 413, "4XX")
 }
 
 
 class BodySizeLimit:
-    """Rejects a POST without ``Content-Length`` (411) or with a body over the path's limit (413).
+    """Rejects a POST body over the path's limit with 413, before the app parses it.
 
-    The check runs before the body is read, so an oversized request never reaches parsing or the
-    database.
+    A declared ``Content-Length`` over the limit is refused at once. Every body is also counted
+    as it arrives and buffered up to the limit, so chunked bodies, or a ``Content-Length`` that
+    disagrees with the chunked framing, cannot bring more past it.
     """
 
     def __init__(self, app: ASGIApp) -> None:
@@ -142,13 +150,32 @@ class BodySizeLimit:
             return
         limit = MAX_BULK_BODY_BYTES if scope["path"] == _BULK_PATH else MAX_BODY_BYTES
         length = dict(scope["headers"]).get(b"content-length")
-        if length is None or not length.isdigit():
-            await _send_error(send, 411, "Content-Length is required")
-            return
-        if int(length) > limit:
+        if length is not None and length.isdigit() and int(length) > limit:
             await _send_error(send, 413, f"Request body is larger than {limit} bytes")
             return
-        await self.app(scope, receive, send)
+
+        body = bytearray()
+        more = True
+        while more:
+            message = await receive()
+            if message["type"] == "http.disconnect":
+                return
+            body += message.get("body", b"")
+            if len(body) > limit:
+                await _send_error(send, 413, f"Request body is larger than {limit} bytes")
+                return
+            more = message.get("more_body", False)
+
+        replayed = False
+
+        async def replay() -> Message:
+            nonlocal replayed
+            if not replayed:
+                replayed = True
+                return {"type": "http.request", "body": bytes(body), "more_body": False}
+            return await receive()
+
+        await self.app(scope, replay, send)
 
 
 async def _send_error(send: Send, status: int, message: str) -> None:
@@ -173,9 +200,13 @@ def create_app(storage: FinSyncStorage) -> FastAPI:
     app = FastAPI(title="FinSync API", version="0.3.0-dev", responses=_ERRORS)
     app.add_middleware(BodySizeLimit)
 
-    def principal(authorization: Annotated[str | None, Header()] = None) -> Principal:
+    # auto_error=False: TokenService decides and words every refusal; HTTPBearer only reads the
+    # header and puts the bearer scheme into the OpenAPI schema (and the /docs "Authorize" button).
+    bearer = HTTPBearer(auto_error=False)
+
+    def principal(credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)]) -> Principal:
         """The caller's member and group, from the API token only; client identity headers are ignored."""
-        return tokens.authenticate(authorization)
+        return tokens.authenticate(f"Bearer {credentials.credentials}" if credentials else None)
 
     Caller = Annotated[Principal, Depends(principal)]
 

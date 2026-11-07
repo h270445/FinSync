@@ -12,7 +12,7 @@ Translates HTTP requests into calls on `FinSyncService` and maps results and err
 ## Behaviour
 
 - Endpoints: full reference in [docs/guides/api.md](../../docs/guides/api.md).
-- Identity comes from the `Authorization: Bearer` API token only; the token decides member and group, and `X-User-Id`/`X-Group-Id` are ignored ([ADR 0009](../../docs/architecture/decisions/0009-api-tokens.md)). Request bodies are limited before they are read: 64 KiB, and 1 MiB for `/v1/transactions/bulk`; a larger body gets 413, a POST without `Content-Length` 411.
+- Identity comes from the `Authorization: Bearer` API token only; the token decides member and group, and `X-User-Id`/`X-Group-Id` are ignored ([ADR 0009](../../docs/architecture/decisions/0009-api-tokens.md)). Request bodies are limited before the app parses them: 64 KiB, and 1 MiB for `/v1/transactions/bulk`; a larger body gets 413. The middleware counts the bytes that arrive, not only the declared `Content-Length`, so chunked bodies are limited too.
 - Errors: `AuthenticationError` → 401 with `WWW-Authenticate: Bearer`, `AuthorizationError` → 403, `NotFoundError` → 404, `ConflictError` → 409, `ValueError` and request-model validation errors → 400, unknown path → 404. Every error body is `{"error": "..."}`.
 - The request models describe the shapes; the service validates the values again, so its rules stay in one place and its tests cover them.
 
