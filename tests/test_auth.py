@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-import http.client
-from http.server import ThreadingHTTPServer
 import json
 import os
 import sqlite3
 import tempfile
-import threading
 import unittest
 
-from finsync.api import create_handler
+from fastapi.routing import APIRoute
+from fastapi.testclient import TestClient
+
+from finsync.api import create_app
 from finsync.api.tokens import main as tokens_cli
 from finsync.core import AuthenticationError, TokenService
 from finsync.core.auth import hash_token
@@ -18,7 +18,8 @@ from finsync.storage import FinSyncStorage
 NOTIFICATION = "CARD PURCHASE -4500 HUF at Tesco on 2026-09-05 16:42"
 MANUAL = {"amount": "-4500", "currency": "HUF", "description": "Weekly shop", "happened_at": "2026-09-05"}
 
-# Every route of finsync/api/server.py. A new route must be added here, so it gets the checks below.
+# Every route of finsync/api/server.py. A new route must be added here, so it gets the checks below;
+# test_every_route_is_listed fails otherwise.
 ENDPOINTS = (
     ("POST", "/v1/notifications/ingest"),
     ("POST", "/v1/transactions"),
@@ -147,10 +148,8 @@ class AuthApiTest(unittest.TestCase):
         self.token_b, _ = self.tokens.create("user-b", "group-1", "phone")
         self.token_c, _ = self.tokens.create("user-c", "group-2", "phone")
 
-        handler = create_handler(self.storage)
-        handler.log_message = lambda *args: None
-        self.server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
-        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        self.app = create_app(self.storage)
+        self.client = TestClient(self.app)
 
         self._call("POST", "/v1/notifications/ingest", self.token_a, {"message": NOTIFICATION})
         self._call("POST", "/v1/transactions", self.token_b, MANUAL)
@@ -160,21 +159,24 @@ class AuthApiTest(unittest.TestCase):
         self.group_1_record = review["candidate_event"]["transactions"][0]["id"]
 
     def tearDown(self) -> None:
-        self.server.shutdown()
-        self.server.server_close()
+        self.client.close()
         self.tempdir.cleanup()
 
     def _call(self, method: str, path: str, token: str | None, body: dict | None = None, headers: dict | None = None):
         sent = {"Content-Type": "application/json", **(headers or {})}
         if token is not None:
             sent["Authorization"] = f"Bearer {token}"
-        connection = http.client.HTTPConnection("127.0.0.1", self.server.server_address[1])
-        connection.request(method, path, body=json.dumps(body or {}), headers=sent)
-        response = connection.getresponse()
-        payload = json.loads(response.read())
-        www_authenticate = response.getheader("WWW-Authenticate")
-        connection.close()
-        return response.status, payload, www_authenticate
+        response = self.client.request(method, path, content=json.dumps(body or {}), headers=sent)
+        return response.status_code, response.json(), response.headers.get("WWW-Authenticate")
+
+    def test_every_route_is_listed(self) -> None:
+        routes = {
+            (method, route.path.replace("{decision_id}", "{decision}").replace("{event_id}", "{event}"))
+            for route in self.app.routes
+            if isinstance(route, APIRoute)
+            for method in route.methods
+        }
+        self.assertEqual(routes, set(ENDPOINTS))
 
     def _endpoints(self):
         for method, path in ENDPOINTS:

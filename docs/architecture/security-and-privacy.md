@@ -21,7 +21,7 @@ Privacy requirements will be considered during design, with GDPR principles such
 | Parameterised SQL | Implemented |
 | Server-side validation of manual input | Implemented (amount, currency, description, timestamp) |
 | Authentication | **Missing.** The user identifier is supplied by the client, so stronger identity verification is required before the system can safely handle real users' financial data. |
-| Request size limits | Missing |
+| Request size limits | Implemented: 64 KiB per request, 1 MiB for bulk import, 413 above it; the bytes that arrive are counted, so chunked bodies cannot bypass it |
 | Audit trail | Planned through `match_decisions` |
 
 ## Rules

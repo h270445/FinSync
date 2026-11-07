@@ -7,11 +7,11 @@ Each significant, hard-to-reverse decision gets one short record: the context, t
 | # | Title | Status |
 | --- | --- | --- |
 | [0001](0001-record-architecture-decisions.md) | Record architecture decisions | Accepted |
-| [0002](0002-python-stdlib-and-sqlite.md) | Python standard library and SQLite for the prototype | Accepted |
+| [0002](0002-python-stdlib-and-sqlite.md) | Python standard library and SQLite for the prototype | Superseded by 0006 for the HTTP layer (2026-11-07) |
 | [0003](0003-layered-package-layout.md) | Layered package layout | Accepted |
 | [0004](0004-event-based-transaction-matching.md) | Event-based, rule-scored transaction matching | Accepted |
 | [0005](0005-web-client-first.md) | Web app as the main user interface, built before the Android app | Proposed |
-| [0006](0006-framework-based-stack.md) | Framework-based stack: FastAPI, PostgreSQL, React | Proposed |
+| [0006](0006-framework-based-stack.md) | Framework-based stack: FastAPI, PostgreSQL, React | Accepted, in steps (HTTP layer done 2026-11-07) |
 | [0007](0007-how-external-clients-reach-the-api.md) | How the Google Sheets script and the Android app reach the API | Accepted |
 | [0008](0008-notification-time-and-calendar-day.md) | Notification time and the calendar day | Accepted |
 | [0009](0009-api-tokens.md) | API tokens: one member, one group, stored as a hash | Proposed |

@@ -139,36 +139,20 @@ class FinSyncServiceTest(unittest.TestCase):
         self.assertEqual(self.service.list_group_transactions("user-1", "group-1"), [])
 
     def test_non_object_bulk_row_returns_400_from_api(self) -> None:
-        from http.server import ThreadingHTTPServer
-        import http.client
-        import json
-        import threading
+        from fastapi.testclient import TestClient
 
-        from finsync.api import create_handler
+        from finsync.api import create_app
         from finsync.core import TokenService
 
         token, _ = TokenService(self.storage).create("user-1", "group-1", "test")
-        handler = create_handler(self.storage)
-        handler.log_message = lambda *args: None
-        server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
-        thread = threading.Thread(target=server.serve_forever, daemon=True)
-        thread.start()
-        try:
-            connection = http.client.HTTPConnection("127.0.0.1", server.server_address[1])
-            connection.request(
-                "POST",
+        with TestClient(create_app(self.storage)) as client:
+            response = client.post(
                 "/v1/transactions/bulk",
-                body=json.dumps({"rows": [self._row(), "oops"]}),
-                headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+                json={"rows": [self._row(), "oops"]},
+                headers={"Authorization": f"Bearer {token}"},
             )
-            response = connection.getresponse()
-            body = json.loads(response.read())
-            connection.close()
-        finally:
-            server.shutdown()
-            server.server_close()
-        self.assertEqual(response.status, 400)
-        self.assertIn("Transaction must be a JSON object", body["error"])
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Transaction must be a JSON object", response.json()["error"])
         self.assertEqual(self.service.list_group_transactions("user-1", "group-1"), [])
 
 

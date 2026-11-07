@@ -1,2 +1,6 @@
+# Web layer (ADR 0006): FastAPI with Pydantic, served by Uvicorn. httpx is needed by the tests' TestClient.
+fastapi==0.116.1
+uvicorn==0.35.0
+httpx==0.28.1
 # Time-zone data for zoneinfo; Linux and macOS ship it with the operating system, Windows does not.
 tzdata; sys_platform == "win32"

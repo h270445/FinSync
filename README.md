@@ -36,9 +36,10 @@ This repository contains an early backend prototype and is the foundation for a 
 
 ## Quick start
 
-Requires Python 3.10+ and no third-party packages.
+Requires Python 3.10+ and the packages in `requirements.txt` (FastAPI, Uvicorn; see the guide for a virtual environment).
 
 ```bash
+python -m pip install -r requirements.txt
 python -m finsync.api                    # API on http://127.0.0.1:8080
 python -m unittest discover -s tests     # run the tests
 ```
