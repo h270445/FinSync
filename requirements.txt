@@ -1,0 +1,2 @@
+# Time-zone data for zoneinfo; Linux and macOS ship it with the operating system, Windows does not.
+tzdata; sys_platform == "win32"

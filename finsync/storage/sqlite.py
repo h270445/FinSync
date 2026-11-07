@@ -88,6 +88,20 @@ class FinSyncStorage:
         connection.row_factory = sqlite3.Row
         return connection
 
+    @contextmanager
+    def _session(self) -> Iterator[sqlite3.Connection]:
+        """Commits on success, rolls back on error and always closes the connection.
+
+        `with connection:` alone only ends the transaction; the open file would stay locked
+        on Windows until garbage collection.
+        """
+        connection = self._connect()
+        try:
+            with connection:
+                yield connection
+        finally:
+            connection.close()
+
     def _init_schema(self) -> None:
         connection = self._connect()
         connection.isolation_level = None
@@ -253,14 +267,14 @@ class FinSyncStorage:
             connection.close()
 
     def add_group_membership(self, user_id: str, group_id: str) -> None:
-        with self._connect() as connection:
+        with self._session() as connection:
             connection.execute(
                 "INSERT OR IGNORE INTO group_memberships (user_id, group_id) VALUES (?, ?)",
                 (user_id, group_id),
             )
 
     def is_user_in_group(self, user_id: str, group_id: str) -> bool:
-        with self._connect() as connection:
+        with self._session() as connection:
             row = connection.execute(
                 "SELECT 1 FROM group_memberships WHERE user_id = ? AND group_id = ?",
                 (user_id, group_id),
@@ -268,13 +282,13 @@ class FinSyncStorage:
         return row is not None
 
     def remove_group_membership(self, user_id: str, group_id: str) -> None:
-        with self._connect() as connection:
+        with self._session() as connection:
             connection.execute(
                 "DELETE FROM group_memberships WHERE user_id = ? AND group_id = ?", (user_id, group_id)
             )
 
     def insert_api_token(self, user_id: str, group_id: str, name: str, token_hash: str, prefix: str) -> int:
-        with self._connect() as connection:
+        with self._session() as connection:
             cursor = connection.execute(
                 """
                 INSERT INTO api_tokens (user_id, group_id, name, token_hash, prefix, created_at)
@@ -285,24 +299,24 @@ class FinSyncStorage:
         return int(cursor.lastrowid)
 
     def find_api_token(self, token_hash: str) -> ApiTokenRecord | None:
-        with self._connect() as connection:
+        with self._session() as connection:
             row = connection.execute("SELECT * FROM api_tokens WHERE token_hash = ?", (token_hash,)).fetchone()
         return _row_to_api_token(row) if row else None
 
     def touch_api_token(self, token_id: int) -> None:
-        with self._connect() as connection:
+        with self._session() as connection:
             connection.execute("UPDATE api_tokens SET last_used_at = ? WHERE id = ?", (_now(), token_id))
 
     def revoke_api_token(self, token_id: int) -> bool:
         """Revoke a token; False if it does not exist or was already revoked."""
-        with self._connect() as connection:
+        with self._session() as connection:
             cursor = connection.execute(
                 "UPDATE api_tokens SET revoked_at = ? WHERE id = ? AND revoked_at IS NULL", (_now(), token_id)
             )
         return cursor.rowcount == 1
 
     def list_api_tokens(self, user_id: str | None = None) -> list[ApiTokenRecord]:
-        with self._connect() as connection:
+        with self._session() as connection:
             if user_id is None:
                 rows = connection.execute("SELECT * FROM api_tokens ORDER BY id").fetchall()
             else:
@@ -312,7 +326,7 @@ class FinSyncStorage:
         return [_row_to_api_token(row) for row in rows]
 
     def list_transactions(self, group_id: str) -> list[TransactionRecord]:
-        with self._connect() as connection:
+        with self._session() as connection:
             rows = connection.execute(
                 f"""
                 SELECT {_TRANSACTION_COLUMNS}
@@ -329,7 +343,7 @@ class FinSyncStorage:
         for record in sorted(self.list_transactions(group_id), key=lambda tx: tx.id):
             if record.event_id is not None:
                 transactions_by_event.setdefault(record.event_id, []).append(record)
-        with self._connect() as connection:
+        with self._session() as connection:
             rows = connection.execute(
                 """
                 SELECT * FROM events WHERE group_id = ? AND review_state != 'empty'
@@ -355,14 +369,14 @@ class FinSyncStorage:
         ]
 
     def list_decisions(self, group_id: str) -> list[dict[str, Any]]:
-        with self._connect() as connection:
+        with self._session() as connection:
             rows = connection.execute(
                 "SELECT * FROM match_decisions WHERE group_id = ? ORDER BY id", (group_id,)
             ).fetchall()
         return [_decision_dict(row) for row in rows]
 
     def list_open_reviews(self, group_id: str) -> list[dict[str, Any]]:
-        with self._connect() as connection:
+        with self._session() as connection:
             rows = connection.execute(
                 f"SELECT * FROM match_decisions d WHERE d.group_id = ? AND {_OPEN_REVIEW} ORDER BY d.id",
                 (group_id,),

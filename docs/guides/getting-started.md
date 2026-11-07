@@ -3,7 +3,7 @@
 ## Requirements
 
 - Python 3.10 or newer (the code uses `str | None` type syntax).
-- No third-party packages: the prototype uses only the standard library.
+- No third-party code: the prototype uses only the standard library. On Windows, `zoneinfo` needs the IANA time-zone data, which the operating system does not provide; install it once with `python -m pip install -r requirements.txt` (the `tzdata` data package; nothing is installed on Linux or macOS). Without it, the matching code fails with `No time zone found with key Europe/Budapest`.
 
 ## Run the API
 
