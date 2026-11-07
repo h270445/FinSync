@@ -29,5 +29,7 @@ The core flows committed for the semester work together, with proper data handli
 - [ ] LLM categorizer and labelled categorization dataset.
 - [ ] Money transfers: `transfer` direction for records to or from the group's own accounts and counterparties (per-group list), excluded from spending and income totals.
 - [ ] Category correction, the "mixed" flag and category lines (lines add up to the event amount; totals follow them).
+- [x] HTTP layer on FastAPI with an OpenAPI schema (ADR 0006 step 1, 2026-11-07).
+- [ ] Storage on SQLAlchemy, Alembic and PostgreSQL with Docker Compose (ADR 0006 step 2, Nov 16–22, time-boxed).
 - [ ] Docs updated (API reference, security status, client setup in the guides).
 - [ ] Release notes, tag `v0.3.0`, e-mail.
