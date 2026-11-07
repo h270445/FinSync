@@ -1,10 +1,12 @@
-from __future__ import annotations
+from decimal import Decimal
+from typing import Annotated, Any, Literal
 
-import json
-from http import HTTPStatus
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-import re
-from urllib.parse import urlparse
+from fastapi import Depends, FastAPI, Header, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, StrictInt
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from finsync.core import (
     AuthenticationError,
@@ -12,214 +14,308 @@ from finsync.core import (
     ConflictError,
     FinSyncService,
     NotFoundError,
+    Principal,
     ReviewItem,
     StoreResult,
     TokenService,
 )
 from finsync.storage import EventRecord, FinSyncStorage, TransactionRecord
 
+# Request body limits. A bulk import carries many rows; every other request is one small object.
+MAX_BODY_BYTES = 64 * 1024
+MAX_BULK_BODY_BYTES = 1024 * 1024
+_BULK_PATH = "/v1/transactions/bulk"
 
-_REVIEW_ACTION = re.compile(r"^/v1/matches/(?P<decision_id>\d+)/(?P<action>confirm|reject)$")
-_SPLIT = re.compile(r"^/v1/events/(?P<event_id>\d+)/split$")
+
+# Request bodies. The service validates the values again, so the HTTP layer and the tests on the
+# service keep one set of rules; these models describe the shapes for the OpenAPI schema.
 
 
-class FinSyncRequestHandler(BaseHTTPRequestHandler):
-    """Routes /v1 requests. ``service`` and ``tokens`` are set by ``create_handler``."""
+class NotificationIn(BaseModel):
+    message: str
 
-    service: FinSyncService
-    tokens: TokenService
 
-    def _read_json(self) -> dict:
-        content_length = int(self.headers.get("Content-Length", "0"))
-        raw = self.rfile.read(content_length) if content_length > 0 else b"{}"
-        try:
-            parsed = json.loads(raw.decode("utf-8"))
-        except json.JSONDecodeError as error:
-            raise ValueError("Invalid JSON") from error
-        if not isinstance(parsed, dict):
-            raise ValueError("JSON body must be an object")
-        return parsed
+class ManualTransactionIn(BaseModel):
+    amount: Decimal | str
+    currency: str
+    description: str
+    happened_at: str
+    merchant: str | None = None
+    direction: Literal["expense", "income"] | None = None
+    source_ref: str | None = None
 
-    def _identity(self) -> tuple[str, str]:
+
+class BulkIn(BaseModel):
+    rows: list[Any]
+
+
+class SplitIn(BaseModel):
+    transaction_id: StrictInt
+
+
+# Responses.
+
+
+class ErrorOut(BaseModel):
+    error: str
+
+
+class StoreResultOut(BaseModel):
+    transaction_id: int
+    event_id: int
+    match_outcome: str
+
+
+class BulkOut(BaseModel):
+    transaction_ids: list[int]
+    results: list[StoreResultOut]
+
+
+class TransactionOut(BaseModel):
+    id: int
+    user_id: str
+    group_id: str
+    amount: str
+    currency: str
+    description: str
+    merchant: str | None
+    category: str
+    source: str
+    happened_at: str
+    happened_at_precision: str
+    created_at: str
+    event_id: int | None
+    duplicate_of_id: int | None
+
+
+class TransactionsOut(BaseModel):
+    transactions: list[TransactionOut]
+
+
+class EventOut(BaseModel):
+    id: int
+    amount: str
+    currency: str
+    direction: str
+    happened_at: str
+    merchant: str | None
+    category: str
+    primary_transaction_id: int | None
+    review_state: str
+    transactions: list[TransactionOut]
+
+
+class EventsOut(BaseModel):
+    events: list[EventOut]
+
+
+class ReviewOut(BaseModel):
+    decision_id: int
+    score: float | None
+    features: dict[str, Any] | None
+    transaction: TransactionOut
+    candidate_event: EventOut
+
+
+class ReviewsOut(BaseModel):
+    reviews: list[ReviewOut]
+
+
+_ERRORS: dict[int | str, dict[str, Any]] = {
+    status: {"model": ErrorOut} for status in (400, 401, 403, 404, 409, 411, 413)
+}
+
+
+class BodySizeLimit:
+    """Rejects a POST without ``Content-Length`` (411) or with a body over the path's limit (413).
+
+    The check runs before the body is read, so an oversized request never reaches parsing or the
+    database.
+    """
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http" or scope["method"] != "POST":
+            await self.app(scope, receive, send)
+            return
+        limit = MAX_BULK_BODY_BYTES if scope["path"] == _BULK_PATH else MAX_BODY_BYTES
+        length = dict(scope["headers"]).get(b"content-length")
+        if length is None or not length.isdigit():
+            await _send_error(send, 411, "Content-Length is required")
+            return
+        if int(length) > limit:
+            await _send_error(send, 413, f"Request body is larger than {limit} bytes")
+            return
+        await self.app(scope, receive, send)
+
+
+async def _send_error(send: Send, status: int, message: str) -> None:
+    response = JSONResponse({"error": message}, status_code=status)
+    body: Message = {"type": "http.response.body", "body": response.body}
+    await send({"type": "http.response.start", "status": status, "headers": response.raw_headers})
+    await send(body)
+
+
+def _validation_message(error: RequestValidationError) -> str:
+    parts = []
+    for item in error.errors():
+        location = ".".join(str(part) for part in item.get("loc", ()) if part != "body")
+        parts.append(f"{location}: {item.get('msg')}" if location else str(item.get("msg")))
+    return "; ".join(parts) or "Invalid request"
+
+
+def create_app(storage: FinSyncStorage) -> FastAPI:
+    """The /v1 API bound to one database."""
+    service = FinSyncService(storage)
+    tokens = TokenService(storage)
+    app = FastAPI(title="FinSync API", version="0.3.0-dev", responses=_ERRORS)
+    app.add_middleware(BodySizeLimit)
+
+    def principal(authorization: Annotated[str | None, Header()] = None) -> Principal:
         """The caller's member and group, from the API token only; client identity headers are ignored."""
-        principal = self.tokens.authenticate(self.headers.get("Authorization"))
-        return principal.user_id, principal.group_id
+        return tokens.authenticate(authorization)
 
-    def _send_unauthorized(self, error: AuthenticationError) -> None:
-        data = json.dumps({"error": str(error)}).encode("utf-8")
-        self.send_response(HTTPStatus.UNAUTHORIZED.value)
-        self.send_header("WWW-Authenticate", 'Bearer realm="finsync"')
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(data)))
-        self.end_headers()
-        self.wfile.write(data)
+    Caller = Annotated[Principal, Depends(principal)]
 
-    def _send_json(self, status: HTTPStatus, payload: dict) -> None:
-        data = json.dumps(payload).encode("utf-8")
-        self.send_response(status.value)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(data)))
-        self.end_headers()
-        self.wfile.write(data)
+    @app.exception_handler(AuthenticationError)
+    async def unauthorized(_: Request, error: AuthenticationError) -> JSONResponse:
+        return JSONResponse(
+            {"error": str(error)}, status_code=401, headers={"WWW-Authenticate": 'Bearer realm="finsync"'}
+        )
 
-    def do_POST(self) -> None:  # noqa: N802
-        try:
-            path = urlparse(self.path).path
-            user_id, group_id = self._identity()
-            payload = self._read_json()
+    @app.exception_handler(AuthorizationError)
+    async def forbidden(_: Request, error: AuthorizationError) -> JSONResponse:
+        return JSONResponse({"error": str(error)}, status_code=403)
 
-            if path == "/v1/notifications/ingest":
-                message = str(payload.get("message", "")).strip()
-                if not message:
-                    raise ValueError("message is required")
-                result = self.service.ingest_notification(user_id, group_id, message)
-                self._send_json(HTTPStatus.CREATED, _result_json(result))
-                return
+    @app.exception_handler(NotFoundError)
+    async def not_found(_: Request, error: NotFoundError) -> JSONResponse:
+        return JSONResponse({"error": str(error)}, status_code=404)
 
-            if path == "/v1/transactions":
-                result = self.service.create_manual_transaction(user_id, group_id, payload)
-                self._send_json(HTTPStatus.CREATED, _result_json(result))
-                return
+    @app.exception_handler(ConflictError)
+    async def conflict(_: Request, error: ConflictError) -> JSONResponse:
+        return JSONResponse({"error": str(error)}, status_code=409)
 
-            if path == "/v1/transactions/bulk":
-                rows = payload.get("rows")
-                if not isinstance(rows, list):
-                    raise ValueError("rows must be a list")
-                results = self.service.bulk_create_manual_transactions(user_id, group_id, rows)
-                self._send_json(
-                    HTTPStatus.CREATED,
-                    {
-                        "transaction_ids": [result.transaction_id for result in results],
-                        "results": [_result_json(result) for result in results],
-                    },
-                )
-                return
+    @app.exception_handler(ValueError)
+    async def bad_request(_: Request, error: ValueError) -> JSONResponse:
+        return JSONResponse({"error": str(error)}, status_code=400)
 
-            review = _REVIEW_ACTION.match(path)
-            if review:
-                decision_id = int(review.group("decision_id"))
-                if review.group("action") == "confirm":
-                    result = self.service.confirm_match(user_id, group_id, decision_id)
-                else:
-                    result = self.service.reject_match(user_id, group_id, decision_id)
-                self._send_json(HTTPStatus.OK, _result_json(result))
-                return
+    @app.exception_handler(RequestValidationError)
+    async def invalid_request(_: Request, error: RequestValidationError) -> JSONResponse:
+        return JSONResponse({"error": _validation_message(error)}, status_code=400)
 
-            split = _SPLIT.match(path)
-            if split:
-                transaction_id = payload.get("transaction_id")
-                if not isinstance(transaction_id, int) or isinstance(transaction_id, bool):
-                    raise ValueError("transaction_id must be an integer")
-                result = self.service.split_event(user_id, group_id, int(split.group("event_id")), transaction_id)
-                self._send_json(HTTPStatus.OK, _result_json(result))
-                return
+    @app.exception_handler(StarletteHTTPException)
+    async def http_error(_: Request, error: StarletteHTTPException) -> JSONResponse:
+        return JSONResponse({"error": str(error.detail)}, status_code=error.status_code, headers=error.headers)
 
-            self._send_json(HTTPStatus.NOT_FOUND, {"error": "Not found"})
-        except AuthenticationError as error:
-            self._send_unauthorized(error)
-        except AuthorizationError as error:
-            self._send_json(HTTPStatus.FORBIDDEN, {"error": str(error)})
-        except NotFoundError as error:
-            self._send_json(HTTPStatus.NOT_FOUND, {"error": str(error)})
-        except ConflictError as error:
-            self._send_json(HTTPStatus.CONFLICT, {"error": str(error)})
-        except ValueError as error:
-            self._send_json(HTTPStatus.BAD_REQUEST, {"error": str(error)})
+    @app.post("/v1/notifications/ingest", status_code=201)
+    def ingest_notification(body: NotificationIn, caller: Caller) -> StoreResultOut:
+        message = body.message.strip()
+        if not message:
+            raise ValueError("message is required")
+        return _result(service.ingest_notification(caller.user_id, caller.group_id, message))
 
-    def do_GET(self) -> None:  # noqa: N802
-        try:
-            path = urlparse(self.path).path
-            user_id, group_id = self._identity()
-            if path == "/v1/transactions":
-                transactions = self.service.list_group_transactions(user_id, group_id)
-                self._send_json(HTTPStatus.OK, {"transactions": [_transaction_json(tx) for tx in transactions]})
-                return
+    @app.post("/v1/transactions", status_code=201)
+    def create_transaction(body: ManualTransactionIn, caller: Caller) -> StoreResultOut:
+        return _result(service.create_manual_transaction(caller.user_id, caller.group_id, _manual(body)))
 
-            if path == "/v1/matches/review":
-                items = self.service.list_open_reviews(user_id, group_id)
-                self._send_json(HTTPStatus.OK, {"reviews": [_review_json(item) for item in items]})
-                return
+    @app.post(_BULK_PATH, status_code=201)
+    def bulk_create(body: BulkIn, caller: Caller) -> BulkOut:
+        results = service.bulk_create_manual_transactions(caller.user_id, caller.group_id, body.rows)
+        return BulkOut(
+            transaction_ids=[result.transaction_id for result in results],
+            results=[_result(result) for result in results],
+        )
 
-            if path == "/v1/events":
-                events = self.service.list_group_events(user_id, group_id)
-                self._send_json(HTTPStatus.OK, {"events": [_event_json(event) for event in events]})
-                return
+    @app.post("/v1/matches/{decision_id}/confirm")
+    def confirm_match(decision_id: int, caller: Caller) -> StoreResultOut:
+        return _result(service.confirm_match(caller.user_id, caller.group_id, decision_id))
 
-            self._send_json(HTTPStatus.NOT_FOUND, {"error": "Not found"})
-        except AuthenticationError as error:
-            self._send_unauthorized(error)
-        except AuthorizationError as error:
-            self._send_json(HTTPStatus.FORBIDDEN, {"error": str(error)})
-        except ValueError as error:
-            self._send_json(HTTPStatus.BAD_REQUEST, {"error": str(error)})
+    @app.post("/v1/matches/{decision_id}/reject")
+    def reject_match(decision_id: int, caller: Caller) -> StoreResultOut:
+        return _result(service.reject_match(caller.user_id, caller.group_id, decision_id))
+
+    @app.post("/v1/events/{event_id}/split")
+    def split_event(event_id: int, body: SplitIn, caller: Caller) -> StoreResultOut:
+        return _result(service.split_event(caller.user_id, caller.group_id, event_id, body.transaction_id))
+
+    @app.get("/v1/transactions")
+    def list_transactions(caller: Caller) -> TransactionsOut:
+        transactions = service.list_group_transactions(caller.user_id, caller.group_id)
+        return TransactionsOut(transactions=[_transaction(tx) for tx in transactions])
+
+    @app.get("/v1/matches/review")
+    def list_reviews(caller: Caller) -> ReviewsOut:
+        items = service.list_open_reviews(caller.user_id, caller.group_id)
+        return ReviewsOut(reviews=[_review(item) for item in items])
+
+    @app.get("/v1/events")
+    def list_events(caller: Caller) -> EventsOut:
+        events = service.list_group_events(caller.user_id, caller.group_id)
+        return EventsOut(events=[_event(event) for event in events])
+
+    return app
 
 
-def _result_json(result: StoreResult) -> dict:
-    return {
-        "transaction_id": result.transaction_id,
-        "event_id": result.event_id,
-        "match_outcome": result.match_outcome,
-    }
+def _manual(body: ManualTransactionIn) -> dict[str, Any]:
+    payload = body.model_dump(exclude_none=True)
+    payload["amount"] = str(payload["amount"])
+    return payload
 
 
-def _review_json(item: ReviewItem) -> dict:
-    return {
-        "decision_id": item.decision_id,
-        "score": item.score,
-        "features": item.features,
-        "transaction": _transaction_json(item.transaction),
-        "candidate_event": _event_json(item.candidate_event),
-    }
+def _result(result: StoreResult) -> StoreResultOut:
+    return StoreResultOut(
+        transaction_id=result.transaction_id, event_id=result.event_id, match_outcome=result.match_outcome
+    )
 
 
-def _transaction_json(tx: TransactionRecord) -> dict:
-    return {
-        "id": tx.id,
-        "user_id": tx.user_id,
-        "group_id": tx.group_id,
-        "amount": str(tx.amount),
-        "currency": tx.currency,
-        "description": tx.description,
-        "merchant": tx.merchant,
-        "category": tx.category,
-        "source": tx.source,
-        "happened_at": tx.happened_at.isoformat(),
-        "happened_at_precision": tx.happened_at_precision,
-        "created_at": tx.created_at.isoformat(),
-        "event_id": tx.event_id,
-        "duplicate_of_id": tx.duplicate_of_id,
-    }
+def _review(item: ReviewItem) -> ReviewOut:
+    return ReviewOut(
+        decision_id=item.decision_id,
+        score=item.score,
+        features=item.features,
+        transaction=_transaction(item.transaction),
+        candidate_event=_event(item.candidate_event),
+    )
 
 
-def _event_json(event: EventRecord) -> dict:
-    return {
-        "id": event.id,
-        "amount": str(event.amount),
-        "currency": event.currency,
-        "direction": event.direction,
-        "happened_at": event.happened_at.isoformat(),
-        "merchant": event.merchant,
-        "category": event.category,
-        "primary_transaction_id": event.primary_transaction_id,
-        "review_state": event.review_state,
-        "transactions": [_transaction_json(tx) for tx in event.transactions],
-    }
+def _transaction(tx: TransactionRecord) -> TransactionOut:
+    return TransactionOut(
+        id=tx.id,
+        user_id=tx.user_id,
+        group_id=tx.group_id,
+        amount=str(tx.amount),
+        currency=tx.currency,
+        description=tx.description,
+        merchant=tx.merchant,
+        category=tx.category,
+        source=tx.source,
+        happened_at=tx.happened_at.isoformat(),
+        happened_at_precision=tx.happened_at_precision,
+        created_at=tx.created_at.isoformat(),
+        event_id=tx.event_id,
+        duplicate_of_id=tx.duplicate_of_id,
+    )
 
 
-def create_handler(storage: FinSyncStorage) -> type[FinSyncRequestHandler]:
-    """A handler class bound to one database."""
-    return type(
-        "BoundFinSyncRequestHandler",
-        (FinSyncRequestHandler,),
-        {"service": FinSyncService(storage), "tokens": TokenService(storage)},
+def _event(event: EventRecord) -> EventOut:
+    return EventOut(
+        id=event.id,
+        amount=str(event.amount),
+        currency=event.currency,
+        direction=event.direction,
+        happened_at=event.happened_at.isoformat(),
+        merchant=event.merchant,
+        category=event.category,
+        primary_transaction_id=event.primary_transaction_id,
+        review_state=event.review_state,
+        transactions=[_transaction(tx) for tx in event.transactions],
     )
 
 
 def run_server(host: str = "127.0.0.1", port: int = 8080, db_path: str = "finsync.db") -> None:
-    server = ThreadingHTTPServer((host, port), create_handler(FinSyncStorage(db_path)))
-    print(f"FinSync API running on http://{host}:{port} (database: {db_path})")
-    server.serve_forever()
+    import uvicorn
 
-
-if __name__ == "__main__":
-    run_server()
+    print(f"FinSync API running on http://{host}:{port} (database: {db_path}, docs: /docs)")
+    uvicorn.run(create_app(FinSyncStorage(db_path)), host=host, port=port)

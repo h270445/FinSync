@@ -4,13 +4,13 @@ This document has two parts: the architecture **as implemented** today, and the 
 
 ## 1. Current architecture (implemented)
 
-A single Python process using only the standard library:
+A single Python process: FastAPI on Uvicorn for HTTP, the standard library and SQLite below it:
 
 ```text
 HTTP client
     │  Authorization: Bearer <API token>, JSON body
     ▼
-finsync.api          ThreadingHTTPServer + FinSyncRequestHandler
+finsync.api          FastAPI app: routes, request models, body size limit, token dependency
     │
     ▼
 finsync.core         TokenService: token → member and group; FinSyncService: membership check, validation, use cases
@@ -123,9 +123,9 @@ The direction column is proposed in [ADR 0006](decisions/0006-framework-based-st
 
 | Concern | Now | Direction |
 | --- | --- | --- |
-| Language | Python (standard library) | Python with FastAPI and Pydantic |
+| Language | Python with FastAPI and Pydantic | Python with FastAPI and Pydantic |
 | Storage | SQLite | PostgreSQL with SQLAlchemy 2.0 and Alembic migrations |
-| API | `http.server` | FastAPI on Uvicorn, OpenAPI schema |
+| API | FastAPI on Uvicorn, OpenAPI schema (since 2026-11-07) | FastAPI on Uvicorn, OpenAPI schema |
 | Tests | `unittest` | pytest (existing tests run unchanged), PostgreSQL in tests, labelled datasets under `tests/data/` |
 | Web UI | none | React, TypeScript, Vite, TanStack Query, Tailwind CSS, shadcn/ui ([ADR 0005](decisions/0005-web-client-first.md)) |
 | Clients | none | Android: Kotlin, Jetpack Compose, WorkManager; Sheets: Apps Script with clasp |

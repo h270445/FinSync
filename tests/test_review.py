@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-import http.client
-from http.server import ThreadingHTTPServer
-import json
 import os
 import tempfile
-import threading
 import unittest
 
-from finsync.api import create_handler
+from fastapi.testclient import TestClient
+
+from finsync.api import create_app
 from finsync.core import AuthorizationError, ConflictError, FinSyncService, NotFoundError, TokenService
 from finsync.storage import FinSyncStorage
 
@@ -190,28 +188,17 @@ class ReviewApiTest(unittest.TestCase):
             ("user-1", "group-1"): tokens.create("user-1", "group-1", "test")[0],
             ("user-3", "group-2"): tokens.create("user-3", "group-2", "test")[0],
         }
-        handler = create_handler(storage)
-        handler.log_message = lambda *args: None
-        self.server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
-        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        self.client = TestClient(create_app(storage))
 
     def tearDown(self) -> None:
-        self.server.shutdown()
-        self.server.server_close()
+        self.client.close()
         self.tempdir.cleanup()
 
     def _call(self, method: str, path: str, body: dict | None = None, group: str = "group-1", user: str = "user-1"):
-        connection = http.client.HTTPConnection("127.0.0.1", self.server.server_address[1])
-        connection.request(
-            method,
-            path,
-            body=json.dumps(body or {}),
-            headers={"Authorization": f"Bearer {self.tokens[(user, group)]}", "Content-Type": "application/json"},
+        response = self.client.request(
+            method, path, json=body or {}, headers={"Authorization": f"Bearer {self.tokens[(user, group)]}"}
         )
-        response = connection.getresponse()
-        payload = json.loads(response.read())
-        connection.close()
-        return response.status, payload
+        return response.status_code, response.json()
 
     def test_review_flow_over_http(self) -> None:
         self._call("POST", "/v1/notifications/ingest", {"message": NOTIFICATION})

@@ -3,7 +3,13 @@
 ## Requirements
 
 - Python 3.10 or newer (the code uses `str | None` type syntax).
-- No third-party code: the prototype uses only the standard library. On Windows, `zoneinfo` needs the IANA time-zone data, which the operating system does not provide; install it once with `python -m pip install -r requirements.txt` (the `tzdata` data package; nothing is installed on Linux or macOS). Without it, the matching code fails with `No time zone found with key Europe/Budapest`.
+- The packages in `requirements.txt`: FastAPI and Uvicorn for the API, httpx for the tests, and on Windows the `tzdata` time-zone data (Windows does not ship it; without it the matching code fails with `No time zone found with key Europe/Budapest`). Install them once, preferably in a virtual environment:
+
+  ```bash
+  python -m venv .venv
+  source .venv/bin/activate     # Windows PowerShell: .venv\Scripts\Activate.ps1
+  python -m pip install -r requirements.txt
+  ```
 
 ## Run the API
 
@@ -13,7 +19,7 @@ From the repository root:
 python -m finsync.api
 ```
 
-The server listens on `http://127.0.0.1:8080` and creates `finsync.db` (SQLite) in the current directory. Options: `--host`, `--port`, `--db <file>`.
+The server listens on `http://127.0.0.1:8080` and creates `finsync.db` (SQLite) in the current directory. The interactive API description is at `http://127.0.0.1:8080/docs`. Options: `--host`, `--port`, `--db <file>`.
 
 ## Create an API token
 
@@ -51,4 +57,4 @@ Stop the server and delete `finsync.db`.
 
 ## Security note
 
-Requests are authenticated with per-member API tokens; keep a token like a password and revoke it if it leaks. There is no request size limit yet, so do not expose the API to the internet (for example through a tunnel) before that is in place. Use synthetic data only.
+Requests are authenticated with per-member API tokens; keep a token like a password and revoke it if it leaks. Request bodies are size-limited (64 KiB, 1 MiB for bulk import). Expose the API through a tunnel only temporarily, for tests and the demo ([ADR 0007](../architecture/decisions/0007-how-external-clients-reach-the-api.md)). Use synthetic data only.

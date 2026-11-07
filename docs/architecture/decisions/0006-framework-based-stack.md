@@ -1,6 +1,6 @@
 # 0006. Framework-based stack: FastAPI, PostgreSQL, React
 
-- Status: Proposed (supersedes [0002](0002-python-stdlib-and-sqlite.md) when accepted)
+- Status: Accepted 2026-11-07, in steps (supersedes [0002](0002-python-stdlib-and-sqlite.md)). Step 1, done 2026-11-07: the HTTP layer runs on FastAPI and Uvicorn, with the storage still on SQLite (the fallback below). The storage switch (SQLAlchemy, Alembic, PostgreSQL) and Docker Compose follow in a later step.
 - Date: 2026-10-09
 
 ## Context
