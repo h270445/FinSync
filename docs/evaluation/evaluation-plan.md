@@ -35,6 +35,8 @@ Both approaches will be evaluated on the same manually labeled dataset using mea
 
 The goal is to determine where an LLM provides a measurable benefit over deterministic rules, rather than assuming that an AI-based solution is inherently better.
 
+**Dataset** (`tests/data/categorization_eval.csv`, version 1 with 200 items, see [datasets.md](datasets.md#testsdatacategorization_evalcsv--categorization-version-1)): 130 clear and 70 ambiguous items, split into development and test sets.
+
 Ambiguous merchants (for example a supermarket that also sells clothing) are labelled separately, and abstaining is scored as its own outcome; the details are in the [categorization design](../design/categorization.md#evaluation).
 
 ## 3. Security and privacy
