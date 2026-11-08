@@ -1,6 +1,6 @@
 # User interface
 
-- Status: **Proposed** (not implemented)
+- Status: **In progress**: W3, W4 and W5 are built in [`web/`](../../web/README.md) (2026-11-08); the other screens are placeholders
 - Date: 2026-10-09
 - Decision record: [ADR 0005](../architecture/decisions/0005-web-client-first.md)
 - Figma prompts: [figma-prompts.md](figma-prompts.md)
