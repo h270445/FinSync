@@ -1,0 +1,201 @@
+item_id,scenario,ambiguity,split,source,description,merchant,amount,currency,true_category,usual_category
+C0001,unfamiliar_merchant,clear,test,manual,Parkolás,Parkolás,1110,HUF,transport,transport
+C0002,hungarian_description,clear,dev,manual,ebéd a menzán,,1890,HUF,eating_out,eating_out
+C0003,mixed_merchant,ambiguous,dev,android_notification,AUCHAN SOROKSAR,,25440,HUF,entertainment,groceries
+C0004,hungarian_description,clear,test,manual,mozijegy,,2990,HUF,entertainment,entertainment
+C0005,mixed_merchant,ambiguous,dev,android_notification,TESCO Áruház 41021,,4500,HUF,groceries,groceries
+C0006,mixed_with_detail,clear,dev,manual,Tesco - Weekly food shop,Tesco,3490,HUF,groceries,groceries
+C0007,mixed_merchant,ambiguous,dev,file_import,VÁSÁRLÁS KÁRTYÁVAL AMAZON MKTPL*2K4L9,,11870,HUF,clothing,household
+C0008,clear_merchant,clear,test,manual,OBI,OBI,15990,HUF,household,household
+C0009,unfamiliar_merchant,clear,dev,manual,Kovács Pékség,Kovács Pékség,1450,HUF,groceries,groceries
+C0010,unfamiliar_merchant,clear,test,manual,Cipőbolt,Cipőbolt,21990,HUF,clothing,clothing
+C0011,clear_merchant,clear,test,manual,Benu,Benu,7820,HUF,health,health
+C0012,hungarian_description,clear,test,manual,fogorvos,,25950,HUF,health,health
+C0013,mixed_with_detail,clear,test,manual,Auchan - kaja hétvégére,Auchan,22340,HUF,groceries,groceries
+C0014,mixed_merchant,ambiguous,test,manual,Spar,Spar,7590,HUF,groceries,groceries
+C0015,mixed_with_detail,clear,test,manual,Tesco - Cleaning supplies,Tesco,14650,HUF,household,groceries
+C0016,unfamiliar_merchant,clear,dev,manual,Vízművek,Vízművek,7340,HUF,housing_utilities,housing_utilities
+C0017,mixed_merchant,ambiguous,test,android_notification,DECATHLON,,13440,HUF,entertainment,clothing
+C0018,mixed_merchant,ambiguous,test,file_import,VÁSÁRLÁS KÁRTYÁVAL DM DROGERIE 0855,,3640,HUF,household,household
+C0019,unfamiliar_merchant,clear,test,manual,Cipőbolt,Cipőbolt,16990,HUF,clothing,clothing
+C0020,mixed_merchant,ambiguous,dev,android_notification,AUCHAN SOROKSAR,,15330,HUF,groceries,groceries
+C0021,unfamiliar_merchant,clear,dev,manual,Kovács Pékség,Kovács Pékség,1450,HUF,groceries,groceries
+C0022,cryptic_text,ambiguous,dev,file_import,VÁSÁRLÁS KÁRTYÁVAL BARION*ONLINE FIZ,,28690,HUF,entertainment,
+C0023,clear_merchant,clear,dev,manual,Benu,Benu,8490,HUF,health,health
+C0024,mixed_merchant,ambiguous,dev,manual,Spar,Spar,2590,HUF,groceries,groceries
+C0025,mixed_with_detail,clear,dev,manual,dm - gyógyszer,dm,5590,HUF,health,household
+C0026,unfamiliar_merchant,clear,test,file_import,VÁSÁRLÁS KÁRTYÁVAL DR NAGY FOGASZATI REND,,25000,HUF,health,health
+C0027,clear_merchant,clear,test,android_notification,PIZZERIA ROMA,,9800,HUF,eating_out,eating_out
+C0028,mixed_merchant,ambiguous,dev,android_notification,EMAG.HU,,4580,HUF,entertainment,household
+C0029,mixed_merchant,ambiguous,dev,file_import,VÁSÁRLÁS KÁRTYÁVAL ROSSMANN 207,,4890,HUF,health,household
+C0030,mixed_merchant,ambiguous,test,manual,Rossmann,Rossmann,4890,HUF,household,household
+C0031,clear_merchant,clear,test,android_notification,Magyar Telekom Nyrt.,,9990,HUF,housing_utilities,housing_utilities
+C0032,clear_merchant,clear,dev,android_notification,DEICHMANN 233,,8990,HUF,clothing,clothing
+C0033,clear_merchant,clear,test,manual,Netflix,Netflix,4490,HUF,entertainment,entertainment
+C0034,clear_merchant,clear,test,android_notification,BOLT.EU/O/2610,,4150,HUF,transport,transport
+C0035,hungarian_description,clear,dev,manual,mozijegy,,5980,HUF,entertainment,entertainment
+C0036,mixed_merchant,ambiguous,dev,manual,Spar,Spar,6720,HUF,groceries,groceries
+C0037,unfamiliar_merchant,clear,test,manual,Cipőbolt,Cipőbolt,21990,HUF,clothing,clothing
+C0038,clear_merchant,clear,test,manual,Burger King,Burger King,3290,HUF,eating_out,eating_out
+C0039,clear_merchant,clear,dev,android_notification,BKK Automata,,8590,HUF,transport,transport
+C0040,clear_merchant,clear,dev,android_notification,BOLT.EU/O/2610,,4150,HUF,transport,transport
+C0041,unfamiliar_merchant,clear,test,android_notification,PRAKTIKER 21,,12990,HUF,household,household
+C0042,clear_merchant,clear,dev,manual,H&M,H&M,10060,HUF,clothing,clothing
+C0043,clear_merchant,clear,test,file_import,VÁSÁRLÁS KÁRTYÁVAL SPOTIFY P2B8E1,,2530,HUF,entertainment,entertainment
+C0044,clear_merchant,clear,test,manual,Posta,Posta,2890,HUF,other,other
+C0045,hungarian_description,clear,dev,manual,ebéd a menzán,,1580,HUF,eating_out,eating_out
+C0046,cryptic_text,ambiguous,dev,android_notification,POS 00451 BUDAPEST,,1350,HUF,health,
+C0047,cryptic_text,ambiguous,test,file_import,VÁSÁRLÁS KÁRTYÁVAL POS 00451 BUDAPEST,,23810,HUF,health,
+C0048,unfamiliar_merchant,clear,dev,android_notification,PARKOLAS BP XIII,,500,HUF,transport,transport
+C0049,mixed_with_detail,clear,dev,manual,Decathlon - PS5 játék,Decathlon,11990,HUF,entertainment,clothing
+C0050,mixed_merchant,ambiguous,test,file_import,VÁSÁRLÁS KÁRTYÁVAL TESCO ÁRUHÁZ 41021,,4750,HUF,entertainment,groceries
+C0051,clear_merchant,clear,test,file_import,VÁSÁRLÁS KÁRTYÁVAL PIZZERIA ROMA,,12000,HUF,eating_out,eating_out
+C0052,mixed_with_detail,clear,test,manual,Rossmann - mosószer és szivacs,Rossmann,2340,HUF,household,household
+C0053,hungarian_description,clear,dev,manual,benzin,,21000,HUF,transport,transport
+C0054,mixed_merchant,ambiguous,test,manual,Amazon,Amazon,11000,HUF,entertainment,household
+C0055,mixed_merchant,ambiguous,dev,android_notification,TESCO Áruház 41021,,3740,HUF,groceries,groceries
+C0056,mixed_merchant,ambiguous,test,android_notification,AMAZON MKTPL*2K4L9,,11870,HUF,entertainment,household
+C0057,mixed_merchant,ambiguous,dev,android_notification,TESCO Áruház 41021,,10650,HUF,groceries,groceries
+C0058,hungarian_description,clear,dev,manual,BKV bérlet,,8950,HUF,transport,transport
+C0059,mixed_merchant,ambiguous,dev,manual,Rossmann,Rossmann,2340,HUF,household,household
+C0060,unfamiliar_merchant,clear,test,file_import,VÁSÁRLÁS KÁRTYÁVAL ZOLD KERT BISZTRO,,11200,HUF,eating_out,eating_out
+C0061,hungarian_description,clear,test,manual,villanyszámla,,14300,HUF,housing_utilities,housing_utilities
+C0062,cryptic_text,ambiguous,dev,file_import,VÁSÁRLÁS KÁRTYÁVAL POS 00451 BUDAPEST,,2330,HUF,other,
+C0063,unfamiliar_merchant,clear,test,android_notification,FODRASZAT ANNA,,6500,HUF,other,other
+C0064,clear_merchant,clear,dev,android_notification,NETFLIX.COM,,4490,HUF,entertainment,entertainment
+C0065,mixed_merchant,ambiguous,dev,manual,Auchan,Auchan,22340,HUF,groceries,groceries
+C0066,cryptic_text,ambiguous,dev,android_notification,POS 00451 BUDAPEST,,4950,HUF,groceries,
+C0067,clear_merchant,clear,dev,android_notification,MVM NEXT ENERGIA,,14320,HUF,housing_utilities,housing_utilities
+C0068,clear_merchant,clear,dev,android_notification,MAV-START ZRT,,5180,HUF,transport,transport
+C0069,hungarian_description,clear,dev,manual,ebéd a menzán,,2200,HUF,eating_out,eating_out
+C0070,mixed_merchant,ambiguous,test,manual,eMAG,eMAG,8990,HUF,entertainment,household
+C0071,mixed_with_detail,clear,dev,manual,Lidl - Weekly food shop,Lidl,7680,HUF,groceries,groceries
+C0072,mixed_merchant,ambiguous,test,android_notification,LIDL 0231,,3210,HUF,groceries,groceries
+C0073,mixed_with_detail,clear,dev,manual,Amazon - Cleaning supplies,Amazon,11870,HUF,household,household
+C0074,unfamiliar_merchant,clear,test,android_notification,CIPOBOLT KFT,,19080,HUF,clothing,clothing
+C0075,mixed_with_detail,clear,dev,manual,eMAG - Cleaning supplies,eMAG,8990,HUF,household,household
+C0076,unfamiliar_merchant,clear,dev,file_import,VÁSÁRLÁS KÁRTYÁVAL PRAKTIKER 21,,5490,HUF,household,household
+C0077,unfamiliar_merchant,clear,test,android_notification,PARKOLAS BP XIII,,1240,HUF,transport,transport
+C0078,cryptic_text,ambiguous,test,android_notification,POS 00451 BUDAPEST,,13100,HUF,groceries,
+C0079,hungarian_description,clear,test,manual,mozijegy,,2800,HUF,entertainment,entertainment
+C0080,unfamiliar_merchant,clear,test,manual,Vízművek,Vízművek,7000,HUF,housing_utilities,housing_utilities
+C0081,clear_merchant,clear,dev,file_import,VÁSÁRLÁS KÁRTYÁVAL CINEMA CITY ARENA,,3500,HUF,entertainment,entertainment
+C0082,mixed_merchant,ambiguous,dev,android_notification,AMAZON MKTPL*2K4L9,,9910,HUF,clothing,household
+C0083,mixed_merchant,ambiguous,dev,android_notification,DECATHLON,,8990,HUF,entertainment,clothing
+C0084,mixed_with_detail,clear,dev,manual,Tesco - Cleaning supplies,Tesco,13030,HUF,household,groceries
+C0085,mixed_with_detail,clear,test,manual,Auchan - Light bulbs,Auchan,9870,HUF,household,groceries
+C0086,clear_merchant,clear,test,manual,Deichmann,Deichmann,10940,HUF,clothing,clothing
+C0087,clear_merchant,clear,dev,android_notification,H&M 0921,,14990,HUF,clothing,clothing
+C0088,mixed_merchant,ambiguous,test,android_notification,TESCO Áruház 41021,,3490,HUF,household,groceries
+C0089,mixed_merchant,ambiguous,dev,android_notification,LIDL 0231,,2990,HUF,groceries,groceries
+C0090,unfamiliar_merchant,clear,test,android_notification,DR NAGY FOGASZATI REND,,20360,HUF,health,health
+C0091,unfamiliar_merchant,clear,test,file_import,VÁSÁRLÁS KÁRTYÁVAL PARKOLAS BP XIII,,600,HUF,transport,transport
+C0092,mixed_with_detail,clear,test,manual,eMAG - mosószer és szivacs,eMAG,7340,HUF,household,household
+C0093,clear_merchant,clear,dev,android_notification,MVM NEXT ENERGIA,,24630,HUF,housing_utilities,housing_utilities
+C0094,mixed_merchant,ambiguous,dev,android_notification,EMAG.HU,,24990,HUF,entertainment,household
+C0095,cryptic_text,ambiguous,dev,android_notification,POS 00451 BUDAPEST,,16110,HUF,groceries,
+C0096,mixed_merchant,ambiguous,test,android_notification,LIDL 0231,,2990,HUF,clothing,groceries
+C0097,mixed_with_detail,clear,dev,manual,Decathlon - zokni,Decathlon,10710,HUF,clothing,clothing
+C0098,mixed_merchant,ambiguous,test,android_notification,SPAR Magyarország Kft.,,2040,HUF,other,groceries
+C0099,clear_merchant,clear,test,file_import,VÁSÁRLÁS KÁRTYÁVAL MAGYAR TELEKOM NYRT.,,8350,HUF,housing_utilities,housing_utilities
+C0100,clear_merchant,clear,dev,android_notification,BURGER KING 0412,,2860,HUF,eating_out,eating_out
+C0101,mixed_merchant,ambiguous,test,manual,dm,dm,3120,HUF,household,household
+C0102,mixed_with_detail,clear,test,manual,dm - gyógyszer,dm,6200,HUF,health,household
+C0103,unfamiliar_merchant,clear,test,android_notification,PARKOLAS BP XIII,,600,HUF,transport,transport
+C0104,mixed_merchant,ambiguous,dev,manual,Amazon,Amazon,6870,HUF,entertainment,household
+C0105,mixed_merchant,ambiguous,dev,android_notification,AMAZON MKTPL*2K4L9,,9640,HUF,clothing,household
+C0106,mixed_merchant,ambiguous,test,android_notification,DM DROGERIE 0855,,3120,HUF,household,household
+C0107,clear_merchant,clear,dev,android_notification,DEICHMANN 233,,8990,HUF,clothing,clothing
+C0108,clear_merchant,clear,dev,file_import,VÁSÁRLÁS KÁRTYÁVAL OBI 1043,,6490,HUF,household,household
+C0109,mixed_merchant,ambiguous,dev,android_notification,EMAG.HU,,9570,HUF,household,household
+C0110,unfamiliar_merchant,clear,test,android_notification,PRAKTIKER 21,,14760,HUF,household,household
+C0111,hungarian_description,clear,test,manual,villanyszámla,,14300,HUF,housing_utilities,housing_utilities
+C0112,mixed_merchant,ambiguous,dev,file_import,VÁSÁRLÁS KÁRTYÁVAL DM DROGERIE 0855,,3120,HUF,household,household
+C0113,clear_merchant,clear,dev,manual,Pizzeria Roma,Pizzeria Roma,9800,HUF,eating_out,eating_out
+C0114,unfamiliar_merchant,clear,test,android_notification,ZOLDSEG-GYUMOLCS 14,,2100,HUF,groceries,groceries
+C0115,cryptic_text,ambiguous,test,android_notification,SZEP KARTYA ELFOG 0193,,19020,HUF,groceries,
+C0116,mixed_merchant,ambiguous,dev,manual,dm,dm,2690,HUF,household,household
+C0117,mixed_merchant,ambiguous,dev,manual,Decathlon,Decathlon,8990,HUF,entertainment,clothing
+C0118,clear_merchant,clear,dev,manual,Burger King,Burger King,4580,HUF,eating_out,eating_out
+C0119,mixed_merchant,ambiguous,test,manual,Spar,Spar,6720,HUF,groceries,groceries
+C0120,mixed_with_detail,clear,dev,manual,Decathlon - T-shirt for the kid,Decathlon,13030,HUF,clothing,clothing
+C0121,mixed_merchant,ambiguous,dev,file_import,VÁSÁRLÁS KÁRTYÁVAL DECATHLON,,11990,HUF,entertainment,clothing
+C0122,clear_merchant,clear,test,manual,H&M,H&M,10080,HUF,clothing,clothing
+C0123,mixed_merchant,ambiguous,test,android_notification,AMAZON MKTPL*2K4L9,,12630,HUF,household,household
+C0124,hungarian_description,clear,test,manual,ebéd a menzán,,1870,HUF,eating_out,eating_out
+C0125,unfamiliar_merchant,clear,dev,android_notification,KONYVESBOLT LIBRI,,4990,HUF,entertainment,entertainment
+C0126,clear_merchant,clear,dev,file_import,VÁSÁRLÁS KÁRTYÁVAL WOLT,,8780,HUF,eating_out,eating_out
+C0127,hungarian_description,clear,dev,manual,porszívó,,35800,HUF,household,household
+C0128,clear_merchant,clear,dev,android_notification,OBI 1043,,6490,HUF,household,household
+C0129,mixed_with_detail,clear,dev,manual,Tesco - Weekly food shop,Tesco,4500,HUF,groceries,groceries
+C0130,mixed_merchant,ambiguous,test,android_notification,LIDL 0231,,4120,HUF,groceries,groceries
+C0131,mixed_merchant,ambiguous,test,android_notification,DM DROGERIE 0855,,3120,HUF,health,household
+C0132,clear_merchant,clear,test,file_import,VÁSÁRLÁS KÁRTYÁVAL MAGYAR POSTA 1132,,2890,HUF,other,other
+C0133,clear_merchant,clear,test,android_notification,Wolt,,5890,HUF,eating_out,eating_out
+C0134,clear_merchant,clear,dev,manual,Benu,Benu,1290,HUF,health,health
+C0135,unfamiliar_merchant,clear,test,file_import,VÁSÁRLÁS KÁRTYÁVAL PRAKTIKER 21,,5490,HUF,household,household
+C0136,hungarian_description,clear,test,manual,vacsora étteremben,,14500,HUF,eating_out,eating_out
+C0137,cryptic_text,ambiguous,test,android_notification,SIMPLEP*7731 BUDAPEST,,5180,HUF,eating_out,
+C0138,mixed_merchant,ambiguous,dev,manual,Rossmann,Rossmann,4890,HUF,household,household
+C0139,unfamiliar_merchant,clear,dev,file_import,VÁSÁRLÁS KÁRTYÁVAL PRAKTIKER 21,,12990,HUF,household,household
+C0140,mixed_merchant,ambiguous,test,file_import,VÁSÁRLÁS KÁRTYÁVAL AUCHAN SOROKSAR,,9320,HUF,entertainment,groceries
+C0141,clear_merchant,clear,dev,manual,Pizzeria Roma,Pizzeria Roma,9800,HUF,eating_out,eating_out
+C0142,mixed_with_detail,clear,dev,manual,dm - Cleaning supplies,dm,3700,HUF,household,household
+C0143,cryptic_text,ambiguous,test,android_notification,SZEP KARTYA ELFOG 0193,,26040,HUF,groceries,
+C0144,mixed_with_detail,clear,test,manual,Tesco - Weekly food shop,Tesco,3490,HUF,groceries,groceries
+C0145,clear_merchant,clear,test,manual,OBI,OBI,15990,HUF,household,household
+C0146,hungarian_description,clear,dev,manual,patika,,3080,HUF,health,health
+C0147,mixed_merchant,ambiguous,dev,android_notification,DM DROGERIE 0855,,5460,HUF,health,household
+C0148,mixed_with_detail,clear,test,manual,Tesco - heti bevásárlás,Tesco,12450,HUF,groceries,groceries
+C0149,mixed_with_detail,clear,dev,manual,Decathlon - Winter jacket,Decathlon,7660,HUF,clothing,clothing
+C0150,clear_merchant,clear,test,android_notification,MVM NEXT ENERGIA,,21870,HUF,housing_utilities,housing_utilities
+C0151,mixed_with_detail,clear,dev,manual,Spar - kaja hétvégére,Spar,5690,HUF,groceries,groceries
+C0152,cryptic_text,ambiguous,test,file_import,VÁSÁRLÁS KÁRTYÁVAL POS 00451 BUDAPEST,,16660,HUF,other,
+C0153,cryptic_text,ambiguous,test,file_import,VÁSÁRLÁS KÁRTYÁVAL SIMPLEP*7731 BUDAPEST,,10730,HUF,eating_out,
+C0154,unfamiliar_merchant,clear,test,manual,Vízművek,Vízművek,6400,HUF,housing_utilities,housing_utilities
+C0155,mixed_with_detail,clear,dev,manual,eMAG - PS5 játék,eMAG,4220,HUF,entertainment,household
+C0156,clear_merchant,clear,dev,android_notification,OBI 1043,,15990,HUF,household,household
+C0157,clear_merchant,clear,dev,manual,Főtáv,Főtáv,21900,HUF,housing_utilities,housing_utilities
+C0158,clear_merchant,clear,dev,file_import,VÁSÁRLÁS KÁRTYÁVAL DEICHMANN 233,,12990,HUF,clothing,clothing
+C0159,mixed_with_detail,clear,dev,manual,Decathlon - Lego for birthday,Decathlon,11990,HUF,entertainment,clothing
+C0160,unfamiliar_merchant,clear,test,android_notification,FODRASZAT ANNA,,8640,HUF,other,other
+C0161,hungarian_description,clear,dev,manual,lakbér,,202900,HUF,housing_utilities,housing_utilities
+C0162,mixed_with_detail,clear,dev,manual,Decathlon - Winter jacket,Decathlon,8990,HUF,clothing,clothing
+C0163,mixed_with_detail,clear,test,manual,Auchan - heti bevásárlás,Auchan,9440,HUF,groceries,groceries
+C0164,cryptic_text,ambiguous,dev,file_import,VÁSÁRLÁS KÁRTYÁVAL POS 00451 BUDAPEST,,27200,HUF,other,
+C0165,cryptic_text,ambiguous,dev,file_import,VÁSÁRLÁS KÁRTYÁVAL POS 00451 BUDAPEST,,2280,HUF,other,
+C0166,cryptic_text,ambiguous,dev,android_notification,SIMPLEP*7731 BUDAPEST,,23700,HUF,household,
+C0167,clear_merchant,clear,test,manual,Deichmann,Deichmann,8990,HUF,clothing,clothing
+C0168,cryptic_text,ambiguous,dev,file_import,VÁSÁRLÁS KÁRTYÁVAL SZEP KARTYA ELFOG 0193,,7240,HUF,groceries,
+C0169,clear_merchant,clear,dev,manual,Telekom,Telekom,9990,HUF,housing_utilities,housing_utilities
+C0170,unfamiliar_merchant,clear,dev,file_import,VÁSÁRLÁS KÁRTYÁVAL FODRASZAT ANNA,,7720,HUF,other,other
+C0171,cryptic_text,ambiguous,test,file_import,VÁSÁRLÁS KÁRTYÁVAL POS 00451 BUDAPEST,,29210,HUF,health,
+C0172,mixed_with_detail,clear,test,manual,Amazon - Cleaning supplies,Amazon,6320,HUF,household,household
+C0173,unfamiliar_merchant,clear,test,android_notification,PARKOLAS BP XIII,,1200,HUF,transport,transport
+C0174,clear_merchant,clear,test,file_import,VÁSÁRLÁS KÁRTYÁVAL OBI 1043,,6490,HUF,household,household
+C0175,clear_merchant,clear,test,android_notification,BENU GYOGYSZERTAR 112,,3450,HUF,health,health
+C0176,hungarian_description,clear,test,manual,BKV bérlet,,8950,HUF,transport,transport
+C0177,cryptic_text,ambiguous,dev,android_notification,SZEP KARTYA ELFOG 0193,,29110,HUF,groceries,
+C0178,mixed_with_detail,clear,test,manual,dm - mosószer és szivacs,dm,3120,HUF,household,household
+C0179,cryptic_text,ambiguous,test,file_import,VÁSÁRLÁS KÁRTYÁVAL BARION*ONLINE FIZ,,15160,HUF,clothing,
+C0180,cryptic_text,ambiguous,test,android_notification,PAYPAL *4029357733,,20890,HUF,clothing,
+C0181,clear_merchant,clear,dev,android_notification,OBI 1043,,15990,HUF,household,household
+C0182,hungarian_description,clear,test,manual,mozijegy,,2990,HUF,entertainment,entertainment
+C0183,mixed_merchant,ambiguous,test,file_import,VÁSÁRLÁS KÁRTYÁVAL DM DROGERIE 0855,,5460,HUF,household,household
+C0184,clear_merchant,clear,test,manual,MÁV,MÁV,3450,HUF,transport,transport
+C0185,clear_merchant,clear,test,manual,Benu,Benu,1290,HUF,health,health
+C0186,clear_merchant,clear,dev,manual,Pizzeria Roma,Pizzeria Roma,13900,HUF,eating_out,eating_out
+C0187,mixed_merchant,ambiguous,dev,android_notification,TESCO Áruház 41021,,12450,HUF,household,groceries
+C0188,mixed_merchant,ambiguous,dev,android_notification,AMAZON MKTPL*2K4L9,,12740,HUF,clothing,household
+C0189,mixed_merchant,ambiguous,test,android_notification,DECATHLON,,10690,HUF,entertainment,clothing
+C0190,mixed_with_detail,clear,dev,manual,Decathlon - PS5 játék,Decathlon,11990,HUF,entertainment,clothing
+C0191,clear_merchant,clear,test,manual,Pizzeria Roma,Pizzeria Roma,13990,HUF,eating_out,eating_out
+C0192,hungarian_description,clear,test,manual,mozijegy,,2990,HUF,entertainment,entertainment
+C0193,unfamiliar_merchant,clear,test,android_notification,PRAKTIKER 21,,5860,HUF,household,household
+C0194,hungarian_description,clear,test,manual,mozijegy,,2990,HUF,entertainment,entertainment
+C0195,mixed_merchant,ambiguous,dev,manual,Amazon,Amazon,11870,HUF,entertainment,household
+C0196,unfamiliar_merchant,clear,dev,android_notification,CIPOBOLT KFT,,16990,HUF,clothing,clothing
+C0197,mixed_with_detail,clear,test,manual,Amazon - Light bulbs,Amazon,12720,HUF,household,household
+C0198,clear_merchant,clear,dev,manual,Benu,Benu,7820,HUF,health,health
+C0199,mixed_with_detail,clear,test,manual,Rossmann - Weekly food shop,Rossmann,2340,HUF,groceries,household
+C0200,mixed_merchant,ambiguous,dev,file_import,VÁSÁRLÁS KÁRTYÁVAL EMAG.HU,,4030,HUF,household,household
