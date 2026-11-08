@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { describeDelta, formatAmount, formatDate, formatDateTime, formatScore } from './format'
+import { describeDelta, formatAmount, formatDate, formatDateTime, formatScore, localMonth } from './format'
 
 // Intl uses no-break spaces as thousand separators; compare with plain spaces.
 const plain = (text: string | null) => text?.replace(/\s/g, ' ')
@@ -28,6 +28,16 @@ describe('formatDate', () => {
 
   it('adds a 24-hour time for minute precision', () => {
     expect(formatDateTime('2026-09-01T13:45:00+00:00')).toBe('2026. 09. 01. 15:45')
+  })
+})
+
+describe('localMonth', () => {
+  it('puts a late-evening UTC time into the next Budapest month', () => {
+    expect(localMonth('2026-09-30T22:30:00+00:00')).toBe('2026-10')
+  })
+
+  it('keeps the stored date of a day-precision value', () => {
+    expect(localMonth('2026-09-30T00:00:00+00:00', 'day')).toBe('2026-09')
   })
 })
 

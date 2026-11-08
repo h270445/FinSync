@@ -92,13 +92,25 @@ describe('ReviewPage', () => {
     expect(posted).toContain('POST /v1/matches/7/reject')
   })
 
-  it('blocks confirming a contested match', async () => {
-    serve([review({ features: { a: 1, t: 0.9, m: 1, delta: '0.40h', score: 0.97, contested: true } })])
+  it('blocks confirming while the event holds a record of the same channel', async () => {
+    const base = review({ features: { a: 1, t: 0.9, m: 1, delta: '0.40h', score: 0.97, contested: true } })
+    const sameChannel = record({ id: 3, source: 'manual', user_id: 'balint', merchant: 'Spar' })
+    const event = { ...base.candidate_event, transactions: [...base.candidate_event.transactions, sameChannel] }
+    serve([{ ...base, candidate_event: event }])
     renderPage()
 
     expect(await screen.findByText('Vitatott összekapcsolás')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Ugyanaz a vásárlás' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Két külön vásárlás' })).toBeEnabled()
+  })
+
+  it('allows confirming once the conflicting record was split off', async () => {
+    serve([review({ features: { a: 1, t: 0.9, m: 1, delta: '0.40h', score: 0.97, contested: true } })])
+    renderPage()
+
+    expect(await screen.findByText('1 ellenőrzésre vár')).toBeInTheDocument()
+    expect(screen.queryByText('Vitatott összekapcsolás')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Ugyanaz a vásárlás' })).toBeEnabled()
   })
 
   it('shows an identical manual entry without a score', async () => {

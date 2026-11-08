@@ -22,7 +22,6 @@ interface Features {
   delta?: string
   score?: number
   runner_up?: number | null
-  contested?: boolean
   identical_row_of_id?: number
 }
 
@@ -93,33 +92,42 @@ function ReviewItem({ review }: { review: Review }) {
   const reject = useRejectMatch()
   const split = useSplitEvent()
   const busy = confirm.isPending || reject.isPending
+  const identical = features.identical_row_of_id !== undefined
+  // The backend refuses a confirmation while the event holds a record of the same channel (source and
+  // member), so this is checked on the event as it is now, not on the flag stored with the decision.
+  const blocked =
+    !identical &&
+    originalRecords(event).some(
+      ({ record }) => record.source === review.transaction.source && record.user_id === review.transaction.user_id,
+    )
 
-  const fail = (error: Error) =>
+  // mutateAsync, not per-call mutate callbacks: the refetch after a decision removes this item from the
+  // queue and unmounts it, and callbacks of an unmounted observer never run.
+  const fail = (error: unknown) =>
     toast.error(error instanceof ApiError ? error.message : 'A döntést nem sikerült elmenteni.')
 
   function same() {
-    confirm.mutate(review.decision_id, {
-      onSuccess: (result) =>
-        toast.success('Összekapcsolva: ugyanaz a vásárlás.', {
-          // Undo of a confirmation is a split of the record out of the event (logged as well).
-          action: {
-            label: 'Visszavonás',
-            onClick: () =>
-              split.mutate(
-                { eventId: result.event_id, transactionId: result.transaction_id },
-                { onSuccess: () => toast.success('Visszavonva: a tétel újra külön esemény.'), onError: fail },
-              ),
-          },
-        }),
-      onError: fail,
-    })
+    confirm.mutateAsync(review.decision_id).then((result) => {
+      if (identical) {
+        // The record became a re-delivery of the earlier row, which a split cannot move: no undo yet.
+        toast.success('Összekapcsolva: ugyanaz a vásárlás.')
+        return
+      }
+      toast.success('Összekapcsolva: ugyanaz a vásárlás.', {
+        // Undo of a confirmation is a split of the record out of the event (logged as well).
+        action: {
+          label: 'Visszavonás',
+          onClick: () =>
+            split
+              .mutateAsync({ eventId: result.event_id, transactionId: result.transaction_id })
+              .then(() => toast.success('Visszavonva: a tétel újra külön esemény.'), fail),
+        },
+      })
+    }, fail)
   }
 
   function different() {
-    reject.mutate(review.decision_id, {
-      onSuccess: () => toast.success('Két külön vásárlásként rögzítve.'),
-      onError: fail,
-    })
+    reject.mutateAsync(review.decision_id).then(() => toast.success('Két külön vásárlásként rögzítve.'), fail)
   }
 
   return (
@@ -142,7 +150,7 @@ function ReviewItem({ review }: { review: Review }) {
         </Card>
       </div>
 
-      {features.identical_row_of_id !== undefined ? (
+      {identical ? (
         <Alert>
           <AlertTitle>Azonos kézi tétel már rögzítve</AlertTitle>
           <AlertDescription>
@@ -160,7 +168,7 @@ function ReviewItem({ review }: { review: Review }) {
         </p>
       )}
 
-      {features.contested && (
+      {blocked && (
         <Alert>
           <AlertTitle>Vitatott összekapcsolás</AlertTitle>
           <AlertDescription>
@@ -175,7 +183,7 @@ function ReviewItem({ review }: { review: Review }) {
       )}
 
       <div className="flex flex-wrap gap-2">
-        <Button size="lg" onClick={same} disabled={busy || features.contested}>
+        <Button size="lg" onClick={same} disabled={busy || blocked}>
           Ugyanaz a vásárlás
         </Button>
         <Button size="lg" variant="outline" onClick={different} disabled={busy}>

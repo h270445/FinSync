@@ -1,4 +1,5 @@
 import type { FinSyncEvent, Transaction } from '@/api/client'
+import { localMonth } from '@/lib/format'
 
 /** An event's records without re-deliveries, each with how many times it arrived. */
 export function originalRecords(event: FinSyncEvent): { record: Transaction; deliveries: number }[] {
@@ -14,7 +15,7 @@ export function primaryRecord(event: FinSyncEvent): Transaction | undefined {
   return event.transactions.find((record) => record.id === event.primary_transaction_id) ?? event.transactions[0]
 }
 
-/** "2026-10" from the API's timestamp: close enough for a month filter. */
+/** The event's month ("2026-10") as the list shows its date: in Budapest time, a day-precision date as stored. */
 export function monthOf(event: FinSyncEvent): string {
-  return event.happened_at.slice(0, 7)
+  return localMonth(event.happened_at, primaryRecord(event)?.happened_at_precision)
 }

@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { createContext, useContext, useState, type ReactNode } from 'react'
 
 import { setApiToken } from '@/api/client'
@@ -24,6 +25,7 @@ function readStored(): string | null {
 }
 
 export function TokenProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient()
   const [token, setToken] = useState(() => {
     const stored = readStored()
     setApiToken(stored)
@@ -31,6 +33,9 @@ export function TokenProvider({ children }: { children: ReactNode }) {
   })
 
   function update(value: string | null) {
+    // Another token may be another member or group: drop every cached answer and in-flight request of the old one.
+    void queryClient.cancelQueries()
+    queryClient.clear()
     setApiToken(value)
     setToken(value)
     try {

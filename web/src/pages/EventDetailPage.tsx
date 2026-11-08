@@ -143,17 +143,16 @@ function SplitButton({ event, record }: { event: FinSyncEvent; record: Transacti
   const navigate = useNavigate()
 
   function confirm() {
-    split.mutate(
-      { eventId: event.id, transactionId: record.id },
-      {
-        onSuccess: (result) => {
-          setOpen(false)
-          toast.success('Szétválasztva: a tétel külön eseménybe került.', {
-            action: { label: 'Megnyitás', onClick: () => navigate(`/esemenyek/${result.event_id}`) },
-          })
-        },
-        onError: (error) => toast.error(error instanceof ApiError ? error.message : 'A szétválasztás nem sikerült.'),
+    // mutateAsync: the refetch moves this record out of the event and unmounts this button, and
+    // per-call mutate callbacks of an unmounted component never run.
+    split.mutateAsync({ eventId: event.id, transactionId: record.id }).then(
+      (result) => {
+        setOpen(false)
+        toast.success('Szétválasztva: a tétel külön eseménybe került.', {
+          action: { label: 'Megnyitás', onClick: () => navigate(`/esemenyek/${result.event_id}`) },
+        })
       },
+      (error) => toast.error(error instanceof ApiError ? error.message : 'A szétválasztás nem sikerült.'),
     )
   }
 

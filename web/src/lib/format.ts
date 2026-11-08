@@ -9,6 +9,7 @@ const huf = money('HUF')
 const dateFormat = new Intl.DateTimeFormat('hu-HU', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: TIME_ZONE })
 const dayFormat = new Intl.DateTimeFormat('hu-HU', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC' })
 const timeFormat = new Intl.DateTimeFormat('hu-HU', { hour: '2-digit', minute: '2-digit', timeZone: TIME_ZONE })
+const monthParts = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', timeZone: TIME_ZONE })
 const decimal = new Intl.NumberFormat('hu-HU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 /** Expenses are shown without a sign, income with "+": a spending list reads naturally. */
@@ -32,6 +33,14 @@ export function formatTime(iso: string, precision = 'minute'): string | null {
 export function formatDateTime(iso: string, precision = 'minute'): string {
   const time = formatTime(iso, precision)
   return time ? `${formatDate(iso, precision)} ${time}` : formatDate(iso, precision)
+}
+
+/** "2026-10": the month of a timestamp in Budapest time; a day-precision value keeps its stored date. */
+export function localMonth(iso: string, precision = 'minute'): string {
+  if (precision === 'day') return iso.slice(0, 7)
+  const parts = monthParts.formatToParts(new Date(iso))
+  const part = (type: string) => parts.find((item) => item.type === type)?.value
+  return `${part('year')}-${part('month')}`
 }
 
 /** Scores and feature values as "0,97". */
