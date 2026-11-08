@@ -45,11 +45,17 @@ curl http://127.0.0.1:8080/v1/transactions -H "Authorization: Bearer $TOKEN"
 
 All endpoints: [api.md](api.md).
 
+## Run the web app
+
+With the API running, see [web/README.md](../../web/README.md): `npm install` and `npm run dev` in `web/`, then sign in with a token from the step above.
+
 ## Run the tests
 
 ```bash
 python -m unittest discover -s tests
 ```
+
+Web app: `npm test` in `web/`.
 
 ## Reset local data
 

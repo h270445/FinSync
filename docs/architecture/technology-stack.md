@@ -37,13 +37,13 @@ The layer rules of [ADR 0003](decisions/0003-layered-package-layout.md) stay: `f
 
 | Concern | Choice | Why |
 | --- | --- | --- |
-| Framework | **React 19 + TypeScript** | The most widely used UI library; strict typing catches API mismatches. Figma Make generates React, so its output can be used as a starting point after review. |
+| Framework | **React 19 + TypeScript** (TypeScript 5.9: openapi-typescript does not support 7 yet) | The most widely used UI library; strict typing catches API mismatches. Figma Make generates React, so its output can be used as a starting point after review. |
 | Build tool | **Vite** | Fast development server, simple static build. A single-page app is enough: no server-side rendering is needed for a signed-in tool, so Next.js would only add a second server. |
 | Routing | **React Router** | Standard client-side routing for the eight screens. |
 | Server state | **TanStack Query** | Caching, loading and error states and refetch after a review action, without writing it by hand. |
-| API client | **openapi-typescript** types generated from the FastAPI schema | Frontend and backend cannot drift apart silently. |
+| API client | **openapi-typescript** types generated from the FastAPI schema, called through **openapi-fetch** | Frontend and backend cannot drift apart silently. |
 | Forms | **React Hook Form + Zod** | Typed validation for manual entry, import mapping and sign-in. |
-| Styling and components | **Tailwind CSS + shadcn/ui** (Radix primitives) | Accessible components (dialogs, tabs, tables) copied into the repository rather than a heavy component library; matches Figma Make's output style. |
+| Styling and components | **Tailwind CSS + shadcn/ui** (Base UI primitives, the current shadcn default; Radix before) | Accessible components (dialogs, tabs, tables) copied into the repository rather than a heavy component library; matches Figma Make's output style. |
 | Charts | **Recharts** | Only the overview bar chart needs one. |
 | Formatting | `Intl.NumberFormat('hu-HU')`, `Intl.DateTimeFormat` | HUF and Hungarian dates without an extra library; the UI is Hungarian only. |
 
