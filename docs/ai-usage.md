@@ -24,6 +24,7 @@ The course requires documenting significant use of AI tools and how their result
 | 2026-10-17 | Claude Code | Duplicate kinds and sources; matching steps 1–5 on SQLite (rules, schema version 2, wiring, `GET /v1/events`); categorization design | 37 unit and service tests including the four hand-decided examples; reviewed and merged by the author | #7 |
 | 2026-10-17 | Claude Code | Review endpoints: list, confirm, reject, split | 8 service, permission and HTTP tests (45 in total) | session PR |
 | 2026-10-17 | Claude Code | Synthetic matching dataset generator and dataset v1 (100 records) | Reproducibility and ingest tests; scenario labels by construction | session PR |
+| 2026-11-08 | Claude Code | Web app skeleton in `web/` (Vite, React, TypeScript, Tailwind, shadcn/ui), types generated from the OpenAPI schema; screens W3, W4, W5 and a development token sign-in | Type check, lint, 11 Vitest tests; run against the local API with synthetic data, screenshots at 1280 px and 360 px, confirm and undo tried in the browser | session PR |
 | 2026-11-08 | Claude Code | Synthetic categorization dataset generator and dataset v1 (200 items, clear and ambiguous) | Reproducibility and label tests; labels by construction; merchant shares to be checked by the author | session PR |
 
 ## Author decisions

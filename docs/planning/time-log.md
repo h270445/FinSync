@@ -17,7 +17,8 @@ Time spent on the project, for the weekly-effort figure the supervisor asked for
 | 2026-10-29 | 19:13–20:46 | 60 | Supervisor's reply recorded; ADR 0008 accepted; two reverse-order fixes compared on dataset v2, `rules-3` with threshold 0.95 and new results; review fixes; Android spike closed for M1; v0.2.0 release notes drafted | Author |
 | 2026-11-02 | 10:59–11:12 | 13 | v0.2.0 release notes final, M1 e-mail draft, tag `v0.2.0`; per-member API tokens with hashed storage and cross-group tests (PR #17, ADR 0009) | Commits (earlier work in the session not visible; to be corrected by the author) |
 | 2026-11-07 | evening | 90 | Plan for Nov 7–8 and the week of Nov 9; M1 e-mail finalised; tests run on Windows (`tzdata`, closed SQLite connections); GitHub CLI set-up; Figma session plan (PR #19); HTTP layer on FastAPI with request size limits (PR #20) | Author |
-| 2026-11-08 | 15:46–15:53 | 7 | Labelled categorization dataset: generator, 200 synthetic items (clear and ambiguous), tests and description | Project messages and commits |
+| 2026-11-08 | 15:20–15:50 | 30 | Web app skeleton (Vite, React, TypeScript, Tailwind, shadcn/ui, generated API types); screens W3, W4, W5 and a development token sign-in; tried against the local API | Project messages and commits |
+| 2026-11-08 | 15:46–15:53 | 3 | Labelled categorization dataset: generator, 200 synthetic items (clear and ambiguous), tests and description (overlaps the web app session until 15:50; only the 3 minutes after it are counted) | Project messages and commits |
 
 ## Weekly totals
 
@@ -28,5 +29,5 @@ Time spent on the project, for the weekly-effort figure the supervisor asked for
 | 2026-10-12 – 10-18 | 123 | 2.1 |
 | 2026-10-19 – 10-25 | 63 | 1.1 |
 | 2026-10-26 – 11-01 | 264 | 4.4 |
-| 2026-11-02 – 11-08 | 110 | 1.8 |
-| **Total** | **815** | **13.6** |
+| 2026-11-02 – 11-08 | 136 | 2.3 |
+| **Total** | **841** | **14.0** |
