@@ -4,6 +4,30 @@ Summary of each letter from the thesis supervisor (Dr. Bilicki Vilmos) and what 
 
 Each entry lists the points as actions; ticked actions link to where they were done.
 
+## 2026-11-11 — Reply to the M1 e-mail
+
+**Assessment**
+
+- The supervisor reviewed tag `v0.2.0` (`4f545c2`), `main` up to `37c4b8d` and the unmerged `971b418` (categorization evaluation runner). M1 is complete, one week before the deadline.
+- The single ingest pipeline, atomic bulk import and the order-independent gate (`STRICT_POOR_GATE` plus `REOPEN_CONTESTED`: 0 false merges in both arrival orders on the test split at 0.95, 64.3% automatic recall, the remaining Decathlon edge case documented) are judged sound and defensible.
+- Volume (backend, 100 unit tests, Android client, web app, 9 ADRs, reports) exceeds the first-semester expectation. Algorithmic depth is L3–L4: **do not make the matching engine more complex.**
+- The UI moved from G2 to G3 with W1, W3, W4 and W5 (score breakdown, contested-link guard, identical-manual-entry warning, undo). For the application to be a "whole", the placeholder screens must be completed in M2/M3.
+- The categorization baseline is the next research question: keyword rules reach 13.9% (dev) / 13.1% (test); even a perfect merchant dictionary is capped at 48.3% / 47.6% by mixed merchants.
+
+**Actions (M2, 2026-12-04)**
+
+- [ ] **A. Hybrid categorizer with abstention.** On top of `finsync/evaluation/categories.py`: a deterministic Hungarian merchant and keyword layer for clear cases, and a model/LLM layer that sees merchant, description, amount and context for mixed merchants. An explicit abstention threshold ("Bizonytalan kategória"); on the 200-item dataset measure coverage vs. accuracy, latency and cost.
+- [ ] **B1. ADR 0008 in code:** separate `posted_at` and `ingested_at`; Europe/Budapest calendar-day comparison; offset-less times as Budapest wall-clock time.
+- [ ] **B2. PostgreSQL behind `FinSyncStorage`:** SQLite stays runnable for fast local/CI tests (the unit suite keeps running in seconds), PostgreSQL is the production/integration profile.
+- [ ] **C1. Decision history in W4:** the API returns the event's `match_decisions` (when and with what score `auto_linked`, who confirmed, rejected or split).
+- [ ] **C2. W6 manual entry and W7 bulk import preview** wired to `POST /v1/transactions` and `POST /v1/transactions/bulk`.
+- [ ] **C3. W2 overview:** monthly and per-category group totals with the split by member.
+- [ ] **C4. W8 settings / backoffice:** group and members, create and revoke API tokens without the CLI (for the Android client), override merchant–category rules.
+- [ ] **D1. One versioned agent skill** in the repository (for example the leak-free dev/test evaluation protocol, or a group-isolation and OpenAPI-sync check for new endpoints), presented in the methods chapter.
+- [ ] **D2. Six design views in `docs/`:** use-case, page flow (W1–W8 and Android), ingest → normalise → match → store/review flowchart, event and decision state diagram (`auto_linked` / `needs_review` / `confirmed` / `rejected` / `split`), architecture, security (SHA-256 Bearer tokens and `group_id` isolation).
+
+Open design questions on the PostgreSQL switch or the hybrid categorizer measurement can be sent to the supervisor at any time.
+
 ## 2026-10-29 — Reply to the Oct 28 interim note
 
 **Assessment**
