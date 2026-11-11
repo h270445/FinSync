@@ -8,6 +8,7 @@ Tooling for the evaluation in [docs/evaluation/](../../docs/evaluation/README.md
 | `generate_categories.py` | Generator of the synthetic, labelled categorization dataset (`python -m finsync.evaluation.generate_categories`) |
 | `runner.py` | Replays a split through a fresh database, scores the events against the labels, and the store-every-row baseline |
 | `__main__.py` | The report (`python -m finsync.evaluation [--out docs/evaluation/results/<date>-matching.md]`): threshold sweep on dev, test split at the chosen threshold in arrival and reverse order, false merges and missed duplicates listed |
+| `categories.py` | Categorization report (`python -m finsync.evaluation.categories [--out docs/evaluation/results/<date>-categorization-rules.md]`): the rule-based categorizer with its labels mapped to the dataset's nine categories, accuracy per split, ambiguity and scenario |
 
 ## Rules for this folder
 
