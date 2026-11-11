@@ -7,6 +7,7 @@ ambiguous items and per scenario. The categorizer sees only the description and 
 from __future__ import annotations
 
 import argparse
+from collections import Counter, defaultdict
 from dataclasses import dataclass
 import hashlib
 from pathlib import Path
@@ -67,8 +68,9 @@ def evaluate(items: Sequence[Item], dataset: Path) -> str:
         return result
 
     scores = {split: groups(by_split[split]) for split in splits}
-    usual = {split: score([i for i in by_split[split] if i.scenario == "mixed_merchant"],
-                          lambda i: i.usual_category, "usual category") for split in splits}
+    mixed = {split: [i for i in by_split[split] if i.scenario == "mixed_merchant"] for split in splits}
+    usual = {split: score(mixed[split], lambda i: i.usual_category, "usual category") for split in splits}
+    ceiling = {split: merchant_only_ceiling(mixed[split]) for split in splits}
 
     lines = [
         "# Categorization evaluation: rule-based baseline",
@@ -91,14 +93,32 @@ def evaluate(items: Sequence[Item], dataset: Path) -> str:
         lines.append(f"| {dev.label} | {dev.items} | {_pct(dev.accuracy)} | {test.items} | {_pct(test.accuracy)} |")
     lines += [
         "",
-        "## Ceiling on mixed-assortment merchants",
+        "## Mixed-assortment merchants without detail",
         "",
-        "Without detail, the best a merchant-only categorizer can do is the merchant's usual category. "
-        f"Scored against the labels, that reaches {_pct(usual['dev'].accuracy)} on dev and "
-        f"{_pct(usual['test'].accuracy)} on test (`mixed_merchant` items only). The shares behind these "
-        "labels are the author's assumptions (see [datasets.md](../datasets.md)).",
+        "`mixed_merchant` items only. The shares behind these labels are the author's assumptions "
+        "(see [datasets.md](../datasets.md)).",
+        "",
+        "| Method | Dev accuracy | Test accuracy |",
+        "| --- | --- | --- |",
+        f"| Usual-category baseline: each merchant's `usual_category` from the dataset | "
+        f"{_pct(usual['dev'].accuracy)} | {_pct(usual['test'].accuracy)} |",
+        f"| Merchant-only ceiling: each merchant's most frequent label in the same split (oracle) | "
+        f"{_pct(ceiling['dev'].accuracy)} | {_pct(ceiling['test'].accuracy)} |",
+        "",
+        "The usual category is a fixed guess, not an upper bound. The ceiling is an upper bound for any "
+        "categorizer that sees only the merchant: it picks each merchant's best label after seeing the "
+        "answers, so no real method can reach it on unseen data.",
     ]
     return "\n".join(lines) + "\n"
+
+
+def merchant_only_ceiling(items: Sequence[Item]) -> Score:
+    """Upper bound for a merchant-only categorizer: every merchant gets its most frequent true label."""
+    by_merchant: dict[str, Counter[str]] = defaultdict(Counter)
+    for item in items:
+        by_merchant[item.merchant][item.true_category] += 1
+    correct = sum(counts.most_common(1)[0][1] for counts in by_merchant.values())
+    return Score("merchant-only ceiling", len(items), correct)
 
 
 def _pct(value: float | None) -> str:
