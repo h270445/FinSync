@@ -223,6 +223,18 @@ class ReviewApiTest(unittest.TestCase):
         self.assertEqual((status, body["match_outcome"]), (200, "split"))
         self.assertEqual(len(self._call("GET", "/v1/events")[1]["events"]), 2)
 
+        # The event's history: proposed for review, confirmed by the member, then split again.
+        status, body = self._call("GET", f"/v1/events/{event_id}/decisions")
+        self.assertEqual(status, 200)
+        history = [(d["outcome"], d["decided_by"], d["superseded"]) for d in body["decisions"]]
+        self.assertEqual(
+            history[-3:],
+            [("needs_review", "system", True), ("confirmed", "user-1", False), ("split", "user-1", False)],
+        )
+        self.assertEqual(body["decisions"][-2]["supersedes_id"], decision_id)
+        self.assertEqual(self._call("GET", f"/v1/events/{event_id}/decisions", group="group-2", user="user-3")[0], 404)
+        self.assertEqual(self._call("GET", f"/v1/events/{event_id + 99}/decisions")[0], 404)
+
 
 if __name__ == "__main__":
     unittest.main()

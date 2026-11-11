@@ -30,6 +30,7 @@ Status: describes the endpoints **implemented** in `finsync/api/server.py`.
 | `POST` | `/v1/transactions/bulk` | Create multiple transactions from a structured payload |
 | `GET` | `/v1/transactions` | List transactions accessible within the requested group |
 | `GET` | `/v1/events` | List the group's events (one per purchase), each with its source records |
+| `GET` | `/v1/events/{event_id}/decisions` | The event's decision history: links, reviews, answers and splits |
 | `GET` | `/v1/matches/review` | List uncertain matches waiting for a member |
 | `POST` | `/v1/matches/{decision_id}/confirm` | Confirm: the record joins the candidate event |
 | `POST` | `/v1/matches/{decision_id}/reject` | Reject: the record stays separate and the pair is not proposed again |
@@ -85,6 +86,10 @@ Response `200`:
 ### `GET /v1/events`
 
 Response `200`: `{"events": [{"id": 1, "amount": "-1234.56", "currency": "HUF", "direction": "expense", "happened_at": "...", "merchant": "Tesco", "category": "groceries", "primary_transaction_id": 1, "review_state": "clear", "transactions": [ ... ]}]}`. Display values come from the primary record (a notification first, then the earliest). `review_state` is `needs_review` while an uncertain match waits for a member.
+
+### `GET /v1/events/{event_id}/decisions`
+
+Response `200`: `{"decisions": [{"id": 3, "transaction_id": 2, "candidate_event_id": 1, "outcome": "needs_review", "score": 0.8, "features": { ... }, "matcher_version": "...", "decided_by": "system", "supersedes_id": null, "superseded": true, "created_at": "..."}, {"id": 4, "outcome": "confirmed", "decided_by": "user-1", "supersedes_id": 3, "superseded": false, ...}]}`. Every decision that names the event as candidate or concerns one of its current records, oldest first. `decided_by` is `system` for the matcher, otherwise the member's id; `superseded` is true when a later decision answered or undid it. An event of another group returns `404`.
 
 ### `GET /v1/matches/review`
 

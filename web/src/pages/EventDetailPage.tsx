@@ -3,8 +3,8 @@ import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
 
-import { ApiError, type FinSyncEvent, type Transaction } from '@/api/client'
-import { useEvents, useSplitEvent } from '@/api/queries'
+import { ApiError, type Decision, type FinSyncEvent, type Transaction } from '@/api/client'
+import { useEventDecisions, useEvents, useSplitEvent } from '@/api/queries'
 import { ReviewTag, SourceBadge } from '@/components/badges'
 import { EmptyState, ErrorState, LoadingRows } from '@/components/states'
 import { Button } from '@/components/ui/button'
@@ -19,7 +19,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { originalRecords, primaryRecord } from '@/lib/events'
-import { categoryLabel, formatAmount, formatDateTime } from '@/lib/format'
+import { categoryLabel, formatAmount, formatDateTime, formatScore } from '@/lib/format'
 
 /** W4: one event and the records behind it, with the split action. */
 export function EventDetailPage() {
@@ -88,10 +88,79 @@ function EventDetail({ event }: { event: FinSyncEvent }) {
         <h2 id="history-heading" className="text-lg font-semibold">
           Döntési előzmények
         </h2>
-        {/* The decision log is stored but no endpoint returns it yet (planned with the M2 web screens). */}
-        <EmptyState>A döntési előzmények megjelenítése még nem érhető el.</EmptyState>
+        <DecisionHistory event={event} />
       </section>
     </>
+  )
+}
+
+const OUTCOME_LABELS: Record<string, string> = {
+  separate: 'Új esemény',
+  auto_linked: 'Automatikusan összekapcsolva',
+  exact_duplicate: 'Ismételt beküldés',
+  needs_review: 'Ellenőrzésre küldve',
+  confirmed: 'Jóváhagyva',
+  rejected: 'Elutasítva',
+  split: 'Szétválasztva',
+}
+
+/** The event's decision log, oldest first: who or what linked, reviewed or split its records, and with what score. */
+function DecisionHistory({ event }: { event: FinSyncEvent }) {
+  const decisions = useEventDecisions(event.id)
+  const records = new Map(event.transactions.map((record) => [record.id, record]))
+
+  if (decisions.isPending) return <LoadingRows rows={2} />
+  if (decisions.isError) return <ErrorState error={decisions.error} />
+  if (decisions.data.length === 0) return <EmptyState>Ehhez az eseményhez még nincs naplózott döntés.</EmptyState>
+
+  return (
+    <ol className="space-y-2 border-l pl-4">
+      {decisions.data.map((decision) => (
+        <DecisionItem
+          key={decision.id}
+          decision={decision}
+          eventId={event.id}
+          record={records.get(decision.transaction_id)}
+        />
+      ))}
+    </ol>
+  )
+}
+
+function DecisionItem(props: { decision: Decision; eventId: number; record: Transaction | undefined }) {
+  const { decision, eventId, record } = props
+  const otherEvent =
+    decision.candidate_event_id !== null && decision.candidate_event_id !== eventId ? decision.candidate_event_id : null
+
+  return (
+    <li className={decision.superseded ? 'text-muted-foreground' : undefined}>
+      <p className="flex flex-wrap items-baseline gap-x-2 text-sm">
+        <span className="font-medium">{OUTCOME_LABELS[decision.outcome] ?? decision.outcome}</span>
+        {decision.score !== null && <span className="tabular-nums">pontszám {formatScore(decision.score)}</span>}
+        {decision.superseded && <span>(később felülírva)</span>}
+      </p>
+      <p className="text-xs text-muted-foreground">
+        <span className="tabular-nums">{formatDateTime(decision.created_at)}</span>
+        {' · '}
+        {decision.decided_by === 'system' ? 'automatikus döntés' : decision.decided_by}
+        {' · '}
+        {record ? (
+          <>
+            <SourceBadge source={record.source} /> {record.merchant ?? record.description}
+          </>
+        ) : (
+          `#${decision.transaction_id} tétel (már másik eseményben)`
+        )}
+        {otherEvent !== null && (
+          <>
+            {' · '}
+            <Link to={`/esemenyek/${otherEvent}`} className="text-primary hover:underline">
+              kapcsolódó esemény #{otherEvent}
+            </Link>
+          </>
+        )}
+      </p>
+    </li>
   )
 }
 

@@ -375,6 +375,25 @@ class FinSyncStorage:
             ).fetchall()
         return [_decision_dict(row) for row in rows]
 
+    def list_event_decisions(self, group_id: str, event_id: int) -> list[dict[str, Any]] | None:
+        """Every decision that names the event or one of its current records, oldest first; None if no such event."""
+        with self._session() as connection:
+            if connection.execute(
+                "SELECT 1 FROM events WHERE group_id = ? AND id = ?", (group_id, event_id)
+            ).fetchone() is None:
+                return None
+            rows = connection.execute(
+                """
+                SELECT * FROM match_decisions d
+                WHERE d.group_id = ?
+                  AND (d.candidate_event_id = ?
+                       OR d.transaction_id IN (SELECT id FROM transactions WHERE group_id = ? AND event_id = ?))
+                ORDER BY d.id
+                """,
+                (group_id, event_id, group_id, event_id),
+            ).fetchall()
+        return [_decision_dict(row) for row in rows]
+
     def list_open_reviews(self, group_id: str) -> list[dict[str, Any]]:
         with self._session() as connection:
             rows = connection.execute(

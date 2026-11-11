@@ -260,6 +260,14 @@ class FinSyncService:
             items.append(ReviewItem(decision["id"], record, candidate, decision["score"], decision["features"]))
         return items
 
+    def list_event_decisions(self, user_id: str, group_id: str, event_id: int) -> list[dict[str, Any]]:
+        """The event's decision history: how its records were linked, reviewed and split, oldest first."""
+        self.ensure_authorized(user_id, group_id)
+        decisions = self._storage.list_event_decisions(group_id, event_id)
+        if decisions is None:
+            raise NotFoundError("Event not found")
+        return decisions
+
     def confirm_match(self, user_id: str, group_id: str, decision_id: int) -> StoreResult:
         """The member says the record is the same purchase as the candidate event: link them."""
         self.ensure_authorized(user_id, group_id)
