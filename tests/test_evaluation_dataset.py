@@ -1,17 +1,21 @@
 from __future__ import annotations
 
 import collections
+from dataclasses import replace
+from datetime import datetime, timedelta, timezone
 import os
 from pathlib import Path
 import tempfile
 import unittest
 
 from finsync.core import FinSyncService
-from finsync.evaluation.generate import GROUP_ID, MEMBERS, SCENARIOS, generate, generate_v2, read_csv
+from finsync.ingestion import parse_notification
+from finsync.evaluation.generate import GROUP_ID, MEMBERS, SCENARIOS, generate, generate_v2, generate_v3, read_csv
 from finsync.storage import FinSyncStorage
 
 DATASET = Path(__file__).parent / "data" / "matching_eval.csv"
 DATASET_V2 = Path(__file__).parent / "data" / "matching_eval_v2.csv"
+DATASET_V3 = Path(__file__).parent / "data" / "matching_eval_v3.csv"
 
 
 class MatchingDatasetTest(unittest.TestCase):
@@ -20,6 +24,22 @@ class MatchingDatasetTest(unittest.TestCase):
         self.assertEqual(read_csv(DATASET), generate(100, 2026))
         # Regenerate with: python -m finsync.evaluation.generate --version 2
         self.assertEqual(read_csv(DATASET_V2), generate_v2(100, 2026))
+        # Regenerate with: python -m finsync.evaluation.generate --version 3
+        self.assertEqual(read_csv(DATASET_V3), generate_v3(100, 2026))
+
+    def test_version_3_is_version_2_with_local_notification_times(self) -> None:
+        v2, v3 = read_csv(DATASET_V2), read_csv(DATASET_V3)
+        self.assertEqual([replace(row, message="") for row in v3], [replace(row, message="") for row in v2])
+        changed = [(a.message, b.message) for a, b in zip(v2, v3) if a.message != b.message]
+        self.assertEqual(len(changed), sum(1 for row in v2 if row.message))
+        # September is summer time, two hours ahead of UTC; the parser reads the text back to the same instant.
+        before, after = changed[0]
+        self.assertEqual(parse_notification(before).happened_at - parse_notification(after).happened_at, timedelta(hours=-2))
+        for row_v2, row_v3 in zip(v2, v3):
+            if row_v3.message:
+                local = parse_notification(row_v3.message).happened_at
+                printed_utc = datetime.strptime(row_v2.message[-16:], "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
+                self.assertEqual(local, printed_utc, row_v3.record_id)
 
     def test_version_2_keeps_version_1_record_for_record(self) -> None:
         v1, v2 = read_csv(DATASET), read_csv(DATASET_V2)

@@ -18,7 +18,7 @@ from finsync.evaluation.runner import (
 )
 from finsync.matching import decision as decision_rules
 
-DATASET = Path("tests/data/matching_eval_v2.csv")
+DATASET = Path("tests/data/matching_eval_v3.csv")
 # The auto-link threshold of rules-2, where the reverse-order options were compared (2026-10-29).
 COMPARE_AT = 0.85
 

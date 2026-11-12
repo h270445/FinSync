@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 from decimal import Decimal, InvalidOperation
 import re
+
+from finsync.ingestion.local_time import local_to_utc
 
 
 @dataclass(frozen=True)
@@ -37,7 +39,8 @@ def _parse_amount(raw: str) -> Decimal:
 
 
 def _parse_timestamp(raw: str) -> datetime:
-    return datetime.strptime(raw, "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
+    # The text prints local time without an offset (ADR 0008).
+    return local_to_utc(datetime.strptime(raw, "%Y-%m-%d %H:%M"))
 
 
 # OTP Bank (Android app, 2026-10-27/28 spike): the text starts with the signed amount, a space as

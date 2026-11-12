@@ -23,7 +23,7 @@ OTP Bank (from the Android app; shapes from the [spike findings](../../docs/desi
 
 The amount comes first, signed, with a space as thousands separator and `Ft` (HUF) or a three-letter currency. These texts print no time, so the time is the phone's `posted_at`. The Android app applies the same rule before sending (`OtpFormat.kt`); the server stays the authority.
 
-Any other text raises `ValueError("Unsupported notification format")`. Timestamps are currently tagged as UTC; whether banks print local time is an open question in the [matching design](../../docs/design/transaction-matching.md).
+Any other text raises `ValueError("Unsupported notification format")`. A time printed in a synthetic text has no offset and is read as Europe/Budapest wall-clock time, then converted to UTC (`local_time.py`, [ADR 0008](../../docs/architecture/decisions/0008-notification-time-and-calendar-day.md)).
 
 ## Rules for this folder
 

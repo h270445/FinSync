@@ -88,7 +88,7 @@ Response `201`: `{"transaction_id": 1, "event_id": 1, "match_outcome": "separate
 }
 ```
 
-`merchant` is optional. `amount` must be non-zero, `currency` a 3-letter code, `happened_at` ISO 8601 (no time zone means UTC; a date without a time, such as `2026-09-05`, is stored as a day-precision value). Optional: `direction` (`expense` or `income`, sets the sign of `amount`) and `source_ref` (a stable client reference such as a sheet row id; resending the same row with the same reference is recognised as an exact duplicate). Response `201`: `{"transaction_id": 2, "event_id": 1, "match_outcome": "auto_linked"}`.
+`merchant` is optional. `amount` must be non-zero, `currency` a 3-letter code, `happened_at` ISO 8601 (a time without an offset is Europe/Budapest time; a date without a time, such as `2026-09-05`, is stored as a day-precision value). Optional: `direction` (`expense` or `income`, sets the sign of `amount`) and `source_ref` (a stable client reference such as a sheet row id; resending the same row with the same reference is recognised as an exact duplicate). Response `201`: `{"transaction_id": 2, "event_id": 1, "match_outcome": "auto_linked"}`.
 
 ### `POST /v1/transactions/bulk`
 

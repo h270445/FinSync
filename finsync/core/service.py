@@ -10,6 +10,7 @@ import uuid
 
 from finsync.categorization import categorize_transaction
 from finsync.ingestion import parse_notification
+from finsync.ingestion.local_time import local_to_utc
 from finsync.matching import (
     MATCHER_VERSION,
     MatchRecord,
@@ -448,11 +449,13 @@ class FinSyncService:
             raise ValueError("Invalid happened_at; use ISO format") from error
 
         # A date without a time is a calendar day, not midnight: it is kept as that date at 00:00 UTC
-        # and marked day-precision, so matching compares days instead of hours.
+        # and marked day-precision, so matching compares days instead of hours. A time without an
+        # offset is Budapest wall-clock time (ADR 0008).
         precision = "day" if _DATE_ONLY.match(happened_at_raw) else "minute"
-        if happened_at.tzinfo is None:
+        if precision == "day":
             happened_at = happened_at.replace(tzinfo=timezone.utc)
-        happened_at = happened_at.astimezone(timezone.utc)
+        else:
+            happened_at = local_to_utc(happened_at)
 
         direction = payload.get("direction")
         if direction is None:
