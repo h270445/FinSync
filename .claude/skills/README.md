@@ -4,7 +4,7 @@ Versioned instructions for the coding agent (Claude Code), one folder per skill 
 
 | Skill | Version | Use when | Helper |
 | --- | --- | --- | --- |
-| [endpoint-and-screen-checklist](endpoint-and-screen-checklist/SKILL.md) | 1.0 | Adding or changing an API route or a web screen | – |
+| [endpoint-and-screen-checklist](endpoint-and-screen-checklist/SKILL.md) | 1.1 | Adding or changing an API route or a web screen | – |
 | [session-wrap-up](session-wrap-up/SKILL.md) | 1.0 | Closing a working session: time log, plan, AI usage, one pull request | `check_time_log.py` |
 | [dev-test-evaluation](dev-test-evaluation/SKILL.md) | 1.0 | Any measurement: tuning, comparing methods, LLM runs | – |
 | [bank-notification-privacy](bank-notification-privacy/SKILL.md) | 1.0 | Real bank notification formats, parser patterns and fixtures | `mask_captures.py` |

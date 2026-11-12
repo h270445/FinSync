@@ -10,6 +10,7 @@ from finsync.core.service import (
     StoreResult,
     TransactionInput,
 )
+from finsync.core.sessions import SessionService
 
 __all__ = [
     "AuthenticationError",
@@ -19,6 +20,7 @@ __all__ = [
     "NotFoundError",
     "Principal",
     "ReviewItem",
+    "SessionService",
     "StoreResult",
     "TokenService",
     "TransactionInput",

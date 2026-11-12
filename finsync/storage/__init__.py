@@ -6,7 +6,16 @@ from finsync.storage.sqlite import (
     FinSyncStorage,
     StorageSession,
     TransactionRecord,
+    WebSessionRecord,
     candidate_time_range,
 )
 
-__all__ = ["ApiTokenRecord", "EventRecord", "FinSyncStorage", "StorageSession", "TransactionRecord", "candidate_time_range"]
+__all__ = [
+    "ApiTokenRecord",
+    "EventRecord",
+    "FinSyncStorage",
+    "StorageSession",
+    "TransactionRecord",
+    "WebSessionRecord",
+    "candidate_time_range",
+]

@@ -27,11 +27,12 @@ class AuthenticationError(Exception):
 
 @dataclass(frozen=True)
 class Principal:
-    """Who is calling: the token's member and group."""
+    """Who is calling: the member and group of an API token or of a web session."""
 
     user_id: str
     group_id: str
-    token_id: int
+    token_id: int | None = None
+    session_id: int | None = None
 
 
 def hash_token(token: str) -> str:

@@ -5,7 +5,7 @@ description: Use when adding or changing a FinSync API route (finsync/api/server
 
 # Endpoint and screen checklist
 
-- Version: 1.0 (2026-11-12)
+- Version: 1.1 (2026-11-12)
 - Owner: Bence Varga
 - Why it exists: every new route has to pass the same isolation, error and schema checks, and every new screen has to stay in step with the generated API types. Done by hand, one of them was easy to forget. The supervisor named "a group-isolation and OpenAPI-sync check for new endpoints" as a skill candidate (2026-11-11, action D1).
 
@@ -41,6 +41,7 @@ If the request does not say who may call the route, what a member of another gro
 - [ ] Storage method in `finsync/storage/sqlite.py` that filters by `group_id`; returns `None` (mapped to `NotFoundError`) for an id outside the group.
 - [ ] A schema change bumps `SCHEMA_VERSION` with a `_migrate_to_N` step and a test that an older database is upgraded (see `test_a_version_2_database_gets_the_token_table`). This needs checkpoint 1.
 - [ ] Route in `finsync/api/server.py` with `caller: Caller`, a Pydantic `...In` model for the body and a `...Out` model as the return type, so the OpenAPI schema is complete. Errors are raised as the core exceptions (`ValueError` → 400, `NotFoundError` → 404, `ConflictError` → 409, `AuthorizationError` → 403), not as `HTTPException`.
+- [ ] A route that must work without an API token (for example signing in) is an authentication change: checkpoint 1. It is kept out of `ENDPOINTS`, gets its own tests (including that it never reveals whether a member exists), and the OpenAPI test is extended to name it as the exception to bearer security.
 - [ ] A body that can exceed 64 KiB in normal use is a design question (only `/v1/transactions/bulk` has the 1 MiB limit). Ask instead of raising the limit.
 
 ### Tests
@@ -53,7 +54,7 @@ If the request does not say who may call the route, what a member of another gro
 ### OpenAPI and types
 
 - [ ] From `web/`, with the Python virtual environment activated: `npm run gen:api` (it runs `python -m finsync.api --openapi`; `$PYTHON` overrides which Python).
-- [ ] `git diff web/openapi.json web/src/api/schema.d.ts` shows only the new or changed route and models. Other changes usually come from a different Pydantic version (seen on 2026-11-12: a `pattern` on `Decimal | str` fields appears or disappears). Do not commit those; note them in the report.
+- [ ] `git diff web/openapi.json web/src/api/schema.d.ts` shows only the new or changed route and models. Other changes usually come from a different Pydantic version (seen on 2026-11-12: a `pattern` on `Decimal | str` fields appears or disappears). Then regenerate with the version that made the snapshot (Pydantic 2.11 as of 2026-11-12; for example `pip install --target <scratch folder> pydantic==2.11.9` and `PYTHONPATH=<scratch folder> npm run gen:api`), or keep the drift out of the commit with `git add -p`, and name the versions in the report.
 - [ ] New response types get an alias in `web/src/api/client.ts` (`export type X = components['schemas']['XOut']`).
 
 ### Web screen
@@ -97,3 +98,4 @@ Then read the diff once more against the prohibitions, specifically: every new S
 | Version | Date | Change |
 | --- | --- | --- |
 | 1.0 | 2026-11-12 | First version, derived from the W4 decision history change (PR #25) and the token and size-limit tests. |
+| 1.1 | 2026-11-12 | After the first use (web sign-in): a line for routes without a token, and how to regenerate the OpenAPI snapshot with its Pydantic version. |

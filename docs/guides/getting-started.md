@@ -47,7 +47,13 @@ All endpoints: [api.md](api.md).
 
 ## Run the web app
 
-With the API running, see [web/README.md](../../web/README.md): `npm install` and `npm run dev` in `web/`, then sign in with a token from the step above.
+Give the member a password (the member must already be in a group, for example through the token command above):
+
+```bash
+python -m finsync.api.passwords set --user demo-user --email demo@example.com
+```
+
+With the API running, see [web/README.md](../../web/README.md): `npm install` and `npm run dev` in `web/`, then sign in with `demo@example.com` or `demo-user` and the password.
 
 ## Run the tests
 
@@ -63,4 +69,4 @@ Stop the server and delete `finsync.db`.
 
 ## Security note
 
-Requests are authenticated with per-member API tokens; keep a token like a password and revoke it if it leaks. Request bodies are size-limited (64 KiB, 1 MiB for bulk import). Expose the API through a tunnel only temporarily, for tests and the demo ([ADR 0007](../architecture/decisions/0007-how-external-clients-reach-the-api.md)). Use synthetic data only.
+Requests are authenticated with per-member API tokens or, in the web app, a password and a session cookie ([ADR 0010](../architecture/decisions/0010-web-sign-in.md)); keep a token like a password and revoke it if it leaks. Request bodies are size-limited (64 KiB, 1 MiB for bulk import). Expose the API through a tunnel only temporarily, for tests and the demo ([ADR 0007](../architecture/decisions/0007-how-external-clients-reach-the-api.md)). Use synthetic data only.

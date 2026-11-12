@@ -4,7 +4,8 @@ Status: describes the endpoints **implemented** in `finsync/api/server.py`.
 
 ## Common rules
 
-- Every request needs an API token: `Authorization: Bearer fs_...`. The token decides the member and the group; `X-User-Id` and `X-Group-Id` headers are ignored ([ADR 0009](../architecture/decisions/0009-api-tokens.md)).
+- Every request needs an API token, `Authorization: Bearer fs_...`, or the web app's session cookie (see [`/v1/session`](#post-v1session)). The token or the session decides the member and the group; `X-User-Id` and `X-Group-Id` headers are ignored ([ADR 0009](../architecture/decisions/0009-api-tokens.md), [ADR 0010](../architecture/decisions/0010-web-sign-in.md)). A token wins over a cookie.
+- With the session cookie, every `POST`, `PUT`, `PATCH` and `DELETE` also needs `X-CSRF-Token: <csrf_token>` from the session; without it the answer is `403` and nothing is written.
 - Tokens are issued with `python -m finsync.api.tokens create --user <member> --group <group> --name <what for>` and revoked with `... revoke <id>`; see [getting started](getting-started.md#create-an-api-token).
 - Request and response bodies are JSON objects. Bodies are limited to 64 KiB, and to 1 MiB for `/v1/transactions/bulk`.
 - Validation errors are `400`, not FastAPI's usual `422`.
@@ -15,8 +16,8 @@ Status: describes the endpoints **implemented** in `finsync/api/server.py`.
 | `201` | Created |
 | `200` | Read succeeded |
 | `400` | Invalid JSON, validation error (`{"error": "..."}`) |
-| `401` | No token, or a malformed, unknown or revoked one (`WWW-Authenticate: Bearer`) |
-| `403` | The token's member is no longer in the group |
+| `401` | No token, or a malformed, unknown or revoked one (`WWW-Authenticate: Bearer`); no valid session; a failed sign-in |
+| `403` | The member is no longer in the group, the member is not in the named group at sign-in, or a cookie request without a valid CSRF token |
 | `404` | Unknown path, or an id that does not exist in the requested group |
 | `409` | A review action that no longer fits, such as answering a decision twice |
 | `413` | A body over the size limit |
@@ -25,6 +26,9 @@ Status: describes the endpoints **implemented** in `finsync/api/server.py`.
 
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
+| `POST` | `/v1/session` | Sign in to the web app: sets the session cookie, returns the CSRF token |
+| `GET` | `/v1/session` | The signed-in member and group, and the CSRF token (for example after a reload) |
+| `DELETE` | `/v1/session` | Sign out: ends the session and clears the cookie |
 | `POST` | `/v1/notifications/ingest` | Parse, categorize, and store a supported notification-like text payload |
 | `POST` | `/v1/transactions` | Create a manual transaction |
 | `POST` | `/v1/transactions/bulk` | Create multiple transactions from a structured payload |
@@ -37,6 +41,24 @@ Status: describes the endpoints **implemented** in `finsync/api/server.py`.
 | `POST` | `/v1/events/{event_id}/split` | Move one record out of an event (undo a wrong link) |
 
 These endpoints describe the current prototype. They do not imply that direct Android or Google Sheets integrations are available.
+
+### `POST /v1/session`
+
+No token needed. `login` is the member's e-mail address (any case) or member id; `group_id` is needed only if the member belongs to several groups.
+
+```json
+{"login": "anna@example.com", "password": "...", "group_id": "lakas"}
+```
+
+Response `200` with the cookie `finsync_session` (`HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/v1`, 12 hours):
+
+```json
+{"user_id": "anna", "group_id": "lakas", "expires_at": "2026-11-13T09:00:00+00:00", "csrf_token": "3f9c..."}
+```
+
+`401` with one message for an unknown login, a member without a password and a wrong password; `400` without a `group_id` when the member is in several groups; `403` when the member is not in the named group. Passwords are set with `python -m finsync.api.passwords set --user <member> [--email <address>]`.
+
+`GET /v1/session` returns the same body for a valid cookie (`401` otherwise). `DELETE /v1/session` needs the CSRF token, ends the session on the server and answers `204`.
 
 ### `POST /v1/notifications/ingest`
 

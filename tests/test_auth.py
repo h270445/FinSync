@@ -32,6 +32,12 @@ ENDPOINTS = (
     ("POST", "/v1/matches/{decision}/reject"),
     ("POST", "/v1/events/{event}/split"),
 )
+# The web sign-in routes work with the session cookie, not a token; tests/test_sessions.py covers them.
+SESSION_ENDPOINTS = (
+    ("POST", "/v1/session"),
+    ("GET", "/v1/session"),
+    ("DELETE", "/v1/session"),
+)
 
 
 class TokenServiceTest(unittest.TestCase):
@@ -93,7 +99,9 @@ class TokenServiceTest(unittest.TestCase):
         connection = sqlite3.connect(self.db_path)
         with connection:
             connection.execute("DROP TABLE api_tokens")
-            connection.execute("DELETE FROM schema_version WHERE version = 3")
+            connection.execute("DROP TABLE member_accounts")
+            connection.execute("DROP TABLE web_sessions")
+            connection.execute("DELETE FROM schema_version WHERE version >= 3")
         connection.close()
         token, _ = TokenService(FinSyncStorage(self.db_path)).create("user-a", "group-1", "phone")
         self.assertEqual(self.tokens.authenticate(f"Bearer {token}").user_id, "user-a")
@@ -177,7 +185,7 @@ class AuthApiTest(unittest.TestCase):
             if isinstance(route, APIRoute)
             for method in route.methods
         }
-        self.assertEqual(routes, set(ENDPOINTS))
+        self.assertEqual(routes, set(ENDPOINTS) | set(SESSION_ENDPOINTS))
 
     def _endpoints(self):
         for method, path in ENDPOINTS:

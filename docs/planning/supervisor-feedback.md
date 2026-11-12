@@ -55,7 +55,7 @@ Literature for the thesis: the three-zone decision model is a domain adaptation 
 **Actions**
 
 - [x] M1 (2026-11-06): the reverse-order case investigated with both directions compared on the development split, the time-zone ADR, and an updated evaluation summary ([M1](milestones/m1-2026-11-06-working-core.md), tag `v0.2.0` on 2026-11-02).
-- [ ] M2 (2026-12-04): token authentication and web screens W3, W4, W5, then W1, W6, W7 ([user interface](../design/user-interface.md)). API tokens done on 2026-11-02 ([ADR 0009](../architecture/decisions/0009-api-tokens.md)).
+- [ ] M2 (2026-12-04): token authentication and web screens W3, W4, W5, then W1, W6, W7 ([user interface](../design/user-interface.md)). API tokens done on 2026-11-02 ([ADR 0009](../architecture/decisions/0009-api-tokens.md)); W3, W4, W5 on 2026-11-08; W1 with password sign-in on 2026-11-12 ([ADR 0010](../architecture/decisions/0010-web-sign-in.md)); W6 and W7 open.
 - [ ] Turn one recurring, discipline-heavy FinSync workflow into a versioned agent skill in the repository, with clear input, output, prohibitions and mandatory human checkpoints. Candidates: a bank-notification anonymiser and parser checker that guarantees no personal financial data reaches tests or docs, or an evaluation skill that enforces the dev/test split. Log what it sped up, where it failed and how it was refined, for the methods chapter.
 - [ ] Keep documentation in step with development. By the end of Szakdolgozat I. the six design views form one coherent frame: use-case diagram, W1–W8 and A1–A2 page flow, matching and review flowchart, event and decision state diagram, layered architecture diagram, and a security diagram of token authentication and group isolation.
 

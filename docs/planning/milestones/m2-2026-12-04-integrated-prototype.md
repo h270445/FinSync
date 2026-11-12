@@ -14,7 +14,7 @@ The core flows committed for the semester work together, with proper data handli
 - [ ] All sources go through the same matching pipeline: Android notifications (one bank format), spreadsheet-export files and manual entries (Google Sheets rows if the script is built).
 - [ ] Demo: a notification on the phone and the same purchase imported from a spreadsheet appear as one event, while two separate purchases of the same amount on the same day stay two events.
 - [ ] Uncertain matches can be listed, confirmed and rejected in the web app; a wrong link can be split; every action is logged and supersedes the previous decision.
-- [ ] Requests are authenticated: per-user API tokens for the Android app (and Sheets script), password login with a secure session cookie and CSRF protection for the web app; client-supplied identity headers are no longer trusted.
+- [x] Requests are authenticated: per-user API tokens for the Android app (and Sheets script), password login with a secure session cookie and CSRF protection for the web app; client-supplied identity headers are no longer trusted (tokens 2026-11-02, web sign-in 2026-11-12, [ADR 0010](../../architecture/decisions/0010-web-sign-in.md)).
 - [x] Every endpoint has a cross-group access test (403/404, nothing written) (`tests/test_auth.py`, 2026-11-02).
 - [ ] Malformed input, oversized bodies and failing bulk imports leave the database unchanged and return a clear error: 400 for malformed input, 413 for an oversized body (`tests/test_api_limits.py`, 2026-11-07; failing bulk imports were already atomic).
 - [ ] The LLM categorizer runs behind the same interface as the rule-based one and its output is validated against the category list.
@@ -26,7 +26,7 @@ The core flows committed for the semester work together, with proper data handli
 
 ## Checklist
 
-- [ ] Authentication and request size limits (API tokens done 2026-11-02, [ADR 0009](../../architecture/decisions/0009-api-tokens.md); request size limits done 2026-11-07 with the FastAPI switch; web password login open).
+- [x] Authentication and request size limits (API tokens done 2026-11-02, [ADR 0009](../../architecture/decisions/0009-api-tokens.md); request size limits done 2026-11-07 with the FastAPI switch; web password login done 2026-11-12, [ADR 0010](../../architecture/decisions/0010-web-sign-in.md)).
 - [ ] Review and correction endpoints with tests.
 - [ ] Web app: event list, event detail with split and category correction, review queue (manual entry, file import and token management if time allows).
 - [ ] Android app (notification listener, token setup, sending, retry) with its README.

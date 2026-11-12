@@ -8,7 +8,7 @@ import json
 import sqlite3
 from typing import Any, Iterator
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 
 @dataclass(frozen=True)
@@ -43,6 +43,18 @@ class ApiTokenRecord:
     prefix: str
     created_at: datetime
     last_used_at: datetime | None
+    revoked_at: datetime | None
+
+
+@dataclass(frozen=True)
+class WebSessionRecord:
+    """A web app session as stored: the SHA-256 hash of its id, never the id itself."""
+
+    id: int
+    user_id: str
+    group_id: str
+    created_at: datetime
+    expires_at: datetime
     revoked_at: datetime | None
 
 
@@ -139,6 +151,8 @@ class FinSyncStorage:
                 self._migrate_to_2(connection)
             if version < 3:
                 self._migrate_to_3(connection)
+            if version < 4:
+                self._migrate_to_4(connection)
             connection.execute("COMMIT")
         except BaseException:
             connection.execute("ROLLBACK")
@@ -247,6 +261,32 @@ class FinSyncStorage:
         )
         connection.execute("INSERT INTO schema_version (version) VALUES (3)")
 
+    @staticmethod
+    def _migrate_to_4(connection: sqlite3.Connection) -> None:
+        """Add web sign-in: per member an e-mail address and a password hash, and sessions bound to one member and group."""
+        _execute_script(
+            connection,
+            """
+            CREATE TABLE member_accounts (
+                user_id TEXT PRIMARY KEY,
+                email TEXT UNIQUE,
+                password_hash TEXT,
+                updated_at TEXT NOT NULL
+            );
+
+            CREATE TABLE web_sessions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL,
+                group_id TEXT NOT NULL,
+                session_hash TEXT NOT NULL UNIQUE,
+                created_at TEXT NOT NULL,
+                expires_at TEXT NOT NULL,
+                revoked_at TEXT
+            );
+            """,
+        )
+        connection.execute("INSERT INTO schema_version (version) VALUES (4)")
+
     @contextmanager
     def transaction(self) -> Iterator["StorageSession"]:
         """One write unit: everything inside is committed together or rolled back.
@@ -324,6 +364,100 @@ class FinSyncStorage:
                     "SELECT * FROM api_tokens WHERE user_id = ? ORDER BY id", (user_id,)
                 ).fetchall()
         return [_row_to_api_token(row) for row in rows]
+
+    def set_member_password(self, user_id: str, password_hash: str) -> None:
+        """Store or replace a member's password hash; every open web session of the member ends."""
+        with self._session() as connection:
+            connection.execute(
+                """
+                INSERT INTO member_accounts (user_id, password_hash, updated_at) VALUES (?, ?, ?)
+                ON CONFLICT (user_id) DO UPDATE SET password_hash = excluded.password_hash,
+                    updated_at = excluded.updated_at
+                """,
+                (user_id, password_hash, _now()),
+            )
+            connection.execute(
+                "UPDATE web_sessions SET revoked_at = ? WHERE user_id = ? AND revoked_at IS NULL", (_now(), user_id)
+            )
+
+    def set_member_email(self, user_id: str, email: str) -> None:
+        """Store or replace a member's sign-in e-mail address (already normalised to lower case).
+
+        Raises ValueError if another member already uses the address.
+        """
+        try:
+            with self._session() as connection:
+                connection.execute(
+                    """
+                    INSERT INTO member_accounts (user_id, email, updated_at) VALUES (?, ?, ?)
+                    ON CONFLICT (user_id) DO UPDATE SET email = excluded.email, updated_at = excluded.updated_at
+                    """,
+                    (user_id, email, _now()),
+                )
+        except sqlite3.IntegrityError as error:
+            raise ValueError("this e-mail address belongs to another member") from error
+
+    def find_member_account(self, login: str) -> tuple[str, str | None] | None:
+        """The member id and password hash for a sign-in name: an e-mail address (with "@") or a member id."""
+        column = "email" if "@" in login else "user_id"
+        with self._session() as connection:
+            row = connection.execute(
+                f"SELECT user_id, password_hash FROM member_accounts WHERE {column} = ?", (login,)
+            ).fetchone()
+        if row is None:
+            return None
+        return str(row["user_id"]), (str(row["password_hash"]) if row["password_hash"] is not None else None)
+
+    def get_member_password(self, user_id: str) -> str | None:
+        with self._session() as connection:
+            row = connection.execute(
+                "SELECT password_hash FROM member_accounts WHERE user_id = ?", (user_id,)
+            ).fetchone()
+        return str(row["password_hash"]) if row and row["password_hash"] is not None else None
+
+    def get_member_email(self, user_id: str) -> str | None:
+        with self._session() as connection:
+            row = connection.execute("SELECT email FROM member_accounts WHERE user_id = ?", (user_id,)).fetchone()
+        return str(row["email"]) if row and row["email"] is not None else None
+
+    def list_member_groups(self, user_id: str) -> list[str]:
+        with self._session() as connection:
+            rows = connection.execute(
+                "SELECT group_id FROM group_memberships WHERE user_id = ? ORDER BY group_id", (user_id,)
+            ).fetchall()
+        return [str(row["group_id"]) for row in rows]
+
+    def insert_web_session(self, user_id: str, group_id: str, session_hash: str, expires_at: datetime) -> int:
+        with self._session() as connection:
+            cursor = connection.execute(
+                """
+                INSERT INTO web_sessions (user_id, group_id, session_hash, created_at, expires_at)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (user_id, group_id, session_hash, _now(), expires_at.isoformat()),
+            )
+        return int(cursor.lastrowid)
+
+    def find_web_session(self, session_hash: str) -> WebSessionRecord | None:
+        with self._session() as connection:
+            row = connection.execute("SELECT * FROM web_sessions WHERE session_hash = ?", (session_hash,)).fetchone()
+        if row is None:
+            return None
+        return WebSessionRecord(
+            id=int(row["id"]),
+            user_id=str(row["user_id"]),
+            group_id=str(row["group_id"]),
+            created_at=datetime.fromisoformat(str(row["created_at"])),
+            expires_at=datetime.fromisoformat(str(row["expires_at"])),
+            revoked_at=_optional_time(row["revoked_at"]),
+        )
+
+    def revoke_web_session(self, session_id: int) -> bool:
+        with self._session() as connection:
+            cursor = connection.execute(
+                "UPDATE web_sessions SET revoked_at = ? WHERE id = ? AND revoked_at IS NULL", (_now(), session_id)
+            )
+        return cursor.rowcount == 1
 
     def list_transactions(self, group_id: str) -> list[TransactionRecord]:
         with self._session() as connection:

@@ -1,10 +1,10 @@
 from decimal import Decimal
 from typing import Annotated, Any, Literal
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.security import APIKeyCookie, HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, StrictInt, WithJsonSchema
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
@@ -17,15 +17,23 @@ from finsync.core import (
     NotFoundError,
     Principal,
     ReviewItem,
+    SessionService,
     StoreResult,
     TokenService,
 )
-from finsync.storage import EventRecord, FinSyncStorage, TransactionRecord
+from finsync.core.sessions import SESSION_LIFETIME, csrf_token
+from finsync.storage import EventRecord, FinSyncStorage, TransactionRecord, WebSessionRecord
 
 # Request body limits. A bulk import carries many rows; every other request is one small object.
 MAX_BODY_BYTES = 64 * 1024
 MAX_BULK_BODY_BYTES = 1024 * 1024
 _BULK_PATH = "/v1/transactions/bulk"
+
+# Web sign-in (ADR 0010): the session secret travels only in this HttpOnly cookie; state-changing
+# requests made with it also send the session's CSRF token in the header.
+SESSION_COOKIE = "finsync_session"
+CSRF_HEADER = "X-CSRF-Token"
+_SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
 
 
 # Request bodies. The service validates the values again, so the HTTP layer and the tests on the
@@ -57,6 +65,14 @@ class BulkIn(BaseModel):
 
 class SplitIn(BaseModel):
     transaction_id: StrictInt
+
+
+class SignInIn(BaseModel):
+    # The member's e-mail address or member id.
+    login: str
+    password: str
+    # Needed only when the member belongs to several groups.
+    group_id: str | None = None
 
 
 # Responses.
@@ -145,6 +161,14 @@ class DecisionsOut(BaseModel):
     decisions: list[DecisionOut]
 
 
+class SessionOut(BaseModel):
+    user_id: str
+    group_id: str
+    expires_at: str
+    # Send it back in the X-CSRF-Token header with every POST, PUT, PATCH or DELETE.
+    csrf_token: str
+
+
 # "4XX" also replaces FastAPI's default 422 entry: validation errors are answered with 400.
 _ERRORS: dict[int | str, dict[str, Any]] = {
     status: {"model": ErrorOut} for status in (400, 401, 403, 404, 409, 413, "4XX")
@@ -215,15 +239,29 @@ def create_app(storage: FinSyncStorage) -> FastAPI:
     """The /v1 API bound to one database."""
     service = FinSyncService(storage)
     tokens = TokenService(storage)
+    sessions = SessionService(storage)
     app = FastAPI(title="FinSync API", version="0.3.0-dev", responses=_ERRORS)
     app.add_middleware(BodySizeLimit)
 
     # auto_error=False: TokenService decides and words every refusal; HTTPBearer only reads the
     # header and puts the bearer scheme into the OpenAPI schema (and the /docs "Authorize" button).
     bearer = HTTPBearer(auto_error=False)
+    # Only for the /v1/session routes' schema; the data routes read the cookie in principal().
+    session_cookie = APIKeyCookie(name=SESSION_COOKIE, scheme_name="SessionCookie", auto_error=False)
 
-    def principal(credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)]) -> Principal:
-        """The caller's member and group, from the API token only; client identity headers are ignored."""
+    def principal(
+        request: Request, credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)]
+    ) -> Principal:
+        """The caller's member and group, from the API token or the web session cookie.
+
+        Client identity headers are ignored. A token wins over a cookie. With the cookie, a
+        state-changing request must also carry the session's CSRF token.
+        """
+        cookie = request.cookies.get(SESSION_COOKIE)
+        if credentials is None and cookie is not None:
+            return sessions.authenticate(
+                cookie, request.headers.get(CSRF_HEADER), request.method not in _SAFE_METHODS
+            )
         return tokens.authenticate(f"Bearer {credentials.credentials}" if credentials else None)
 
     Caller = Annotated[Principal, Depends(principal)]
@@ -257,6 +295,36 @@ def create_app(storage: FinSyncStorage) -> FastAPI:
     @app.exception_handler(StarletteHTTPException)
     async def http_error(_: Request, error: StarletteHTTPException) -> JSONResponse:
         return JSONResponse({"error": str(error.detail)}, status_code=error.status_code, headers=error.headers)
+
+    @app.post("/v1/session", openapi_extra={"security": []})
+    def sign_in(body: SignInIn, response: Response) -> SessionOut:
+        """Sign in to the web app with e-mail address or member id and password; sets the HttpOnly session cookie."""
+        secret, record = sessions.sign_in(body.login, body.password, body.group_id)
+        response.set_cookie(
+            SESSION_COOKIE,
+            secret,
+            max_age=int(SESSION_LIFETIME.total_seconds()),
+            path="/v1",
+            secure=True,
+            httponly=True,
+            samesite="strict",
+        )
+        return _session(record, secret)
+
+    @app.get("/v1/session")
+    def current_session(cookie: Annotated[str | None, Depends(session_cookie)]) -> SessionOut:
+        """The signed-in member and group, and the CSRF token, e.g. after a page reload."""
+        return _session(sessions.session(cookie), str(cookie))
+
+    @app.delete("/v1/session", status_code=204)
+    def sign_out(request: Request, cookie: Annotated[str | None, Depends(session_cookie)]) -> Response:
+        """Sign out: the session ends on the server and the cookie is cleared. Needs the CSRF token."""
+        caller = sessions.authenticate(cookie, request.headers.get(CSRF_HEADER), state_changing=True)
+        assert caller.session_id is not None
+        sessions.sign_out(caller.session_id)
+        response = Response(status_code=204)
+        response.delete_cookie(SESSION_COOKIE, path="/v1", secure=True, httponly=True, samesite="strict")
+        return response
 
     @app.post("/v1/notifications/ingest", status_code=201)
     def ingest_notification(body: NotificationIn, caller: Caller) -> StoreResultOut:
@@ -323,6 +391,15 @@ def _manual(body: ManualTransactionIn) -> dict[str, Any]:
     payload = body.model_dump(exclude_none=True)
     payload["amount"] = str(payload["amount"])
     return payload
+
+
+def _session(record: WebSessionRecord, secret: str) -> SessionOut:
+    return SessionOut(
+        user_id=record.user_id,
+        group_id=record.group_id,
+        expires_at=record.expires_at.isoformat(),
+        csrf_token=csrf_token(secret),
+    )
 
 
 def _result(result: StoreResult) -> StoreResultOut:

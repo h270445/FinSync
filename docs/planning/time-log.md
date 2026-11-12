@@ -22,7 +22,7 @@ Time spent on the project, for the weekly-effort figure the supervisor asked for
 | 2026-11-08 | 16:09–16:22 | 13 | Categorization evaluation runner: rule labels mapped to the nine dataset categories, accuracy per split and scenario, first baseline report (in parallel with the W4 endpoint session; count the overlap once) | Project messages and commits |
 | 2026-11-11 | 22:53–00:27 | 94 | W4 decision history: `GET /v1/events/{event_id}/decisions`, the timeline on the event detail page, tests and API docs | Commits (start time estimated from the previous merge; to be corrected by the author) |
 | 2026-11-12 | 09:56–10:06 | 10 | Faster determinism test of the matching evaluation (sample of cases), full test suite and web build, PR | Project messages and commits |
-| 2026-11-12 | 10:06–10:28 | 22 | Plan for finishing the week; five versioned agent skills (endpoint and screen checklist, session wrap-up, dev/test evaluation, bank notification privacy, status e-mail) with a time-log checker and a capture-masking script; plan and AI-usage docs | Project messages and commits |
+| 2026-11-12 | 10:06–10:50 | 44 | Plan for finishing the week; five versioned agent skills (endpoint and screen checklist, session wrap-up, dev/test evaluation, bank notification privacy, status e-mail) with a time-log checker and a capture-masking script; web sign-in (W1) with e-mail or member id, session cookie and CSRF token, ADR 0010; plan and AI-usage docs | Project messages and commits |
 
 ## Weekly totals
 
@@ -34,5 +34,5 @@ Time spent on the project, for the weekly-effort figure the supervisor asked for
 | 2026-10-19 – 10-25 | 63 | 1.1 |
 | 2026-10-26 – 11-01 | 264 | 4.4 |
 | 2026-11-02 – 11-08 | 149 | 2.5 |
-| 2026-11-09 – 11-15 | 126 | 2.1 |
-| **Total** | **980** | **16.3** |
+| 2026-11-09 – 11-15 | 148 | 2.5 |
+| **Total** | **1002** | **16.7** |
