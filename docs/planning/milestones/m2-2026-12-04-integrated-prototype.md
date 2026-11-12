@@ -29,7 +29,7 @@ The core flows committed for the semester work together, with proper data handli
 - [x] Authentication and request size limits (API tokens done 2026-11-02, [ADR 0009](../../architecture/decisions/0009-api-tokens.md); request size limits done 2026-11-07 with the FastAPI switch; web password login done 2026-11-12, [ADR 0010](../../architecture/decisions/0010-web-sign-in.md)).
 - [ ] Review and correction endpoints with tests.
 - [ ] Web app: event list, event detail with split and category correction, review queue (manual entry, file import and token management if time allows).
-- [ ] Android app (notification listener, token setup, sending, retry) with its README.
+- [ ] Android app (notification listener, token setup, sending, retry) with its README (done 2026-11-12 and tested on the emulator; open: the test on the real phone, and the token kept in plain preferences).
 - [ ] File import with `import_batch_id` and `source_ref`; Sheets script if time allows.
 - [ ] LLM categorizer and labelled categorization dataset (dataset done 2026-11-08: `tests/data/categorization_eval.csv`, 200 synthetic items).
 - [ ] Money transfers: `transfer` direction for records to or from the group's own accounts and counterparties (per-group list), excluded from spending and income totals.

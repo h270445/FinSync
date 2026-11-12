@@ -9,7 +9,7 @@ Versioned instructions for the coding agent (Claude Code), one folder per skill 
 | [dev-test-evaluation](dev-test-evaluation/SKILL.md) | 1.0 | Any measurement: tuning, comparing methods, LLM runs | – |
 | [bank-notification-privacy](bank-notification-privacy/SKILL.md) | 1.0 | Real bank notification formats, parser patterns and fixtures | `mask_captures.py` |
 | [supervisor-status-email](supervisor-status-email/SKILL.md) | 1.0 | Drafting a status e-mail to the supervisor | – |
-| [android-emulator-e2e](android-emulator-e2e/SKILL.md) | 1.0 | After an Android app or ingest change: build and test on an emulator, on the author's computer | – |
+| [android-emulator-e2e](android-emulator-e2e/SKILL.md) | 1.1 | After an Android app or ingest change: build and test on an emulator, on the author's computer | – |
 
 ## Rules
 
