@@ -54,7 +54,7 @@ description: Use after any change to the FinSync Android app (clients/android) o
 
    Events: `curl -H "Authorization: Bearer <token>" http://127.0.0.1:8080/v1/events`.
 9. **Evidence.** Read the status lines from `adb shell uiautomator dump /sdcard/ui.xml` and `adb shell cat /sdcard/ui.xml` (`text="..."`), more reliable than reading a screenshot. Take the screenshot with `adb shell screencap -p /sdcard/shot.png`, `adb pull /sdcard/shot.png clients\android\m2-emulator-test.png`, `adb shell rm /sdcard/shot.png` (`adb exec-out ... >` in Windows PowerShell 5.1 writes a broken PNG). If a "System UI isn't responding" dialog appears, tap its "Wait" button (found in the UI dump) and take the screenshot again.
-10. **Clean up.** Stop the API, delete the temporary database and the token file, clear the notification shade, leave the emulator for the next run; nothing committed.
+10. **Clean up.** Stop the API, delete the temporary database and the token file, clear the notification shade, then stop the emulator with `adb emu kill` (it frees about 1.3 GB of RAM on this 7.7 GB computer; the emulator saves a Quick Boot snapshot, so the next start takes seconds instead of a cold boot, and step 6 clears the old state anyway). Leave it running only if the author says another run follows soon. Nothing committed.
 
 ## Self-check
 
@@ -70,4 +70,4 @@ Before reporting PASS, each case has its evidence in the report: the event list 
 | Version | Date | Change |
 | --- | --- | --- |
 | 1.0 | 2026-11-12 | First version, from the first M2 emulator run (all cases passed; found the status screen not refreshing and dropped notifications counted again on reconnect). |
-| 1.1 | 2026-11-12 | After its first use: clean state before installing, counters read from the app's preferences, fixed waits for C and D, a real check of the refresh in F, screenshot through `adb pull`, paths from the repository root, token never echoed, no `cmd /c`, reconnect proof without touching `captures.jsonl`; free memory checked and reported, and the author asked to close memory-heavy programs. |
+| 1.1 | 2026-11-12 | After its first use: clean state before installing, counters read from the app's preferences, fixed waits for C and D, a real check of the refresh in F, screenshot through `adb pull`, paths from the repository root, token never echoed, no `cmd /c`, reconnect proof without touching `captures.jsonl`; free memory checked and reported, and the author asked to close memory-heavy programs; the emulator is stopped at the end. |
