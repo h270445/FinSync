@@ -20,7 +20,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="python -m finsync.api.passwords", description="Manage FinSync web app passwords."
     )
-    parser.add_argument("--db", default="finsync.db", help="SQLite database file (default: finsync.db)")
+    parser.add_argument("--db", default="finsync.db", help="SQLite database file or database URL (default: finsync.db)")
     commands = parser.add_subparsers(dest="command", required=True)
     set_password = commands.add_parser("set", help="Set or replace a member's password")
     set_password.add_argument("--user", required=True)

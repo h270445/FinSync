@@ -1,6 +1,6 @@
 # `finsync/` — backend package
 
-The FinSync backend: a Python standard-library HTTP API that ingests transactions, categorizes them and stores them per group in SQLite.
+The FinSync backend: a FastAPI HTTP API that ingests transactions from every source, matches them into events, categorizes them and stores them per group on SQLite or PostgreSQL.
 
 ## Layout
 
@@ -11,7 +11,7 @@ The FinSync backend: a Python standard-library HTTP API that ingests transaction
 | [`ingestion/`](ingestion/README.md) | Domain | Source-specific parsers, currently the notification text parser |
 | [`categorization/`](categorization/README.md) | Domain | Rule-based categorizer (baseline for the planned LLM comparison) |
 | [`matching/`](matching/README.md) | Domain | Transaction matching and duplicate detection: normalise, fingerprint, score, decide |
-| [`storage/`](storage/README.md) | Persistence | SQLite schema and migrations, transactions, events, match decisions, memberships |
+| [`storage/`](storage/README.md) | Persistence | SQLite or PostgreSQL through SQLAlchemy Core, Alembic migrations; transactions, events, match decisions, memberships, tokens, sessions |
 | [`evaluation/`](evaluation/README.md) | Tooling | Synthetic labelled datasets and the evaluation runner |
 
 ## Dependency rule

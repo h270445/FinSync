@@ -189,6 +189,7 @@ class MatchingServiceTest(unittest.TestCase):
 
 
 class MigrationTest(unittest.TestCase):
+    @unittest.skipIf(os.environ.get("FINSYNC_TEST_DATABASE_URL"), "reads the SQLite file directly")
     def test_existing_rows_become_separate_events(self) -> None:
         with tempfile.TemporaryDirectory() as tempdir:
             db_path = os.path.join(tempdir, "legacy.db")

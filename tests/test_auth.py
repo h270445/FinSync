@@ -60,6 +60,7 @@ class TokenServiceTest(unittest.TestCase):
         self.assertEqual((principal.user_id, principal.group_id, principal.token_id), ("user-a", "group-1", record.id))
         self.assertIsNotNone(self.tokens.list("user-a")[0].last_used_at)
 
+    @unittest.skipIf(os.environ.get("FINSYNC_TEST_DATABASE_URL"), "reads the SQLite file directly")
     def test_only_the_hash_is_stored(self) -> None:
         token, _ = self.tokens.create("user-a", "group-1", "phone")
         connection = sqlite3.connect(self.db_path)
@@ -95,9 +96,14 @@ class TokenServiceTest(unittest.TestCase):
         self.tokens.revoke(phone_record.id)
         self.assertEqual(self.tokens.authenticate(f"bearer {sheet}").user_id, "user-a")
 
+    @unittest.skipIf(os.environ.get("FINSYNC_TEST_DATABASE_URL"), "reads the SQLite file directly")
     def test_a_version_2_database_gets_the_token_table(self) -> None:
         connection = sqlite3.connect(self.db_path)
         with connection:
+            # Turn the new database into a file from before Alembic, at schema version 4.
+            connection.execute("DROP TABLE alembic_version")
+            connection.execute("CREATE TABLE schema_version (version INTEGER NOT NULL)")
+            connection.executemany("INSERT INTO schema_version (version) VALUES (?)", [(2,), (3,), (4,)])
             connection.execute("DROP TABLE api_tokens")
             connection.execute("DROP TABLE member_accounts")
             connection.execute("DROP TABLE web_sessions")

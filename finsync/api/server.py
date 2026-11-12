@@ -474,8 +474,10 @@ def _event(event: EventRecord) -> EventOut:
     )
 
 
-def run_server(host: str = "127.0.0.1", port: int = 8080, db_path: str = "finsync.db") -> None:
+def run_server(host: str = "127.0.0.1", port: int = 8080, db: str = "finsync.db") -> None:
     import uvicorn
 
-    print(f"FinSync API running on http://{host}:{port} (database: {db_path}, docs: /docs)")
-    uvicorn.run(create_app(FinSyncStorage(db_path)), host=host, port=port)
+    storage = FinSyncStorage(db)
+    # The URL may carry a database password; print it masked.
+    print(f"FinSync API running on http://{host}:{port} (database: {storage.display_url}, docs: /docs)")
+    uvicorn.run(create_app(storage), host=host, port=port)

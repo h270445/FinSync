@@ -63,6 +63,7 @@ class SessionServiceTest(unittest.TestCase):
     def tearDown(self) -> None:
         self.tempdir.cleanup()
 
+    @unittest.skipIf(os.environ.get("FINSYNC_TEST_DATABASE_URL"), "reads the SQLite file directly")
     def test_only_salted_hashes_are_stored(self) -> None:
         secret, _ = self.sessions.sign_in("user-a", PASSWORD_A)
         connection = sqlite3.connect(self.db_path)
@@ -148,9 +149,14 @@ class SessionServiceTest(unittest.TestCase):
             self.sessions.sign_in("user-a", PASSWORD_A)
         self.sessions.sign_in("user-a", "uj-jelszo-1234")
 
+    @unittest.skipIf(os.environ.get("FINSYNC_TEST_DATABASE_URL"), "reads the SQLite file directly")
     def test_a_version_3_database_gets_the_sign_in_tables(self) -> None:
         connection = sqlite3.connect(self.db_path)
         with connection:
+            # Turn the new database into a file from before Alembic, at schema version 4.
+            connection.execute("DROP TABLE alembic_version")
+            connection.execute("CREATE TABLE schema_version (version INTEGER NOT NULL)")
+            connection.executemany("INSERT INTO schema_version (version) VALUES (?)", [(2,), (3,), (4,)])
             connection.execute("DROP TABLE member_accounts")
             connection.execute("DROP TABLE web_sessions")
             connection.execute("DELETE FROM schema_version WHERE version = 4")

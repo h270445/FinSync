@@ -20,7 +20,7 @@ The core flows committed for the semester work together, with proper data handli
 - [ ] The LLM categorizer runs behind the same interface as the rule-based one and its output is validated against the category list.
 - [ ] Hybrid categorizer (Hungarian merchant and keyword layer, then model/LLM layer for mixed merchants) with an abstention threshold; coverage vs. accuracy, latency and cost measured on the 200-item dataset (supervisor, 2026-11-11).
 - [x] ADR 0008 implemented: `posted_at` and `ingested_at` stored separately, offset-less times read as Europe/Budapest (2026-11-12: `posted_at` becomes `happened_at`, the arrival time is `created_at`; matching dataset v3).
-- [ ] The test suite runs on SQLite and on PostgreSQL behind `FinSyncStorage`; the SQLite run stays fast.
+- [x] The test suite runs on SQLite and on PostgreSQL behind `FinSyncStorage`; the SQLite run stays fast (2026-11-12: 149 tests in about 9 s on SQLite; `tests/run_on_postgres.py` runs them on PostgreSQL 16).
 - [ ] The web app is a whole: W2 overview with group totals by month, category and member; W4 decision history from the API; W6 manual entry; W7 bulk import preview; W8 settings with members, API tokens (create, revoke) and merchant–category rule overrides.
 - [ ] One versioned agent skill in the repository, and the six design views in `docs/` (skills done 2026-11-12: five in [`.claude/skills/`](../../../.claude/skills/README.md); design views open).
 
@@ -35,6 +35,6 @@ The core flows committed for the semester work together, with proper data handli
 - [ ] Money transfers: `transfer` direction for records to or from the group's own accounts and counterparties (per-group list), excluded from spending and income totals.
 - [ ] Category correction, the "mixed" flag and category lines (lines add up to the event amount; totals follow them).
 - [x] HTTP layer on FastAPI with an OpenAPI schema (ADR 0006 step 1, 2026-11-07).
-- [ ] Storage on SQLAlchemy, Alembic and PostgreSQL with Docker Compose (ADR 0006 step 2, Nov 16–22, time-boxed).
+- [x] Storage on SQLAlchemy, Alembic and PostgreSQL with Docker Compose (ADR 0006 step 2, Nov 16–22, time-boxed; done early on 2026-11-12).
 - [ ] Docs updated (API reference, security status, client setup in the guides).
 - [ ] Release notes, tag `v0.3.0`, e-mail.

@@ -3,7 +3,7 @@
 ## Requirements
 
 - Python 3.10 or newer (the code uses `str | None` type syntax).
-- The packages in `requirements.txt`: FastAPI and Uvicorn for the API, httpx for the tests, and on Windows the `tzdata` time-zone data (Windows does not ship it; without it the matching code fails with `No time zone found with key Europe/Budapest`). Install them once, preferably in a virtual environment:
+- The packages in `requirements.txt`: FastAPI and Uvicorn for the API, SQLAlchemy, Alembic and psycopg for storage, httpx for the tests, and on Windows the `tzdata` time-zone data (Windows does not ship it; without it the matching code fails with `No time zone found with key Europe/Budapest`). Install them once, preferably in a virtual environment:
 
   ```bash
   python -m venv .venv
@@ -19,7 +19,19 @@ From the repository root:
 python -m finsync.api
 ```
 
-The server listens on `http://127.0.0.1:8080` and creates `finsync.db` (SQLite) in the current directory. The interactive API description is at `http://127.0.0.1:8080/docs`. Options: `--host`, `--port`, `--db <file>`.
+The server listens on `http://127.0.0.1:8080` and creates `finsync.db` (SQLite) in the current directory. The interactive API description is at `http://127.0.0.1:8080/docs`. Options: `--host`, `--port`, `--db <file or URL>`.
+
+### With PostgreSQL (Docker Compose)
+
+With Docker installed, from the repository root:
+
+```bash
+docker compose up --build
+```
+
+This starts PostgreSQL 16 and the API on `http://127.0.0.1:8080`; the schema is created on the first start and kept in a Docker volume (`docker compose down -v` deletes it). The commands below then run inside the API container, for example `docker compose exec api sh -c 'python -m finsync.api.tokens --db "$FINSYNC_DATABASE_URL" create --user demo-user --group demo-group --name curl'`. The database password in `compose.yaml` is a development placeholder; set `FINSYNC_DB_PASSWORD` to change it.
+
+Without Docker, any PostgreSQL works: `python -m finsync.api --db postgresql+psycopg://user:password@localhost/finsync`. The startup line prints the URL with the password masked.
 
 ## Create an API token
 

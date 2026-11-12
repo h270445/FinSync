@@ -1,6 +1,6 @@
-"""Persistence layer. The current backend is SQLite."""
+"""Persistence layer: SQLite or PostgreSQL through SQLAlchemy Core, schema managed by Alembic."""
 
-from finsync.storage.sqlite import (
+from finsync.storage.database import (
     ApiTokenRecord,
     EventRecord,
     FinSyncStorage,

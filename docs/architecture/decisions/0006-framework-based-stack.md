@@ -1,6 +1,6 @@
 # 0006. Framework-based stack: FastAPI, PostgreSQL, React
 
-- Status: Accepted 2026-11-07, in steps (supersedes [0002](0002-python-stdlib-and-sqlite.md)). Step 1, done 2026-11-07: the HTTP layer runs on FastAPI and Uvicorn, with the storage still on SQLite (the fallback below). Step 2, planned for 2026-11-16–22 (M2): the storage switch (SQLAlchemy, Alembic, PostgreSQL) and Docker Compose, time-boxed so it does not delay token and password authentication or the W3–W5 screens.
+- Status: Accepted 2026-11-07, in steps (supersedes [0002](0002-python-stdlib-and-sqlite.md)). Step 1, done 2026-11-07: the HTTP layer runs on FastAPI and Uvicorn, with the storage still on SQLite (the fallback below). Step 2, planned for 2026-11-16–22 (M2) and done early on 2026-11-12: the storage runs on SQLAlchemy Core with Alembic migrations, on SQLite or PostgreSQL, and Docker Compose starts PostgreSQL and the API. Implementation choices: SQLAlchemy Core with the existing SQL instead of ORM models; amounts and instants stay text columns on both databases; one advisory lock for all write units instead of one per group; no connection pool; see the [storage README](../../../finsync/storage/README.md).
 - Date: 2026-10-09
 
 ## Context

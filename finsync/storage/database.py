@@ -1,7 +1,10 @@
-"""SQLite storage: schema, migrations and every query, always filtered by group.
+"""Storage on SQLAlchemy Core: SQLite or PostgreSQL behind one interface, every query filtered by group.
 
-`FinSyncStorage` opens connections and runs migrations up to `SCHEMA_VERSION`; `StorageSession` is one
-transaction used by a service method. Instants are stored as UTC ISO strings.
+`FinSyncStorage` takes a file path (SQLite) or a database URL (`postgresql+psycopg://...`), brings the
+schema up to date with Alembic and opens one transaction per call; `StorageSession` is one write unit used
+by a service method. The SQL is plain text that both databases accept; the few differences are in
+`_Dialect`. Instants are stored as UTC ISO strings in text columns on both, so ordering and range queries
+behave the same (ADR 0006, step 2).
 """
 
 from __future__ import annotations
@@ -11,10 +14,28 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 import json
-import sqlite3
-from typing import Any, Iterator
+from pathlib import Path
+import re
+from typing import Any, Iterator, Mapping, Sequence
 
+from functools import cache
+
+from alembic import command
+from alembic.config import Config
+from alembic.runtime.migration import MigrationContext
+from alembic.script import ScriptDirectory
+from sqlalchemy import create_engine, event, inspect, text
+from sqlalchemy.engine import Connection, CursorResult, Engine
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.pool import NullPool
+
+# The last version of the hand-written SQLite migrations. A database at this version is handed over to
+# Alembic at revision BASELINE_REVISION, which creates the same schema from scratch.
 SCHEMA_VERSION = 4
+BASELINE_REVISION = "0001"
+_MIGRATIONS = Path(__file__).with_name("migrations")
+# Any constant works: the lock only has to be the same for every write unit (see FinSyncStorage.transaction).
+_WRITE_LOCK_KEY = 0x46494E53  # "FINS"
 
 
 @dataclass(frozen=True)
@@ -96,35 +117,124 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+class _Result:
+    """Rows as mappings (`row["column"]`), like the sqlite3.Row the queries were written for."""
+
+    def __init__(self, result: CursorResult[Any]) -> None:
+        self._result = result
+
+    def fetchone(self) -> Mapping[str, Any] | None:
+        return self._result.mappings().fetchone() if self._result.returns_rows else None
+
+    def fetchall(self) -> Sequence[Mapping[str, Any]]:
+        return self._result.mappings().fetchall() if self._result.returns_rows else []
+
+    @property
+    def rowcount(self) -> int:
+        return self._result.rowcount
+
+
+class _Connection:
+    """One open transaction. Takes `?` placeholders, so the SQL reads the same on both databases."""
+
+    def __init__(self, connection: Connection) -> None:
+        self._connection = connection
+        self.dialect = connection.dialect.name
+
+    def execute(self, sql: str, params: Sequence[Any] = ()) -> _Result:
+        parts = sql.split("?")
+        if len(parts) - 1 != len(params):
+            raise ValueError(f"expected {len(parts) - 1} parameters, got {len(params)}")
+        named = parts[0] + "".join(f":p{index}{part}" for index, part in enumerate(parts[1:]))
+        return _Result(self._connection.execute(text(named), {f"p{i}": value for i, value in enumerate(params)}))
+
+    def insert(self, sql: str, params: Sequence[Any]) -> int:
+        """Run an INSERT and return the new row's id (RETURNING works on SQLite 3.35+ and PostgreSQL)."""
+        row = self.execute(sql.rstrip() + " RETURNING id", params).fetchone()
+        assert row is not None
+        return int(row["id"])
+
+    def contested_condition(self) -> str:
+        """SQL that is true when a decision's JSON features mark it as contested."""
+        if self.dialect == "postgresql":
+            return "(CAST(d.features AS jsonb) ->> 'contested') = 'true'"
+        return "json_extract(d.features, '$.contested') = 1"
+
+
+def database_url(db: str) -> str:
+    """A database URL as is; anything else is a SQLite file path."""
+    return db if "://" in db else f"sqlite:///{db}"
+
+
+def _engine(url: str) -> Engine:
+    # No pool: each call opens and closes its connection, as before. The SQLite file is then never held
+    # open (on Windows an open file stays locked), and the tests can create hundreds of storages.
+    engine = create_engine(url, poolclass=NullPool)
+    if engine.dialect.name == "sqlite":
+        @event.listens_for(engine, "connect")
+        def _autocommit_driver(dbapi_connection: Any, _record: Any) -> None:
+            # Let SQLAlchemy, not the sqlite3 module, decide where transactions begin.
+            dbapi_connection.isolation_level = None
+
+        @event.listens_for(engine, "begin")
+        def _begin_immediate(connection: Connection) -> None:
+            # Take the write lock up front, so two matching runs cannot read the same candidates.
+            connection.exec_driver_sql("BEGIN IMMEDIATE")
+    return engine
+
+
+@cache
+def _head_revision() -> str | None:
+    config = Config()
+    config.set_main_option("script_location", str(_MIGRATIONS))
+    return ScriptDirectory.from_config(config).get_current_head()
+
+
+def _alembic_config(connection: Connection) -> Config:
+    config = Config()
+    config.set_main_option("script_location", str(_MIGRATIONS))
+    config.attributes["connection"] = connection
+    return config
+
+
 class FinSyncStorage:
-    def __init__(self, db_path: str = "finsync.db") -> None:
-        self._db_path = db_path
+    def __init__(self, db: str = "finsync.db") -> None:
+        """`db` is a SQLite file path or a database URL such as `postgresql+psycopg://user:pw@host/finsync`."""
+        self.url = database_url(db)
+        self._engine = _engine(self.url)
         self._init_schema()
 
-    def _connect(self) -> sqlite3.Connection:
-        connection = sqlite3.connect(self._db_path)
-        connection.row_factory = sqlite3.Row
-        return connection
+    @property
+    def dialect(self) -> str:
+        return self._engine.dialect.name
+
+    @property
+    def display_url(self) -> str:
+        """The database URL with any password replaced by ***, safe to print or log."""
+        return self._engine.url.render_as_string(hide_password=True)
 
     @contextmanager
-    def _session(self) -> Iterator[sqlite3.Connection]:
-        """Commits on success, rolls back on error and always closes the connection.
-
-        `with connection:` alone only ends the transaction; the open file would stay locked
-        on Windows until garbage collection.
-        """
-        connection = self._connect()
-        try:
-            with connection:
-                yield connection
-        finally:
-            connection.close()
+    def _session(self) -> Iterator[_Connection]:
+        """Commits on success, rolls back on error and always closes the connection."""
+        with self._engine.begin() as connection:
+            yield _Connection(connection)
 
     def _init_schema(self) -> None:
-        connection = self._connect()
-        connection.isolation_level = None
-        try:
-            connection.execute("BEGIN IMMEDIATE")
+        """Alembic upgrade; an older SQLite file first runs the hand-written migrations up to version 4."""
+        with self._engine.begin() as raw:
+            tables = set(inspect(raw).get_table_names())
+            if "alembic_version" not in tables and tables & {"transactions", "schema_version"}:
+                self._upgrade_legacy(_Connection(raw))
+                command.stamp(_alembic_config(raw), BASELINE_REVISION)
+            # Opening an up-to-date database is the common case (every request in the tests); skip Alembic then.
+            if MigrationContext.configure(raw).get_current_revision() != _head_revision():
+                command.upgrade(_alembic_config(raw), "head")
+
+    def _upgrade_legacy(self, connection: _Connection) -> None:
+        """The SQLite migrations from before Alembic (schema versions 1 to 4), kept for existing files."""
+        if connection.dialect != "sqlite":
+            raise RuntimeError("a database without alembic_version must be a SQLite file from before Alembic")
+        if True:  # keeps the original indentation of the migration code below
             _execute_script(
                 connection,
                 """
@@ -152,22 +262,16 @@ class FinSyncStorage:
                 """,
             )
             row = connection.execute("SELECT MAX(version) AS version FROM schema_version").fetchone()
-            version = row["version"] or 1
+            version = (row["version"] if row else None) or 1
             if version < 2:
                 self._migrate_to_2(connection)
             if version < 3:
                 self._migrate_to_3(connection)
-            if version < 4:
+            if version < SCHEMA_VERSION:
                 self._migrate_to_4(connection)
-            connection.execute("COMMIT")
-        except BaseException:
-            connection.execute("ROLLBACK")
-            raise
-        finally:
-            connection.close()
 
     @staticmethod
-    def _migrate_to_2(connection: sqlite3.Connection) -> None:
+    def _migrate_to_2(connection: _Connection) -> None:
         """Add events and match decisions; every existing row becomes its own event, nothing is merged."""
         for column, definition in (
             ("event_id", "INTEGER REFERENCES events(id)"),
@@ -247,7 +351,7 @@ class FinSyncStorage:
         connection.execute("INSERT INTO schema_version (version) VALUES (2)")
 
     @staticmethod
-    def _migrate_to_3(connection: sqlite3.Connection) -> None:
+    def _migrate_to_3(connection: _Connection) -> None:
         """Add API tokens; each token belongs to one member of one group."""
         _execute_script(
             connection,
@@ -268,7 +372,7 @@ class FinSyncStorage:
         connection.execute("INSERT INTO schema_version (version) VALUES (3)")
 
     @staticmethod
-    def _migrate_to_4(connection: sqlite3.Connection) -> None:
+    def _migrate_to_4(connection: _Connection) -> None:
         """Add web sign-in: per member an e-mail address and a password hash, and sessions bound to one member and group."""
         _execute_script(
             connection,
@@ -297,25 +401,19 @@ class FinSyncStorage:
     def transaction(self) -> Iterator["StorageSession"]:
         """One write unit: everything inside is committed together or rolled back.
 
-        BEGIN IMMEDIATE takes the write lock up front, so two matching runs cannot both
-        read the same candidates and link conflicting records.
+        Write units run one at a time, so two matching runs cannot both read the same candidates and
+        link conflicting records: SQLite takes its write lock with BEGIN IMMEDIATE, PostgreSQL waits for
+        a transaction-scoped advisory lock (released at commit or rollback).
         """
-        connection = self._connect()
-        connection.isolation_level = None
-        try:
-            connection.execute("BEGIN IMMEDIATE")
+        with self._session() as connection:
+            if connection.dialect == "postgresql":
+                connection.execute("SELECT pg_advisory_xact_lock(?)", (_WRITE_LOCK_KEY,))
             yield StorageSession(connection)
-            connection.execute("COMMIT")
-        except BaseException:
-            connection.execute("ROLLBACK")
-            raise
-        finally:
-            connection.close()
 
     def add_group_membership(self, user_id: str, group_id: str) -> None:
         with self._session() as connection:
             connection.execute(
-                "INSERT OR IGNORE INTO group_memberships (user_id, group_id) VALUES (?, ?)",
+                "INSERT INTO group_memberships (user_id, group_id) VALUES (?, ?) ON CONFLICT DO NOTHING",
                 (user_id, group_id),
             )
 
@@ -335,14 +433,13 @@ class FinSyncStorage:
 
     def insert_api_token(self, user_id: str, group_id: str, name: str, token_hash: str, prefix: str) -> int:
         with self._session() as connection:
-            cursor = connection.execute(
+            return connection.insert(
                 """
                 INSERT INTO api_tokens (user_id, group_id, name, token_hash, prefix, created_at)
                 VALUES (?, ?, ?, ?, ?, ?)
                 """,
                 (user_id, group_id, name, token_hash, prefix, _now()),
             )
-        return int(cursor.lastrowid)
 
     def find_api_token(self, token_hash: str) -> ApiTokenRecord | None:
         with self._session() as connection:
@@ -400,7 +497,7 @@ class FinSyncStorage:
                     """,
                     (user_id, email, _now()),
                 )
-        except sqlite3.IntegrityError as error:
+        except IntegrityError as error:
             raise ValueError("this e-mail address belongs to another member") from error
 
     def find_member_account(self, login: str) -> tuple[str, str | None] | None:
@@ -435,14 +532,13 @@ class FinSyncStorage:
 
     def insert_web_session(self, user_id: str, group_id: str, session_hash: str, expires_at: datetime) -> int:
         with self._session() as connection:
-            cursor = connection.execute(
+            return connection.insert(
                 """
                 INSERT INTO web_sessions (user_id, group_id, session_hash, created_at, expires_at)
                 VALUES (?, ?, ?, ?, ?)
                 """,
                 (user_id, group_id, session_hash, _now(), expires_at.isoformat()),
             )
-        return int(cursor.lastrowid)
 
     def find_web_session(self, session_hash: str) -> WebSessionRecord | None:
         with self._session() as connection:
@@ -546,7 +642,7 @@ class FinSyncStorage:
 class StorageSession:
     """Reads and writes inside one open database transaction."""
 
-    def __init__(self, connection: sqlite3.Connection) -> None:
+    def __init__(self, connection: _Connection) -> None:
         self._connection = connection
 
     def find_original_by_fingerprint(self, group_id: str, fingerprint: str) -> TransactionRecord | None:
@@ -599,7 +695,7 @@ class StorageSession:
     ) -> int:
         now = _now()
         happened = happened_at.isoformat() if isinstance(happened_at, datetime) else happened_at
-        cursor = self._connection.execute(
+        return self._connection.insert(
             """
             INSERT INTO events (
                 group_id, amount, currency, direction, happened_at, merchant, category,
@@ -608,7 +704,6 @@ class StorageSession:
             """,
             (group_id, str(amount), currency, direction, happened, merchant, category, review_state, now, now),
         )
-        return int(cursor.lastrowid)
 
     def insert_record(
         self,
@@ -631,7 +726,7 @@ class StorageSession:
         source_ref: str | None = None,
         import_batch_id: str | None = None,
     ) -> int:
-        cursor = self._connection.execute(
+        return self._connection.insert(
             """
             INSERT INTO transactions (
                 user_id, group_id, amount, currency, description, merchant, category, source,
@@ -660,7 +755,6 @@ class StorageSession:
                 import_batch_id,
             ),
         )
-        return int(cursor.lastrowid)
 
     def refresh_event(self, event_id: int) -> None:
         """Copy display values from the primary record: a notification first, then the earliest."""
@@ -698,7 +792,7 @@ class StorageSession:
             WHERE t.event_id = ? AND {_OPEN_REVIEW}
             UNION ALL
             SELECT 1 FROM match_decisions d
-            WHERE d.candidate_event_id = ? AND json_extract(d.features, '$.contested') = 1 AND {_OPEN_REVIEW}
+            WHERE d.candidate_event_id = ? AND {self._connection.contested_condition()} AND {_OPEN_REVIEW}
             """,
             (event_id, event_id),
         ).fetchone():
@@ -807,7 +901,7 @@ class StorageSession:
         decided_by: str = "system",
         supersedes_id: int | None = None,
     ) -> int:
-        cursor = self._connection.execute(
+        return self._connection.insert(
             """
             INSERT INTO match_decisions (
                 group_id, transaction_id, candidate_event_id, outcome, score, features,
@@ -827,10 +921,9 @@ class StorageSession:
                 _now(),
             ),
         )
-        return int(cursor.lastrowid)
 
 
-def _execute_script(connection: sqlite3.Connection, script: str) -> None:
+def _execute_script(connection: _Connection, script: str) -> None:
     # executescript() would commit first; separate statements keep the schema change in one transaction.
     for statement in script.split(";"):
         if statement.strip():
@@ -845,7 +938,7 @@ def _optional_time(value: Any) -> datetime | None:
     return datetime.fromisoformat(str(value)) if value is not None else None
 
 
-def _row_to_api_token(row: sqlite3.Row) -> ApiTokenRecord:
+def _row_to_api_token(row: Mapping[str, Any]) -> ApiTokenRecord:
     return ApiTokenRecord(
         id=int(row["id"]),
         user_id=str(row["user_id"]),
@@ -858,11 +951,11 @@ def _row_to_api_token(row: sqlite3.Row) -> ApiTokenRecord:
     )
 
 
-def _decision_dict(row: sqlite3.Row) -> dict[str, Any]:
+def _decision_dict(row: Mapping[str, Any]) -> dict[str, Any]:
     return {**dict(row), "features": json.loads(row["features"]) if row["features"] else None}
 
 
-def _row_to_transaction(row: sqlite3.Row) -> TransactionRecord:
+def _row_to_transaction(row: Mapping[str, Any]) -> TransactionRecord:
     return TransactionRecord(
         id=int(row["id"]),
         user_id=str(row["user_id"]),

@@ -1,0 +1,10 @@
+# Only the backend goes into the API image.
+.git
+.venv
+.claude
+**/__pycache__
+*.db
+web
+clients
+docs
+tests

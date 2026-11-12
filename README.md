@@ -26,8 +26,8 @@ This repository contains an early backend prototype and is the foundation for a 
 
 **Implemented today vs planned.**
 
-- *Implemented:* an HTTP API with parsing of two predefined notification text patterns, manual and bulk entry, keyword-based categorization, SQLite storage, group-membership checks and five tests.
-- *Planned:* matching and duplicate detection, review and correction, authentication (identity is currently supplied by the request), the Android app, spreadsheet and Google Sheets input, LLM categorization, the web app and the evaluation runner.
+- *Implemented:* ingestion from bank notifications (OTP Bank via the Android app), manual and bulk entry; transaction matching with review and correction; measured matching results; rule-based categorization; API tokens and web sign-in; the web app's review screens; storage on SQLite or PostgreSQL. Details and links: [project overview](docs/overview.md#current-implementation-status).
+- *Planned:* file import of spreadsheet exports (Google Sheets script if time allows), the remaining web screens, hybrid and LLM categorization, and the security and privacy evaluation.
 
 **Effort and experience.**
 
@@ -58,6 +58,7 @@ Details: [docs/guides/getting-started.md](docs/guides/getting-started.md).
 | Semester roadmap and milestones | [docs/planning/](docs/planning/README.md) |
 | Release notes | [docs/releases/](docs/releases/README.md) |
 | AI usage | [docs/ai-usage.md](docs/ai-usage.md) |
+| Thesis map (chapters and defence questions to evidence) | [docs/thesis-map.md](docs/thesis-map.md) |
 
 Start at [docs/README.md](docs/README.md) for the full map and conventions.
 
@@ -69,8 +70,8 @@ finsync/            backend package (each subfolder has a README)
   core/             use cases and authorization
   ingestion/        input parsers
   categorization/   rule-based categorizer
-  matching/         transaction matching (planned)
-  storage/          SQLite persistence
+  matching/         transaction matching
+  storage/          SQLite or PostgreSQL persistence (SQLAlchemy, Alembic)
 tests/              unittest suite
 docs/               documentation
 .claude/skills/     versioned agent skills (see its README)

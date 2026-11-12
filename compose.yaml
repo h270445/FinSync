@@ -1,0 +1,29 @@
+# Local run with PostgreSQL (ADR 0006, step 2): `docker compose up --build`, then http://localhost:8080/docs.
+# Development only: the password below is a placeholder for a database that never leaves this machine.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: finsync
+      POSTGRES_PASSWORD: ${FINSYNC_DB_PASSWORD:-finsync-dev}
+      POSTGRES_DB: finsync
+    volumes:
+      - finsync-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U finsync -d finsync"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  api:
+    build: .
+    environment:
+      FINSYNC_DATABASE_URL: postgresql+psycopg://finsync:${FINSYNC_DB_PASSWORD:-finsync-dev}@db:5432/finsync
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  finsync-db:
