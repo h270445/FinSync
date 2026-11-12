@@ -38,7 +38,7 @@ UI text is Hungarian, amounts in HUF (`12 990 Ft`), dates `2026. 10. 09.`. All e
 | W4 | Event detail | The records behind one event, raw payload, source reference, import batch, decision history; **Split** action; category correction | `GET /v1/events`, `GET /v1/events/{id}/decisions`, `POST /v1/events/{id}/split` | M2 |
 | W5 | Review queue | Two records side by side, score and feature breakdown (amount, time, merchant), **Same purchase** / **Different purchases** | `GET /v1/matches/review`, `POST /v1/matches/{id}/confirm`, `.../reject` | M2 |
 | W6 | Add transaction | Manual entry form; after saving, show the match outcome | `POST /v1/transactions` | M2 |
-| W7 | Import file | Upload a spreadsheet export, preview rows, import, summary per outcome (new, linked, needs review, re-delivery, rejected rows with reasons) | `POST /v1/imports` (`dry_run` for the preview; API since 2026-11-12, screen planned) | M2 |
+| W7 | Import file | Upload a spreadsheet export, preview rows, import, summary per outcome (new, linked, needs review, re-delivery, rejected rows with reasons) | `POST /v1/imports` (`dry_run` for the preview; implemented 2026-11-12, CSV and XLSX) | M2 |
 | W8 | Settings | Member and group settings, see [Settings](#settings) | Token and settings endpoints (planned, M2) | M2 |
 
 ### Settings

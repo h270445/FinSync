@@ -1,9 +1,10 @@
-"""Spreadsheet export (CSV) to import rows: column mapping, Hungarian number and date forms, row errors.
+"""Spreadsheet export (CSV or XLSX) to import rows: column mapping, Hungarian number and date forms, row errors.
 
 A bank or spreadsheet export names its columns differently, so the caller maps them (`ColumnMapping`); the
 defaults are FinSync's own generic headers. Every row is checked and every error is collected with its line
 number, so the preview can show them all and the import can refuse the whole file ([matching design](
-../../docs/design/transaction-matching.md), file import row). Standard library only; XLSX is not read yet.
+../../docs/design/transaction-matching.md), file import row). XLSX is read with openpyxl: the first sheet,
+cell values only (no formulas are evaluated), turned into the same text rows as a CSV.
 """
 
 from __future__ import annotations
@@ -14,6 +15,8 @@ from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 import io
 import re
+from typing import Iterable, Iterator
+import zipfile
 
 MAX_ROWS = 5000
 _DELIMITERS = ",;\t"
@@ -92,7 +95,7 @@ def parse_date(raw: str) -> date:
 
 
 def parse_export(content: str, mapping: ColumnMapping) -> ParsedExport:
-    """Every data row as an ImportRow, or a RowError naming its line. Raises ValueError for the file as a whole."""
+    """A CSV file: every data row as an ImportRow, or a RowError naming its line. Raises ValueError for the file."""
     text = normalize_content(content)
     if not text.strip():
         raise ValueError("The file is empty")
@@ -101,8 +104,45 @@ def parse_export(content: str, mapping: ColumnMapping) -> ParsedExport:
         delimiter = dialect.delimiter
     except csv.Error:
         delimiter = ","
-    reader = csv.reader(io.StringIO(text), delimiter=delimiter)
-    header = [name.strip().lower() for name in next(reader)]
+    return _parse_rows(csv.reader(io.StringIO(text), delimiter=delimiter), mapping)
+
+
+def parse_xlsx(data: bytes, mapping: ColumnMapping) -> ParsedExport:
+    """An XLSX file, first sheet. Line numbers are the sheet's row numbers, as the spreadsheet shows them."""
+    from openpyxl import load_workbook  # only needed for XLSX
+
+    try:
+        workbook = load_workbook(io.BytesIO(data), read_only=True, data_only=True)
+    except (zipfile.BadZipFile, KeyError, OSError, ValueError) as error:
+        raise ValueError("The file is not a readable XLSX workbook") from error
+    try:
+        sheet = workbook.worksheets[0]
+        return _parse_rows((_cell_texts(row) for row in sheet.iter_rows(values_only=True)), mapping)
+    finally:
+        workbook.close()
+
+
+def _cell_texts(row: Iterable[object]) -> list[str]:
+    texts = []
+    for value in row:
+        if value is None:
+            texts.append("")
+        elif isinstance(value, datetime):
+            texts.append(value.date().isoformat())  # a booking date; a time in the cell is dropped
+        elif isinstance(value, date):
+            texts.append(value.isoformat())
+        elif isinstance(value, float):
+            texts.append(str(Decimal(repr(value))))  # 4990.5, never 4990.499999
+        else:
+            texts.append(str(value))
+    return texts
+
+
+def _parse_rows(reader: Iterator[list[str]], mapping: ColumnMapping) -> ParsedExport:
+    try:
+        header = [str(name).strip().lower() for name in next(reader)]
+    except StopIteration:
+        raise ValueError("The file is empty") from None
 
     def column(name: str | None, required: bool) -> int | None:
         if name is None or not name.strip():

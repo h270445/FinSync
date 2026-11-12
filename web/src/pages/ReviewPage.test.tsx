@@ -120,4 +120,12 @@ describe('ReviewPage', () => {
     expect(await screen.findByText('Azonos kézi tétel már rögzítve')).toBeInTheDocument()
     expect(screen.queryByText('Összpontszám')).not.toBeInTheDocument()
   })
+
+  it('says when the identical row came twice in one imported file', async () => {
+    const transaction = record({ id: 2, source: 'file_import', happened_at_precision: 'day', event_id: 2 })
+    serve([review({ score: null, features: { identical_row_of_id: 1 }, transaction })])
+    renderPage()
+
+    expect(await screen.findByText('Azonos sor ugyanabban a fájlban')).toBeInTheDocument()
+  })
 })

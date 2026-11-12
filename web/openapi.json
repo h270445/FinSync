@@ -1728,8 +1728,26 @@
       "ImportIn": {
         "properties": {
           "content": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Content"
+          },
+          "xlsx_base64": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Xlsx Base64"
           },
           "mapping": {
             "$ref": "#/components/schemas/ColumnMappingIn",
@@ -1750,9 +1768,6 @@
           }
         },
         "type": "object",
-        "required": [
-          "content"
-        ],
         "title": "ImportIn"
       },
       "ImportOut": {

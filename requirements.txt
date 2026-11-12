@@ -7,5 +7,7 @@ httpx==0.28.1
 sqlalchemy==2.0.57
 alembic==1.20.1
 psycopg[binary]==3.3.9
+# File import (W7): openpyxl reads XLSX exports (first sheet, cell values only); CSV needs nothing extra.
+openpyxl==3.1.5
 # Time-zone data for zoneinfo; Linux and macOS ship it with the operating system, Windows does not.
 tzdata; sys_platform == "win32"

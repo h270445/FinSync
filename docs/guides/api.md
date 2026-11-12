@@ -32,7 +32,7 @@ Status: describes the endpoints **implemented** in `finsync/api/server.py`.
 | `POST` | `/v1/notifications/ingest` | Parse, categorize, and store a supported notification-like text payload |
 | `POST` | `/v1/transactions` | Create a manual transaction |
 | `POST` | `/v1/transactions/bulk` | Create multiple transactions from a structured payload |
-| `POST` | `/v1/imports` | Import a spreadsheet export (CSV), or preview it with `dry_run` |
+| `POST` | `/v1/imports` | Import a spreadsheet export (CSV or XLSX), or preview it with `dry_run` |
 | `GET` | `/v1/transactions` | List transactions accessible within the requested group |
 | `GET` | `/v1/events` | List the group's events (one per purchase), each with its source records |
 | `GET` | `/v1/events/{event_id}/decisions` | The event's decision history: links, reviews, answers and splits |
@@ -110,7 +110,7 @@ Each row has the same fields as a manual transaction. The import is atomic: if a
 }
 ```
 
-`content` is the CSV file as text; the client decodes it (for example from Windows-1250). The delimiter (`,`, `;` or tab) is detected from the header. `mapping` names the file's columns, ignoring case; its defaults are FinSync's generic headers `date`, `amount`, `description`, `merchant`, `currency`, `reference`, and `default_currency` is `HUF`. `date`, `amount` and `description` are required; the others are used when the file has them. Amounts may use a space or a dot for thousands and a comma for decimals (`-4 500`, `-4.990,50`); dates are `2026-09-05` or `2026.09.05.` and are stored as calendar days (an export carries the booking date).
+Send exactly one of `content` and `xlsx_base64`. `content` is a CSV file as text; the client decodes it (for example from Windows-1250). `xlsx_base64` is an XLSX workbook encoded as base64; the server reads the first sheet, cell values only (a formula counts as its last saved result), and turns date and number cells into the same text a CSV would hold. Row numbers in errors are then the sheet's row numbers. A file that is not a readable workbook answers `400`. The delimiter (`,`, `;` or tab) is detected from the header. `mapping` names the file's columns, ignoring case; its defaults are FinSync's generic headers `date`, `amount`, `description`, `merchant`, `currency`, `reference`, and `default_currency` is `HUF`. `date`, `amount` and `description` are required; the others are used when the file has them. Amounts may use a space or a dot for thousands and a comma for decimals (`-4 500`, `-4.990,50`); dates are `2026-09-05` or `2026.09.05.` and are stored as calendar days (an export carries the booking date).
 
 - `dry_run: true` answers `200` with every parsed row (`line`, `happened_on`, `amount`, `currency`, `description`, `merchant`, `reference`), every row error (`{"line": 3, "error": "invalid amount 'x'"}`) and `already_imported`; nothing is stored.
 - Otherwise the whole file is imported or nothing is: one bad row answers `400` naming up to five lines, a file that was already imported (same content, whatever its line ends) answers `409`. Response `201`: `{"import_batch_id": "file-<sha256>", "already_imported": false, "rows": [...], "errors": [], "results": [{"transaction_id": 4, "event_id": 3, "match_outcome": "separate"}], "summary": {"separate": 1}}`.

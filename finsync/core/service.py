@@ -17,7 +17,7 @@ from typing import Any
 import uuid
 
 from finsync.categorization import categorize_transaction
-from finsync.ingestion import ColumnMapping, ImportRow, RowError, parse_export, parse_notification
+from finsync.ingestion import ColumnMapping, ImportRow, RowError, parse_export, parse_notification, parse_xlsx
 from finsync.ingestion.csv_import import normalize_content
 from finsync.ingestion.local_time import local_to_utc
 from finsync.matching import (
@@ -190,12 +190,12 @@ class FinSyncService:
         self,
         user_id: str,
         group_id: str,
-        content: str,
+        content: str | bytes,
         mapping: ColumnMapping | None = None,
         *,
         dry_run: bool = False,
     ) -> ImportResult:
-        """Import a spreadsheet export (CSV): every row or none, each through the matching pipeline.
+        """Import a spreadsheet export, CSV as text or XLSX as bytes: every row or none, each through the matching pipeline.
 
         The batch id is the SHA-256 of the file, so importing the same file again is refused (409) before
         anything is stored. A row's `source_ref` is the bank's reference when the export has one, otherwise
@@ -206,9 +206,13 @@ class FinSyncService:
         be wrong). With `dry_run`, nothing is written and the rows and errors are returned for the preview.
         """
         self.ensure_authorized(user_id, group_id)
-        text = normalize_content(content)
-        batch_id = "file-" + hashlib.sha256(text.encode("utf-8")).hexdigest()
-        parsed = parse_export(text, mapping or ColumnMapping())
+        if isinstance(content, bytes):
+            batch_id = "file-" + hashlib.sha256(content).hexdigest()
+            parsed = parse_xlsx(content, mapping or ColumnMapping())
+        else:
+            text = normalize_content(content)
+            batch_id = "file-" + hashlib.sha256(text.encode("utf-8")).hexdigest()
+            parsed = parse_export(text, mapping or ColumnMapping())
         already = self._storage.import_batch_exists(group_id, batch_id)
         if dry_run:
             return ImportResult(batch_id, already, parsed.rows, parsed.errors, [])

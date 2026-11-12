@@ -8,6 +8,8 @@ export type Review = components['schemas']['ReviewOut']
 export type StoreResult = components['schemas']['StoreResultOut']
 export type Decision = components['schemas']['DecisionOut']
 export type Session = components['schemas']['SessionOut']
+export type ImportResult = components['schemas']['ImportOut']
+export type ColumnMapping = components['schemas']['ColumnMappingIn']
 
 /** A refused request, with the backend's `{"error": "..."}` message. */
 export class ApiError extends Error {

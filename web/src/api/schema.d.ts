@@ -328,7 +328,9 @@ export interface components {
         /** ImportIn */
         ImportIn: {
             /** Content */
-            content: string;
+            content?: string | null;
+            /** Xlsx Base64 */
+            xlsx_base64?: string | null;
             /**
              * @default {
              *       "date": "date",

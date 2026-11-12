@@ -1,12 +1,14 @@
-"""File import of spreadsheet exports (CSV): parsing, the whole-file rule, re-imports and matching.
+"""File import of spreadsheet exports (CSV and XLSX): parsing, the whole-file rule, re-imports and matching.
 
 Every row here is made up: synthetic members, made-up shops and amounts.
 """
 
 from __future__ import annotations
 
+import base64
 from datetime import date, datetime, timezone
 from decimal import Decimal
+import io
 import os
 import tempfile
 import unittest
@@ -15,7 +17,7 @@ from fastapi.testclient import TestClient
 
 from finsync.api import create_app
 from finsync.core import ConflictError, FinSyncService, TokenService
-from finsync.ingestion import ColumnMapping, parse_export
+from finsync.ingestion import ColumnMapping, parse_export, parse_xlsx
 from finsync.ingestion.csv_import import parse_amount, parse_date
 from finsync.storage import FinSyncStorage
 
@@ -32,6 +34,52 @@ BANK_MAPPING = ColumnMapping(
     date="Könyvelés dátuma", amount="Összeg", currency="Pénznem", description="Közlemény",
     merchant="Partner", reference="Tranzakció azonosító",
 )
+
+
+def make_xlsx(rows: list[list[object]]) -> bytes:
+    """A workbook built in the test, the shape a bank's XLSX export has: real dates and numbers in cells."""
+    from openpyxl import Workbook
+
+    workbook = Workbook()
+    sheet = workbook.active
+    for row in rows:
+        sheet.append(row)
+    buffer = io.BytesIO()
+    workbook.save(buffer)
+    return buffer.getvalue()
+
+
+XLSX_ROWS: list[list[object]] = [
+    ["Könyvelés dátuma", "Összeg", "Pénznem", "Közlemény", "Partner", "Tranzakció azonosító"],
+    [datetime(2026, 9, 5, 0, 0), -4500, "HUF", "Kártyás vásárlás", "PELDABOLT KFT", "000000101"],
+    [date(2026, 9, 7), -12.5, "EUR", "Kártyás vásárlás", "CAFE PELDA", "000000102"],
+    [None, None, None, None, None, None],
+    ["2026.09.08.", "-1 290", None, "Pékség", None, None],
+]
+
+
+class ParseXlsxTest(unittest.TestCase):
+    def test_dates_numbers_and_text_cells_become_rows(self) -> None:
+        parsed = parse_xlsx(make_xlsx(XLSX_ROWS), BANK_MAPPING)
+        self.assertEqual(parsed.errors, [])
+        self.assertEqual([row.happened_on for row in parsed.rows], [date(2026, 9, 5), date(2026, 9, 7), date(2026, 9, 8)])
+        self.assertEqual([row.amount for row in parsed.rows], [Decimal("-4500"), Decimal("-12.5"), Decimal("-1290")])
+        self.assertEqual([row.currency for row in parsed.rows], ["HUF", "EUR", "HUF"])
+        self.assertEqual([row.line for row in parsed.rows], [2, 3, 5])  # the sheet's row numbers; row 4 is blank
+        self.assertEqual(parsed.rows[0].reference, "000000101")
+
+    def test_a_bad_cell_is_reported_with_its_row(self) -> None:
+        parsed = parse_xlsx(make_xlsx([XLSX_ROWS[0], [date(2026, 9, 5), "sok", "HUF", "Bolt", None, None]]), BANK_MAPPING)
+        self.assertEqual([(error.line, error.error) for error in parsed.errors], [(2, "invalid amount 'sok'")])
+
+    def test_a_file_that_is_not_a_workbook_is_refused(self) -> None:
+        for data in (b"", b"not a zip", EXPORT.encode("utf-8")):
+            with self.assertRaisesRegex(ValueError, "not a readable XLSX"):
+                parse_xlsx(data, ColumnMapping())
+
+    def test_an_empty_sheet_is_refused(self) -> None:
+        with self.assertRaisesRegex(ValueError, "empty"):
+            parse_xlsx(make_xlsx([]), ColumnMapping())
 
 
 class ParseExportTest(unittest.TestCase):
@@ -183,6 +231,14 @@ class FileImportServiceTest(unittest.TestCase):
         if outcome.match_outcome == "auto_linked":
             self.assertEqual(outcome.event_id, notification.event_id)
 
+    def test_an_xlsx_file_is_imported_and_refused_the_second_time(self) -> None:
+        data = make_xlsx(XLSX_ROWS)
+        result = self.service.import_file("anna", "lakas", data, BANK_MAPPING)
+        self.assertEqual(len(result.results), 3)
+        self.assertEqual({tx.source for tx in self.storage.list_transactions("lakas")}, {"file_import"})
+        with self.assertRaisesRegex(ConflictError, "already imported"):
+            self.service.import_file("anna", "lakas", data, BANK_MAPPING)
+
     def test_only_members_can_import(self) -> None:
         from finsync.core import AuthorizationError
         with self.assertRaises(AuthorizationError):
@@ -218,6 +274,19 @@ class FileImportApiTest(unittest.TestCase):
         repeat = self.client.post("/v1/imports", json=body, headers=self.headers)
         self.assertEqual(repeat.status_code, 409)
         self.assertIn("already imported", repeat.json()["error"])
+
+    def test_an_xlsx_file_as_base64(self) -> None:
+        body = {"xlsx_base64": base64.b64encode(make_xlsx(XLSX_ROWS)).decode("ascii"), "dry_run": True,
+                "mapping": {"date": "Könyvelés dátuma", "amount": "Összeg", "currency": "Pénznem",
+                            "description": "Közlemény", "merchant": "Partner", "reference": "Tranzakció azonosító"}}
+        preview = self.client.post("/v1/imports", json=body, headers=self.headers)
+        self.assertEqual(preview.status_code, 200, preview.text)
+        self.assertEqual([row["amount"] for row in preview.json()["rows"]], ["-4500", "-12.5", "-1290"])
+
+    def test_exactly_one_file_field(self) -> None:
+        for body in ({}, {"content": EXPORT, "xlsx_base64": "UEs="}, {"xlsx_base64": "nem base64!"}):
+            response = self.client.post("/v1/imports", json=body, headers=self.headers)
+            self.assertEqual(response.status_code, 400, body)
 
 
 if __name__ == "__main__":

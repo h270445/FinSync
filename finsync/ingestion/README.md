@@ -11,7 +11,7 @@ Turns source-specific input into structured transaction data. One module per sou
 
 ## Spreadsheet exports (CSV)
 
-The caller maps the file's columns (`date`, `amount`, `description`, optional `merchant`, `currency`, `reference`); the defaults are FinSync's generic header names. The delimiter is detected from the header; a byte-order mark and Windows line ends are removed first. Every row is checked and every error collected, so the preview can list them all; the service then imports the whole file or nothing ([API](../../docs/guides/api.md#post-v1imports)). XLSX is not read yet (it would need a new dependency). An amount with only a dot (`1.234`) is read as a decimal point, so a bank export that groups thousands with dots needs a decimal comma as well.
+The caller maps the file's columns (`date`, `amount`, `description`, optional `merchant`, `currency`, `reference`); the defaults are FinSync's generic header names. The delimiter is detected from the header; a byte-order mark and Windows line ends are removed first. Every row is checked and every error collected, so the preview can list them all; the service then imports the whole file or nothing ([API](../../docs/guides/api.md#post-v1imports)). XLSX workbooks are read with openpyxl: the first sheet, cell values only, with date and number cells turned into the same text a CSV holds, so both formats share one row check. An amount with only a dot (`1.234`) is read as a decimal point, so a bank export that groups thousands with dots needs a decimal comma as well.
 
 ## Supported notification formats
 

@@ -5,6 +5,8 @@ from an API token or the web session cookie, never from the request body or head
 Errors are 400/403/404/409/413 with `{"error": ...}`, never 422 ([API guide](../../docs/guides/api.md)).
 """
 
+import base64
+import binascii
 from decimal import Decimal
 from typing import Annotated, Any, Literal
 
@@ -92,8 +94,10 @@ class ColumnMappingIn(BaseModel):
 
 
 class ImportIn(BaseModel):
-    # The CSV file as text (the client decodes it, for example from UTF-8 or Windows-1250).
-    content: str
+    # Exactly one of the two. A CSV file as text (the client decodes it, for example from UTF-8 or
+    # Windows-1250), or an XLSX workbook as base64; the server reads its first sheet.
+    content: str | None = None
+    xlsx_base64: str | None = None
     mapping: ColumnMappingIn = ColumnMappingIn()
     # True: check the file and return the rows and errors for the preview, without storing anything.
     dry_run: bool = False
@@ -420,7 +424,7 @@ def create_app(storage: FinSyncStorage) -> FastAPI:
     def import_file(body: ImportIn, caller: Caller, response: Response) -> ImportOut:
         """Import a spreadsheet export (CSV): every row or none; with dry_run, only the preview."""
         mapping = ColumnMapping(**body.mapping.model_dump())
-        result = service.import_file(caller.user_id, caller.group_id, body.content, mapping, dry_run=body.dry_run)
+        result = service.import_file(caller.user_id, caller.group_id, _file_content(body), mapping, dry_run=body.dry_run)
         if body.dry_run:
             response.status_code = 200
         return _import(result)
@@ -480,6 +484,17 @@ def _session(record: WebSessionRecord, secret: str) -> SessionOut:
         expires_at=record.expires_at.isoformat(),
         csrf_token=csrf_token(secret),
     )
+
+
+def _file_content(body: ImportIn) -> str | bytes:
+    if (body.content is None) == (body.xlsx_base64 is None):
+        raise ValueError("Send exactly one of content (CSV) and xlsx_base64 (XLSX)")
+    if body.content is not None:
+        return body.content
+    try:
+        return base64.b64decode(body.xlsx_base64, validate=True)
+    except binascii.Error as error:
+        raise ValueError("xlsx_base64 is not valid base64") from error
 
 
 def _import(result: ImportResult) -> ImportOut:

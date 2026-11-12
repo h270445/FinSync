@@ -21,7 +21,7 @@ The core flows committed for the semester work together, with proper data handli
 - [ ] Hybrid categorizer (Hungarian merchant and keyword layer, then model/LLM layer for mixed merchants) with an abstention threshold; coverage vs. accuracy, latency and cost measured on the 200-item dataset (supervisor, 2026-11-11).
 - [x] ADR 0008 implemented: `posted_at` and `ingested_at` stored separately, offset-less times read as Europe/Budapest (2026-11-12: `posted_at` becomes `happened_at`, the arrival time is `created_at`; matching dataset v3).
 - [x] The test suite runs on SQLite and on PostgreSQL behind `FinSyncStorage`; the SQLite run stays fast (2026-11-12: 149 tests in about 9 s on SQLite; `tests/run_on_postgres.py` runs them on PostgreSQL 16).
-- [ ] The web app is a whole: W2 overview with group totals by month, category and member; W4 decision history from the API; W6 manual entry; W7 bulk import preview; W8 settings with members, API tokens (create, revoke) and merchant–category rule overrides.
+- [ ] The web app is a whole: W2 overview with group totals by month, category and member; W4 decision history from the API; W6 manual entry; W7 bulk import preview; W8 settings with members, API tokens (create, revoke) and merchant–category rule overrides (W7 done 2026-11-12).
 - [ ] One versioned agent skill in the repository, and the six design views in `docs/` (skills done 2026-11-12: five in [`.claude/skills/`](../../../.claude/skills/README.md); design views open).
 
 ## Checklist
@@ -30,7 +30,7 @@ The core flows committed for the semester work together, with proper data handli
 - [ ] Review and correction endpoints with tests.
 - [ ] Web app: event list, event detail with split and category correction, review queue (manual entry, file import and token management if time allows).
 - [ ] Android app (notification listener, token setup, sending, retry) with its README (done 2026-11-12 and tested on the emulator; open: the test on the real phone, and the token kept in plain preferences).
-- [ ] File import with `import_batch_id` and `source_ref`; Sheets script if time allows (CSV import API with preview done 2026-11-12, `POST /v1/imports`; open: the W7 screen, XLSX, the Sheets script).
+- [ ] File import with `import_batch_id` and `source_ref`; Sheets script if time allows (done 2026-11-12: `POST /v1/imports` for CSV and XLSX with preview, and the W7 screen; open: the Sheets script).
 - [ ] LLM categorizer and labelled categorization dataset (dataset done 2026-11-08: `tests/data/categorization_eval.csv`, 200 synthetic items).
 - [ ] Money transfers: `transfer` direction for records to or from the group's own accounts and counterparties (per-group list), excluded from spending and income totals.
 - [ ] Category correction, the "mixed" flag and category lines (lines add up to the event amount; totals follow them).
