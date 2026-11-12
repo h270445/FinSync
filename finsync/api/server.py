@@ -127,6 +127,24 @@ class ReviewsOut(BaseModel):
     reviews: list[ReviewOut]
 
 
+class DecisionOut(BaseModel):
+    id: int
+    transaction_id: int
+    candidate_event_id: int | None
+    outcome: str
+    score: float | None
+    features: dict[str, Any] | None
+    matcher_version: str
+    decided_by: str
+    supersedes_id: int | None
+    superseded: bool
+    created_at: str
+
+
+class DecisionsOut(BaseModel):
+    decisions: list[DecisionOut]
+
+
 # "4XX" also replaces FastAPI's default 422 entry: validation errors are answered with 400.
 _ERRORS: dict[int | str, dict[str, Any]] = {
     status: {"model": ErrorOut} for status in (400, 401, 403, 404, 409, 413, "4XX")
@@ -285,6 +303,18 @@ def create_app(storage: FinSyncStorage) -> FastAPI:
     def list_events(caller: Caller) -> EventsOut:
         events = service.list_group_events(caller.user_id, caller.group_id)
         return EventsOut(events=[_event(event) for event in events])
+
+    @app.get("/v1/events/{event_id}/decisions")
+    def list_event_decisions(event_id: int, caller: Caller) -> DecisionsOut:
+        decisions = service.list_event_decisions(caller.user_id, caller.group_id, event_id)
+        superseded = {d["supersedes_id"] for d in decisions if d["supersedes_id"] is not None}
+        return DecisionsOut(decisions=[
+            DecisionOut(
+                **{key: d[key] for key in DecisionOut.model_fields if key != "superseded"},
+                superseded=d["id"] in superseded,
+            )
+            for d in decisions
+        ])
 
     return app
 

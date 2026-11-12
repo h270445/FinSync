@@ -26,6 +26,7 @@ ENDPOINTS = (
     ("POST", "/v1/transactions/bulk"),
     ("GET", "/v1/transactions"),
     ("GET", "/v1/events"),
+    ("GET", "/v1/events/{event}/decisions"),
     ("GET", "/v1/matches/review"),
     ("POST", "/v1/matches/{decision}/confirm"),
     ("POST", "/v1/matches/{decision}/reject"),
@@ -237,7 +238,7 @@ class AuthApiTest(unittest.TestCase):
         for method, path in self._endpoints():
             with self.subTest(method=method, path=path):
                 status, body, _ = self._call(method, path, self.token_c, self._body(path), spoofed)
-                if method == "POST" and (path.startswith("/v1/matches/") or path.endswith("/split")):
+                if (method == "POST" and path.startswith("/v1/matches/")) or path.startswith("/v1/events/"):
                     # Group 1's decision and event ids do not exist in group 2.
                     self.assertEqual(status, 404)
                 elif method == "GET":

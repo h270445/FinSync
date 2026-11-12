@@ -9,6 +9,14 @@ export function useEvents() {
   })
 }
 
+export function useEventDecisions(eventId: number) {
+  return useQuery({
+    queryKey: ['events', eventId, 'decisions'],
+    queryFn: async () =>
+      unwrap(await api.GET('/v1/events/{event_id}/decisions', { params: { path: { event_id: eventId } } })).decisions,
+  })
+}
+
 export function useReviews() {
   return useQuery({
     queryKey: ['reviews'],

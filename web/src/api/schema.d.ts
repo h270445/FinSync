@@ -141,6 +141,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/events/{event_id}/decisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Event Decisions */
+        get: operations["list_event_decisions_v1_events__event_id__decisions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -156,6 +173,38 @@ export interface components {
             transaction_ids: number[];
             /** Results */
             results: components["schemas"]["StoreResultOut"][];
+        };
+        /** DecisionOut */
+        DecisionOut: {
+            /** Id */
+            id: number;
+            /** Transaction Id */
+            transaction_id: number;
+            /** Candidate Event Id */
+            candidate_event_id: number | null;
+            /** Outcome */
+            outcome: string;
+            /** Score */
+            score: number | null;
+            /** Features */
+            features: {
+                [key: string]: unknown;
+            } | null;
+            /** Matcher Version */
+            matcher_version: string;
+            /** Decided By */
+            decided_by: string;
+            /** Supersedes Id */
+            supersedes_id: number | null;
+            /** Superseded */
+            superseded: boolean;
+            /** Created At */
+            created_at: string;
+        };
+        /** DecisionsOut */
+        DecisionsOut: {
+            /** Decisions */
+            decisions: components["schemas"]["DecisionOut"][];
         };
         /** ErrorOut */
         ErrorOut: {
@@ -991,6 +1040,91 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EventsOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    list_event_decisions_v1_events__event_id__decisions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DecisionsOut"];
                 };
             };
             /** @description Bad Request */

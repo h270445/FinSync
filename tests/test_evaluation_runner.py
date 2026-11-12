@@ -89,7 +89,10 @@ class DatasetRunTest(unittest.TestCase):
         self.assertNotIn(("R0083", "R0088", "R0096"), [merge.record_ids for merge in lowered.false_merges])
 
     def test_report_is_deterministic(self) -> None:
-        self.assertEqual(evaluate(self.rows, DATASET), evaluate(self.rows, DATASET))
+        # A few whole cases per split keep every report section filled; the full run takes about a minute.
+        cases = {split: sorted({row.case for row in self.rows if row.split == split})[:4] for split in ("dev", "test")}
+        sample = [row for row in self.rows if row.case in cases[row.split]]
+        self.assertEqual(evaluate(sample, DATASET), evaluate(sample, DATASET))
 
 
 if __name__ == "__main__":

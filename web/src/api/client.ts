@@ -6,6 +6,7 @@ export type Transaction = components['schemas']['TransactionOut']
 export type FinSyncEvent = components['schemas']['EventOut']
 export type Review = components['schemas']['ReviewOut']
 export type StoreResult = components['schemas']['StoreResultOut']
+export type Decision = components['schemas']['DecisionOut']
 
 /** A refused request, with the backend's `{"error": "..."}` message. */
 export class ApiError extends Error {
