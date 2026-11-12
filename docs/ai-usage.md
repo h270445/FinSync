@@ -26,6 +26,7 @@ The course requires documenting significant use of AI tools and how their result
 | 2026-10-17 | Claude Code | Synthetic matching dataset generator and dataset v1 (100 records) | Reproducibility and ingest tests; scenario labels by construction | session PR |
 | 2026-11-08 | Claude Code | Web app skeleton in `web/` (Vite, React, TypeScript, Tailwind, shadcn/ui), types generated from the OpenAPI schema; screens W3, W4, W5 and a development token sign-in | Type check, lint, 11 Vitest tests; run against the local API with synthetic data, screenshots at 1280 px and 360 px, confirm and undo tried in the browser | session PR |
 | 2026-11-08 | Claude Code | Synthetic categorization dataset generator and dataset v1 (200 items, clear and ambiguous) | Reproducibility and label tests; labels by construction; merchant shares to be checked by the author | session PR |
+| 2026-11-12 | Claude Code | Five versioned agent skills in `.claude/skills/` (endpoint and screen checklist, session wrap-up, dev/test evaluation protocol, bank notification privacy, supervisor status e-mail) with two helper scripts | Every command in the skills run once; the time-log checker run on the current log and on a deliberately wrong total; the masking script run on a made-up capture (no unmasked character left); the endpoint checklist compared with the files of PR #25 | session PR |
 
 ## Author decisions
 
@@ -48,3 +49,13 @@ Decisions made by the author, as opposed to suggested by an AI tool. Filled in b
 | 2026-10-29 | Reverse-order case: both fixes on (strict gate and contested-link reopening, `rules-3`) | Recommended A+B after the dev-split comparison on dataset v2 | Fewest false merges on dev, the evaluation plan's first criterion; B kept as the safety net for a merge the gate lets through |
 | 2026-10-29 | Auto-link threshold 0.95 instead of 0.85 | Recommended following the plan's tie rule | 0.85–0.95 tie on dev with `rules-3`; the pre-set rule takes the higher threshold |
 | 2026-10-29 | ADR 0008 accepted: notification time is `post_time_ms` in UTC, days compared in Europe/Budapest | Drafted ADR 0008 | Approved by the supervisor on 2026-10-29 |
+| 2026-11-12 | Build the agent skills before the rest of the week's tasks: first the endpoint and screen checklist and the session wrap-up, the others if time allows before noon | Five skill candidates offered, with the endpoint checklist and wrap-up recommended | Done well, skills speed up the rest of the semester; chosen from the options offered |
+
+## Skill usage
+
+One row per use of an [agent skill](../.claude/skills/README.md) that taught something: what it sped up, where it failed or missed something, and how the skill was refined. Evidence for the methods chapter (supervisor, 2026-11-11, action D1).
+
+| Date | Skill (version) | Task | What it sped up or caught | Where it failed, and the refinement |
+| --- | --- | --- | --- | --- |
+| 2026-11-12 | endpoint-and-screen-checklist (1.0) | Retrospective check against PR #25 (W4 decision history) | Every file PR #25 changed is on the checklist; it would also have required a Vitest test for the timeline, which PR #25 lacks | Found while writing it: `web/openapi.json` differs when regenerated with another Pydantic version (a `pattern` on `Decimal \| str` fields); the checklist now says not to commit that drift |
+| 2026-11-12 | session-wrap-up (1.0) | Closing this session | The checker confirmed all weekly totals; the wrap-up found that supervisor action C1 (done in PR #25) was not ticked | – |

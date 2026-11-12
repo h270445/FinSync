@@ -19,11 +19,11 @@ Each entry lists the points as actions; ticked actions link to where they were d
 - [ ] **A. Hybrid categorizer with abstention.** On top of `finsync/evaluation/categories.py`: a deterministic Hungarian merchant and keyword layer for clear cases, and a model/LLM layer that sees merchant, description, amount and context for mixed merchants. An explicit abstention threshold ("Bizonytalan kategória"); on the 200-item dataset measure coverage vs. accuracy, latency and cost.
 - [ ] **B1. ADR 0008 in code:** separate `posted_at` and `ingested_at`; Europe/Budapest calendar-day comparison; offset-less times as Budapest wall-clock time.
 - [ ] **B2. PostgreSQL behind `FinSyncStorage`:** SQLite stays runnable for fast local/CI tests (the unit suite keeps running in seconds), PostgreSQL is the production/integration profile.
-- [ ] **C1. Decision history in W4:** the API returns the event's `match_decisions` (when and with what score `auto_linked`, who confirmed, rejected or split).
+- [x] **C1. Decision history in W4:** the API returns the event's `match_decisions` (when and with what score `auto_linked`, who confirmed, rejected or split). Done in PR #25: `GET /v1/events/{event_id}/decisions` and the timeline on the event detail page ([API](../guides/api.md)).
 - [ ] **C2. W6 manual entry and W7 bulk import preview** wired to `POST /v1/transactions` and `POST /v1/transactions/bulk`.
 - [ ] **C3. W2 overview:** monthly and per-category group totals with the split by member.
 - [ ] **C4. W8 settings / backoffice:** group and members, create and revoke API tokens without the CLI (for the Android client), override merchant–category rules.
-- [ ] **D1. One versioned agent skill** in the repository (for example the leak-free dev/test evaluation protocol, or a group-isolation and OpenAPI-sync check for new endpoints), presented in the methods chapter.
+- [ ] **D1. One versioned agent skill** in the repository (for example the leak-free dev/test evaluation protocol, or a group-isolation and OpenAPI-sync check for new endpoints), presented in the methods chapter. (2026-11-12: five versioned skills in [`.claude/skills/`](../../.claude/skills/README.md), with a usage log in [ai-usage.md](../ai-usage.md#skill-usage); the one presented in the thesis is chosen after it has been used.)
 - [ ] **D2. Six design views in `docs/`:** use-case, page flow (W1–W8 and Android), ingest → normalise → match → store/review flowchart, event and decision state diagram (`auto_linked` / `needs_review` / `confirmed` / `rejected` / `split`), architecture, security (SHA-256 Bearer tokens and `group_id` isolation).
 
 Open design questions on the PostgreSQL switch or the hybrid categorizer measurement can be sent to the supervisor at any time.

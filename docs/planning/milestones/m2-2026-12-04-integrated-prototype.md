@@ -22,7 +22,7 @@ The core flows committed for the semester work together, with proper data handli
 - [ ] ADR 0008 implemented: `posted_at` and `ingested_at` stored separately, offset-less times read as Europe/Budapest.
 - [ ] The test suite runs on SQLite and on PostgreSQL behind `FinSyncStorage`; the SQLite run stays fast.
 - [ ] The web app is a whole: W2 overview with group totals by month, category and member; W4 decision history from the API; W6 manual entry; W7 bulk import preview; W8 settings with members, API tokens (create, revoke) and merchant–category rule overrides.
-- [ ] One versioned agent skill in the repository, and the six design views in `docs/`.
+- [ ] One versioned agent skill in the repository, and the six design views in `docs/` (skills done 2026-11-12: five in [`.claude/skills/`](../../../.claude/skills/README.md); design views open).
 
 ## Checklist
 

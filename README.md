@@ -73,6 +73,7 @@ finsync/            backend package (each subfolder has a README)
   storage/          SQLite persistence
 tests/              unittest suite
 docs/               documentation
+.claude/skills/     versioned agent skills (see its README)
 ```
 
 ## Security note
