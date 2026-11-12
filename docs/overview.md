@@ -25,22 +25,22 @@ Status on 2026-11-12. The flow that runs today:
 
 ### Implemented
 
-* **Ingestion:** the OTP Bank notification format and the synthetic prototype formats ([ingestion](../finsync/ingestion/README.md)); manual entries and atomic bulk import of rows prepared from a spreadsheet export. Times without an offset are read as Europe/Budapest ([ADR 0008](architecture/decisions/0008-notification-time-and-calendar-day.md)).
+* **Ingestion:** the OTP Bank notification format and the synthetic prototype formats ([ingestion](../finsync/ingestion/README.md)); manual entries; atomic bulk import; CSV and XLSX import of spreadsheet exports with a preview, column mapping and refusal of a file imported before ([API](guides/api.md#post-v1imports)). Times without an offset are read as Europe/Budapest ([ADR 0008](architecture/decisions/0008-notification-time-and-calendar-day.md)).
 * **Transaction matching (main contribution):** every record is linked to an event; exact re-deliveries, confident cross-source matches and uncertain cases are told apart by an explainable rule-based score, and each decision is logged with its reason ([design](design/transaction-matching.md)). Frozen at `rules-3` after measurement.
 * **Review and correction:** uncertain matches are listed, confirmed or rejected, a wrong link can be split, and every action supersedes the previous decision.
 * **Measured matching results:** synthetic labelled datasets, a leak-free dev/test protocol and the store-every-row baseline ([results](evaluation/README.md)).
 * **Rule-based categorization:** the baseline for the planned hybrid and LLM categorizers ([result](evaluation/results/2026-11-08-categorization-rules.md)).
 * **Authentication:** per-member API tokens for the Android app ([ADR 0009](architecture/decisions/0009-api-tokens.md)); password sign-in for the web app with an HttpOnly session cookie and CSRF protection ([ADR 0010](architecture/decisions/0010-web-sign-in.md)); every endpoint has a cross-group access test.
 * **HTTP API:** FastAPI with an OpenAPI schema and request size limits ([API guide](guides/api.md)).
-* **Web app:** sign-in, review queue, event detail with split, decision history ([web/](../web/README.md)).
+* **Web app:** sign-in, review queue, event detail with split, decision history, file import with preview ([web/](../web/README.md)).
 * **Android app:** forwards OTP Bank transaction notifications with an outbox and retries that never create a second event; tested on the emulator ([clients/android/](../clients/android/README.md)).
 * **Storage and structure:** SQLite with schema migrations; separate packages for API, core, ingestion, categorization, matching and storage ([finsync/](../finsync/README.md)); automated tests ([tests/](../tests/README.md)).
 
 ### Planned — not yet implemented
 
 * **PostgreSQL** behind the same storage interface, with Docker Compose; SQLite stays for fast tests ([ADR 0006](architecture/decisions/0006-framework-based-stack.md)).
-* **File import** of spreadsheet exports with `import_batch_id`; a direct Google Sheets script only if time allows.
-* **Web app:** overview with totals (W2), manual entry (W6), import preview (W7), settings and token management (W8).
+* **File import:** the W7 screen; a direct Google Sheets script only if time allows.
+* **Web app:** overview with totals (W2), manual entry (W6), settings and token management (W8).
 * **Hybrid and LLM categorization,** measured against the rule-based baseline; category correction and money transfers between the group's own accounts.
 * **Security and privacy evaluation:** access-control boundaries, input validation, data minimisation.
 * **Android:** test on the real phone; the token is still kept in plain app preferences.

@@ -7,7 +7,7 @@ Status: describes the endpoints **implemented** in `finsync/api/server.py`.
 - Every request needs an API token, `Authorization: Bearer fs_...`, or the web app's session cookie (see [`/v1/session`](#post-v1session)). The token or the session decides the member and the group; `X-User-Id` and `X-Group-Id` headers are ignored ([ADR 0009](../architecture/decisions/0009-api-tokens.md), [ADR 0010](../architecture/decisions/0010-web-sign-in.md)). A token wins over a cookie.
 - With the session cookie, every `POST`, `PUT`, `PATCH` and `DELETE` also needs `X-CSRF-Token: <csrf_token>` from the session; without it the answer is `403` and nothing is written.
 - Tokens are issued with `python -m finsync.api.tokens create --user <member> --group <group> --name <what for>` and revoked with `... revoke <id>`; see [getting started](getting-started.md#create-an-api-token).
-- Request and response bodies are JSON objects. Bodies are limited to 64 KiB, and to 1 MiB for `/v1/transactions/bulk`.
+- Request and response bodies are JSON objects. Bodies are limited to 64 KiB, and to 1 MiB for `/v1/transactions/bulk` and `/v1/imports`.
 - Validation errors are `400`, not FastAPI's usual `422`.
 - The OpenAPI schema is served at `/openapi.json`, with an interactive page at `/docs`; `python -m finsync.api --openapi` prints it without starting the server.
 
@@ -19,7 +19,7 @@ Status: describes the endpoints **implemented** in `finsync/api/server.py`.
 | `401` | No token, or a malformed, unknown or revoked one (`WWW-Authenticate: Bearer`); no valid session; a failed sign-in |
 | `403` | The member is no longer in the group, the member is not in the named group at sign-in, or a cookie request without a valid CSRF token |
 | `404` | Unknown path, or an id that does not exist in the requested group |
-| `409` | A review action that no longer fits, such as answering a decision twice |
+| `409` | A review action that no longer fits, such as answering a decision twice; a file that was already imported |
 | `413` | A body over the size limit |
 
 ## Endpoints
@@ -32,6 +32,7 @@ Status: describes the endpoints **implemented** in `finsync/api/server.py`.
 | `POST` | `/v1/notifications/ingest` | Parse, categorize, and store a supported notification-like text payload |
 | `POST` | `/v1/transactions` | Create a manual transaction |
 | `POST` | `/v1/transactions/bulk` | Create multiple transactions from a structured payload |
+| `POST` | `/v1/imports` | Import a spreadsheet export (CSV or XLSX), or preview it with `dry_run` |
 | `GET` | `/v1/transactions` | List transactions accessible within the requested group |
 | `GET` | `/v1/events` | List the group's events (one per purchase), each with its source records |
 | `GET` | `/v1/events/{event_id}/decisions` | The event's decision history: links, reviews, answers and splits |
@@ -97,6 +98,24 @@ Response `201`: `{"transaction_id": 1, "event_id": 1, "match_outcome": "separate
 ```
 
 Each row has the same fields as a manual transaction. The import is atomic: if any row is invalid (for example a non-object row, a zero or non-finite amount), nothing is stored and the `400` error names the row (`Row 1: Amount cannot be zero`). All rows share one `import_batch_id`. Response `201`: `{"transaction_ids": [3], "results": [{"transaction_id": 3, "event_id": 2, "match_outcome": "separate"}]}`.
+
+### `POST /v1/imports`
+
+```json
+{
+  "content": "Könyvelés dátuma;Összeg;Közlemény;Partner;Tranzakció azonosító\n2026.09.05.;-4 500;Kártyás vásárlás;PELDABOLT KFT;000000101\n",
+  "mapping": {"date": "Könyvelés dátuma", "amount": "Összeg", "description": "Közlemény",
+              "merchant": "Partner", "reference": "Tranzakció azonosító"},
+  "dry_run": true
+}
+```
+
+Send exactly one of `content` and `xlsx_base64`. `content` is a CSV file as text; the client decodes it (for example from Windows-1250). `xlsx_base64` is an XLSX workbook encoded as base64; the server reads the first sheet, cell values only (a formula counts as its last saved result), and turns date and number cells into the same text a CSV would hold. Row numbers in errors are then the sheet's row numbers. A file that is not a readable workbook answers `400`. The delimiter (`,`, `;` or tab) is detected from the header. `mapping` names the file's columns, ignoring case; its defaults are FinSync's generic headers `date`, `amount`, `description`, `merchant`, `currency`, `reference`, and `default_currency` is `HUF`. `date`, `amount` and `description` are required; the others are used when the file has them. Amounts may use a space or a dot for thousands and a comma for decimals (`-4 500`, `-4.990,50`); dates are `2026-09-05` or `2026.09.05.` and are stored as calendar days (an export carries the booking date).
+
+- `dry_run: true` answers `200` with every parsed row (`line`, `happened_on`, `amount`, `currency`, `description`, `merchant`, `reference`), every row error (`{"line": 3, "error": "invalid amount 'x'"}`) and `already_imported`; nothing is stored.
+- Otherwise the whole file is imported or nothing is: one bad row answers `400` naming up to five lines, a file that was already imported (same content, whatever its line ends) answers `409`. Response `201`: `{"import_batch_id": "file-<sha256>", "already_imported": false, "rows": [...], "errors": [], "results": [{"transaction_id": 4, "event_id": 3, "match_outcome": "separate"}], "summary": {"separate": 1}}`.
+
+Each row goes through matching as a `file_import` record of the member. The `reference` column, when the export has one, identifies the booking: a later, overlapping export repeats it, so known rows come back as `exact_duplicate` even if the description is worded differently. Without it, a row is identified by its values and by how many identical rows came before it in the file, so an overlapping export still adds only its new rows. A second identical row within one file gets its own event and goes to review against the first (`needs_review`): it may be a second purchase (two equal tickets) or an error in the export.
 
 ### `GET /v1/transactions`
 

@@ -561,6 +561,13 @@ class FinSyncStorage:
             )
         return cursor.rowcount == 1
 
+    def import_batch_exists(self, group_id: str, import_batch_id: str) -> bool:
+        with self._session() as connection:
+            row = connection.execute(
+                "SELECT 1 FROM transactions WHERE group_id = ? AND import_batch_id = ? LIMIT 1", (group_id, import_batch_id)
+            ).fetchone()
+        return row is not None
+
     def list_transactions(self, group_id: str) -> list[TransactionRecord]:
         with self._session() as connection:
             rows = connection.execute(
@@ -802,6 +809,12 @@ class StorageSession:
         self._connection.execute(
             "UPDATE events SET review_state = ?, updated_at = ? WHERE id = ?", (state, _now(), event_id)
         )
+
+    def import_batch_exists(self, group_id: str, import_batch_id: str) -> bool:
+        row = self._connection.execute(
+            "SELECT 1 FROM transactions WHERE group_id = ? AND import_batch_id = ? LIMIT 1", (group_id, import_batch_id)
+        ).fetchone()
+        return row is not None
 
     def get_transaction(self, group_id: str, transaction_id: int) -> TransactionRecord | None:
         row = self._connection.execute(

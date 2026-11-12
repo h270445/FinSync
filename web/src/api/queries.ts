@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { api, unwrap } from './client'
+import type { components } from './schema'
 
 export function useEvents() {
   return useQuery({
@@ -59,5 +60,16 @@ export function useSplitEvent() {
         }),
       ),
     onSuccess,
+  })
+}
+
+export type ImportRequest = components['schemas']['ImportIn']
+
+/** W7: a preview (`dry_run`) changes nothing; a real import changes events, reviews and totals. */
+export function useImportFile() {
+  const invalidateAll = useInvalidateAll()
+  return useMutation({
+    mutationFn: async (body: ImportRequest) => unwrap(await api.POST('/v1/imports', { body })),
+    onSuccess: (_, body) => (body.dry_run ? undefined : invalidateAll()),
   })
 }

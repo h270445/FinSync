@@ -152,11 +152,23 @@ function ReviewItem({ review }: { review: Review }) {
 
       {identical ? (
         <Alert>
-          <AlertTitle>Azonos kézi tétel már rögzítve</AlertTitle>
-          <AlertDescription>
-            Ugyanez a tag ugyanezt a sort már rögzítette. Lehet elírás, de lehet két valódi vásárlás is (például két
-            buszjegy).
-          </AlertDescription>
+          {review.transaction.source === 'file_import' ? (
+            <>
+              <AlertTitle>Azonos sor ugyanabban a fájlban</AlertTitle>
+              <AlertDescription>
+                Az importált fájlban ez a sor kétszer szerepel. Lehet hiba az exportban, de lehet két valódi vásárlás
+                is (például két buszjegy).
+              </AlertDescription>
+            </>
+          ) : (
+            <>
+              <AlertTitle>Azonos kézi tétel már rögzítve</AlertTitle>
+              <AlertDescription>
+                Ugyanez a tag ugyanezt a sort már rögzítette. Lehet elírás, de lehet két valódi vásárlás is (például két
+                buszjegy).
+              </AlertDescription>
+            </>
+          )}
         </Alert>
       ) : (
         <ScoreBreakdown review={review} features={features} />

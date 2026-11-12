@@ -23,6 +23,8 @@ Time spent on the project, for the weekly-effort figure the supervisor asked for
 | 2026-11-11 | 22:53–00:27 | 94 | W4 decision history: `GET /v1/events/{event_id}/decisions`, the timeline on the event detail page, tests and API docs | Commits (start time estimated from the previous merge; to be corrected by the author) |
 | 2026-11-12 | 09:56–10:06 | 10 | Faster determinism test of the matching evaluation (sample of cases), full test suite and web build, PR | Project messages and commits |
 | 2026-11-12 | 10:06–12:15 | 129 | Plan for finishing the week; five versioned agent skills (endpoint and screen checklist, session wrap-up, dev/test evaluation, bank notification privacy, status e-mail) with a time-log checker and a capture-masking script; web sign-in (W1) with e-mail or member id, session cookie and CSRF token, ADR 0010; Android forwarding and OTP ingest, two emulator test runs through Remote Control, the android-emulator-e2e skill; ADR 0008 in code with matching dataset v3; docs-and-comments skill and thesis map; storage on SQLAlchemy and Alembic with PostgreSQL and Docker Compose; plan and AI-usage docs | Project messages and commits |
+| 2026-11-12 | 12:29–12:45 | 16 | CSV file import API with preview and re-import refusal, tests on SQLite and PostgreSQL, docs, PR | Project messages and commits |
+| 2026-11-12 | 13:40–14:00 | 20 | Identical rows of one file sent to review; XLSX reading (openpyxl); W7 import screen tried in a browser at 360 and 1280 px; phone overflow fix in the navigation | Project messages and commits |
 
 ## Weekly totals
 
@@ -34,5 +36,5 @@ Time spent on the project, for the weekly-effort figure the supervisor asked for
 | 2026-10-19 – 10-25 | 63 | 1.1 |
 | 2026-10-26 – 11-01 | 264 | 4.4 |
 | 2026-11-02 – 11-08 | 149 | 2.5 |
-| 2026-11-09 – 11-15 | 233 | 3.9 |
-| **Total** | **1087** | **18.1** |
+| 2026-11-09 – 11-15 | 269 | 4.5 |
+| **Total** | **1123** | **18.7** |

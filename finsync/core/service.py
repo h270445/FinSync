@@ -10,13 +10,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
+import hashlib
 import json
 import re
 from typing import Any
 import uuid
 
 from finsync.categorization import categorize_transaction
-from finsync.ingestion import parse_notification
+from finsync.ingestion import ColumnMapping, ImportRow, RowError, parse_export, parse_notification, parse_xlsx
+from finsync.ingestion.csv_import import normalize_content
 from finsync.ingestion.local_time import local_to_utc
 from finsync.matching import (
     MATCHER_VERSION,
@@ -82,6 +84,17 @@ class ReviewItem:
     candidate_event: EventRecord
     score: float | None
     features: dict[str, Any] | None
+
+
+@dataclass(frozen=True)
+class ImportResult:
+    """A file import or its preview. `results` is empty for a preview or a file that was already imported."""
+
+    import_batch_id: str
+    already_imported: bool
+    rows: list[ImportRow]
+    errors: list[RowError]
+    results: list[StoreResult]
 
 
 class FinSyncService:
@@ -172,6 +185,104 @@ class FinSyncService:
                 self._store_and_match(session, self._manual_record(user_id, group_id, tx, batch_id))
                 for tx in validated
             ]
+
+    def import_file(
+        self,
+        user_id: str,
+        group_id: str,
+        content: str | bytes,
+        mapping: ColumnMapping | None = None,
+        *,
+        dry_run: bool = False,
+    ) -> ImportResult:
+        """Import a spreadsheet export, CSV as text or XLSX as bytes: every row or none, each through the matching pipeline.
+
+        The batch id is the SHA-256 of the file, so importing the same file again is refused (409) before
+        anything is stored. A row's `source_ref` is the bank's reference when the export has one, otherwise
+        a hash of the row and how many identical rows came before it in the file: an overlapping later
+        export repeats the same references, so its known rows become re-deliveries. A second identical row
+        within one file may be a second purchase (two equal tickets) or an error in the export, so it gets its
+        own event and goes to review against the first (author's decision, 2026-11-12: better to ask than to
+        be wrong). With `dry_run`, nothing is written and the rows and errors are returned for the preview.
+        """
+        self.ensure_authorized(user_id, group_id)
+        if isinstance(content, bytes):
+            batch_id = "file-" + hashlib.sha256(content).hexdigest()
+            parsed = parse_xlsx(content, mapping or ColumnMapping())
+        else:
+            text = normalize_content(content)
+            batch_id = "file-" + hashlib.sha256(text.encode("utf-8")).hexdigest()
+            parsed = parse_export(text, mapping or ColumnMapping())
+        already = self._storage.import_batch_exists(group_id, batch_id)
+        if dry_run:
+            return ImportResult(batch_id, already, parsed.rows, parsed.errors, [])
+        if already:
+            raise ConflictError("This file was already imported")
+        if parsed.errors:
+            listed = "; ".join(f"Line {error.line}: {error.error}" for error in parsed.errors[:5])
+            more = f" (and {len(parsed.errors) - 5} more)" if len(parsed.errors) > 5 else ""
+            raise ValueError(f"Nothing was imported. {listed}{more}")
+        seen: dict[tuple[str, ...], int] = {}
+        records: list[tuple[dict[str, Any], tuple[str, ...] | None]] = []
+        for row in parsed.rows:
+            reference = row.reference
+            key = None
+            if reference is None:
+                key = (row.happened_on.isoformat(), str(row.amount), row.currency, row.description, row.merchant or "")
+                seen[key] = seen.get(key, 0) + 1
+                reference = "row-" + hashlib.sha256(json.dumps([*key, seen[key]]).encode("utf-8")).hexdigest()[:24]
+            records.append((self._file_record(user_id, group_id, row, reference, batch_id), key))
+        with self._storage.transaction() as session:
+            # Checked again inside the write unit: two uploads of one file at the same time import it once.
+            if session.import_batch_exists(group_id, batch_id):
+                raise ConflictError("This file was already imported")
+            first_of: dict[tuple[str, ...], StoreResult] = {}
+            results = []
+            for record, key in records:
+                first = first_of.get(key) if key is not None else None
+                if first is None:
+                    result = self._store_and_match(session, record)
+                    if key is not None:
+                        first_of[key] = result
+                else:
+                    result = _store_identical_row(session, record, first)
+                results.append(result)
+        return ImportResult(batch_id, False, parsed.rows, [], results)
+
+    @staticmethod
+    def _file_record(user_id: str, group_id: str, row: ImportRow, reference: str, batch_id: str) -> dict[str, Any]:
+        # An export's date is the booking date, a calendar day: stored as that date at 00:00 UTC with day
+        # precision, like a date-only manual entry (ADR 0008, point 4).
+        happened_at = datetime(row.happened_on.year, row.happened_on.month, row.happened_on.day, tzinfo=timezone.utc)
+        if row.reference is not None:
+            # The bank's id names the booking: a later export that words the description differently is
+            # still the same row. Amount and currency stay in, so a reused id with another amount is not.
+            fields: dict[str, Any] = {"amount": str(row.amount), "currency": row.currency, "source_ref": reference}
+        else:
+            fields = {
+                "amount": str(row.amount),
+                "currency": row.currency,
+                "description": row.description,
+                "merchant": row.merchant,
+                "happened_at": row.happened_on.isoformat(),
+                "source_ref": reference,
+            }
+        return {
+            "user_id": user_id,
+            "group_id": group_id,
+            "amount": row.amount,
+            "currency": row.currency,
+            "description": row.description,
+            "merchant": row.merchant,
+            "category": categorize_transaction(f"{row.description} {row.merchant or ''}"),
+            "source": "file_import",
+            "happened_at": happened_at,
+            "direction": direction_of(row.amount),
+            "happened_at_precision": "day",
+            "raw_payload": canonical_row(fields),
+            "source_ref": reference,
+            "import_batch_id": batch_id,
+        }
 
     @staticmethod
     def _manual_record(
@@ -565,6 +676,20 @@ def _retarget_reviews(session: StorageSession, group_id: str, emptied_event: int
         )
     # A retargeted contested review flags its new candidate event too.
     session.refresh_review_state(new_event)
+
+
+def _store_identical_row(session: StorageSession, record: dict[str, Any], first: StoreResult) -> StoreResult:
+    """A row identical to an earlier row of the same file: a re-delivery if a previous export already had
+    it, otherwise its own event under review against the first row's event."""
+    channel = _channel(record["source"], record["user_id"])
+    record["fingerprint"] = fingerprint(record["group_id"], channel, record["raw_payload"])
+    if session.find_original_by_fingerprint(record["group_id"], record["fingerprint"]) is not None:
+        return FinSyncService._store_and_match(session, record)
+    # Confirming the review makes this row a re-delivery of the original from the same channel.
+    original = next(
+        item for item in session.event_originals(first.event_id) if _channel(item.source, item.user_id) == channel
+    )
+    return _store_new_event(session, record, "needs_review", first.event_id, {"identical_row_of_id": original.id})
 
 
 def _store_new_event(
