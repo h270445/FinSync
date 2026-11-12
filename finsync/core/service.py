@@ -200,9 +200,10 @@ class FinSyncService:
         The batch id is the SHA-256 of the file, so importing the same file again is refused (409) before
         anything is stored. A row's `source_ref` is the bank's reference when the export has one, otherwise
         a hash of the row and how many identical rows came before it in the file: an overlapping later
-        export repeats the same references, so its known rows become re-deliveries, while two identical rows
-        of one file (two equal tickets) stay two purchases. With `dry_run`, nothing is written and the rows
-        and errors are returned for the preview.
+        export repeats the same references, so its known rows become re-deliveries. A second identical row
+        within one file may be a second purchase (two equal tickets) or an error in the export, so it gets its
+        own event and goes to review against the first (author's decision, 2026-11-12: better to ask than to
+        be wrong). With `dry_run`, nothing is written and the rows and errors are returned for the preview.
         """
         self.ensure_authorized(user_id, group_id)
         text = normalize_content(content)
@@ -218,19 +219,30 @@ class FinSyncService:
             more = f" (and {len(parsed.errors) - 5} more)" if len(parsed.errors) > 5 else ""
             raise ValueError(f"Nothing was imported. {listed}{more}")
         seen: dict[tuple[str, ...], int] = {}
-        records = []
+        records: list[tuple[dict[str, Any], tuple[str, ...] | None]] = []
         for row in parsed.rows:
             reference = row.reference
+            key = None
             if reference is None:
                 key = (row.happened_on.isoformat(), str(row.amount), row.currency, row.description, row.merchant or "")
                 seen[key] = seen.get(key, 0) + 1
                 reference = "row-" + hashlib.sha256(json.dumps([*key, seen[key]]).encode("utf-8")).hexdigest()[:24]
-            records.append(self._file_record(user_id, group_id, row, reference, batch_id))
+            records.append((self._file_record(user_id, group_id, row, reference, batch_id), key))
         with self._storage.transaction() as session:
             # Checked again inside the write unit: two uploads of one file at the same time import it once.
             if session.import_batch_exists(group_id, batch_id):
                 raise ConflictError("This file was already imported")
-            results = [self._store_and_match(session, record) for record in records]
+            first_of: dict[tuple[str, ...], StoreResult] = {}
+            results = []
+            for record, key in records:
+                first = first_of.get(key) if key is not None else None
+                if first is None:
+                    result = self._store_and_match(session, record)
+                    if key is not None:
+                        first_of[key] = result
+                else:
+                    result = _store_identical_row(session, record, first)
+                results.append(result)
         return ImportResult(batch_id, False, parsed.rows, [], results)
 
     @staticmethod
@@ -660,6 +672,20 @@ def _retarget_reviews(session: StorageSession, group_id: str, emptied_event: int
         )
     # A retargeted contested review flags its new candidate event too.
     session.refresh_review_state(new_event)
+
+
+def _store_identical_row(session: StorageSession, record: dict[str, Any], first: StoreResult) -> StoreResult:
+    """A row identical to an earlier row of the same file: a re-delivery if a previous export already had
+    it, otherwise its own event under review against the first row's event."""
+    channel = _channel(record["source"], record["user_id"])
+    record["fingerprint"] = fingerprint(record["group_id"], channel, record["raw_payload"])
+    if session.find_original_by_fingerprint(record["group_id"], record["fingerprint"]) is not None:
+        return FinSyncService._store_and_match(session, record)
+    # Confirming the review makes this row a re-delivery of the original from the same channel.
+    original = next(
+        item for item in session.event_originals(first.event_id) if _channel(item.source, item.user_id) == channel
+    )
+    return _store_new_event(session, record, "needs_review", first.event_id, {"identical_row_of_id": original.id})
 
 
 def _store_new_event(

@@ -145,13 +145,29 @@ class FileImportServiceTest(unittest.TestCase):
         self.assertEqual([item.match_outcome for item in result.results], ["exact_duplicate", "exact_duplicate"])
         self.assertEqual(len(self.storage.list_events("lakas")), 2)
 
-    def test_two_identical_rows_of_one_file_stay_two_purchases(self) -> None:
+    def test_a_second_identical_row_of_one_file_goes_to_review(self) -> None:
         content = "date,amount,description\n2026-09-05,-450,Jegy\n2026-09-05,-450,Jegy\n"
-        result = self.service.import_file("anna", "lakas", content)
-        self.assertEqual(len({item.event_id for item in result.results}), 2)
-        # Exporting the same two rows again (with a third) adds only the third.
+        first, second = self.service.import_file("anna", "lakas", content).results
+        self.assertEqual((first.match_outcome, second.match_outcome), ("separate", "needs_review"))
+        self.assertNotEqual(first.event_id, second.event_id)
+        [review] = self.service.list_open_reviews("anna", "lakas")
+        self.assertEqual((review.transaction.id, review.candidate_event.id), (second.transaction_id, first.event_id))
+        # Two tickets after all: rejecting keeps them apart.
+        self.service.reject_match("anna", "lakas", review.decision_id)
+        self.assertEqual(len(self.storage.list_events("lakas")), 2)
+        # Exporting the same two rows again (with a third) adds only the third, which again goes to review.
         again = self.service.import_file("anna", "lakas", content + "2026-09-05,-450,Jegy\n")
-        self.assertEqual([item.match_outcome for item in again.results], ["exact_duplicate", "exact_duplicate", "separate"])
+        self.assertEqual([item.match_outcome for item in again.results], ["exact_duplicate", "exact_duplicate", "needs_review"])
+
+    def test_confirming_the_identical_row_makes_it_a_re_delivery(self) -> None:
+        content = "date,amount,description\n2026-09-05,-450,Jegy\n2026-09-05,-450,Jegy\n"
+        first, second = self.service.import_file("anna", "lakas", content).results
+        [review] = self.service.list_open_reviews("anna", "lakas")
+        self.service.confirm_match("anna", "lakas", review.decision_id)
+        events = self.storage.list_events("lakas")
+        self.assertEqual([len(event.transactions) for event in events], [2])
+        moved = next(tx for tx in self.storage.list_transactions("lakas") if tx.id == second.transaction_id)
+        self.assertEqual(moved.duplicate_of_id, first.transaction_id)
 
     def test_a_row_links_to_the_notification_of_the_same_purchase(self) -> None:
         # The bank books the purchase a day later; the notification carried the purchase time.
