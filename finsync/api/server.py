@@ -21,6 +21,7 @@ from finsync.core import (
     AuthorizationError,
     ConflictError,
     FinSyncService,
+    ImportResult,
     NotFoundError,
     Principal,
     ReviewItem,
@@ -29,12 +30,15 @@ from finsync.core import (
     TokenService,
 )
 from finsync.core.sessions import SESSION_LIFETIME, csrf_token
+from finsync.ingestion import ColumnMapping
 from finsync.storage import EventRecord, FinSyncStorage, TransactionRecord, WebSessionRecord
 
-# Request body limits. A bulk import carries many rows; every other request is one small object.
+# Request body limits. A bulk import or an export file carries many rows; every other request is one small object.
 MAX_BODY_BYTES = 64 * 1024
 MAX_BULK_BODY_BYTES = 1024 * 1024
 _BULK_PATH = "/v1/transactions/bulk"
+_IMPORT_PATH = "/v1/imports"
+_LARGE_BODY_PATHS = {_BULK_PATH, _IMPORT_PATH}
 
 # Web sign-in (ADR 0010): the session secret travels only in this HttpOnly cookie; state-changing
 # requests made with it also send the session's CSRF token in the header.
@@ -76,6 +80,25 @@ class BulkIn(BaseModel):
     ]
 
 
+class ColumnMappingIn(BaseModel):
+    # Header names in the file; matching ignores case. The defaults are FinSync's own generic headers.
+    date: str = "date"
+    amount: str = "amount"
+    description: str = "description"
+    merchant: str | None = "merchant"
+    currency: str | None = "currency"
+    reference: str | None = "reference"
+    default_currency: str = "HUF"
+
+
+class ImportIn(BaseModel):
+    # The CSV file as text (the client decodes it, for example from UTF-8 or Windows-1250).
+    content: str
+    mapping: ColumnMappingIn = ColumnMappingIn()
+    # True: check the file and return the rows and errors for the preview, without storing anything.
+    dry_run: bool = False
+
+
 class SplitIn(BaseModel):
     transaction_id: StrictInt
 
@@ -104,6 +127,32 @@ class StoreResultOut(BaseModel):
 class BulkOut(BaseModel):
     transaction_ids: list[int]
     results: list[StoreResultOut]
+
+
+class ImportRowOut(BaseModel):
+    line: int
+    happened_on: str
+    amount: str
+    currency: str
+    description: str
+    merchant: str | None
+    reference: str | None
+
+
+class RowErrorOut(BaseModel):
+    line: int
+    error: str
+
+
+class ImportOut(BaseModel):
+    import_batch_id: str
+    already_imported: bool
+    rows: list[ImportRowOut]
+    errors: list[RowErrorOut]
+    # One result per row, in file order; empty for a preview.
+    results: list[StoreResultOut]
+    # Rows per match outcome, for the summary screen.
+    summary: dict[str, int]
 
 
 class TransactionOut(BaseModel):
@@ -203,7 +252,7 @@ class BodySizeLimit:
         if scope["type"] != "http" or scope["method"] != "POST":
             await self.app(scope, receive, send)
             return
-        limit = MAX_BULK_BODY_BYTES if scope["path"] == _BULK_PATH else MAX_BODY_BYTES
+        limit = MAX_BULK_BODY_BYTES if scope["path"] in _LARGE_BODY_PATHS else MAX_BODY_BYTES
         length = dict(scope["headers"]).get(b"content-length")
         if length is not None and length.isdigit() and int(length) > limit:
             await _send_error(send, 413, f"Request body is larger than {limit} bytes")
@@ -367,6 +416,15 @@ def create_app(storage: FinSyncStorage) -> FastAPI:
             results=[_result(result) for result in results],
         )
 
+    @app.post(_IMPORT_PATH, responses={200: {"model": ImportOut, "description": "Preview (dry_run)"}}, status_code=201)
+    def import_file(body: ImportIn, caller: Caller, response: Response) -> ImportOut:
+        """Import a spreadsheet export (CSV): every row or none; with dry_run, only the preview."""
+        mapping = ColumnMapping(**body.mapping.model_dump())
+        result = service.import_file(caller.user_id, caller.group_id, body.content, mapping, dry_run=body.dry_run)
+        if body.dry_run:
+            response.status_code = 200
+        return _import(result)
+
     @app.post("/v1/matches/{decision_id}/confirm")
     def confirm_match(decision_id: int, caller: Caller) -> StoreResultOut:
         return _result(service.confirm_match(caller.user_id, caller.group_id, decision_id))
@@ -421,6 +479,31 @@ def _session(record: WebSessionRecord, secret: str) -> SessionOut:
         group_id=record.group_id,
         expires_at=record.expires_at.isoformat(),
         csrf_token=csrf_token(secret),
+    )
+
+
+def _import(result: ImportResult) -> ImportOut:
+    summary: dict[str, int] = {}
+    for item in result.results:
+        summary[item.match_outcome] = summary.get(item.match_outcome, 0) + 1
+    return ImportOut(
+        import_batch_id=result.import_batch_id,
+        already_imported=result.already_imported,
+        rows=[
+            ImportRowOut(
+                line=row.line,
+                happened_on=row.happened_on.isoformat(),
+                amount=str(row.amount),
+                currency=row.currency,
+                description=row.description,
+                merchant=row.merchant,
+                reference=row.reference,
+            )
+            for row in result.rows
+        ],
+        errors=[RowErrorOut(line=error.line, error=error.error) for error in result.errors],
+        results=[_result(item) for item in result.results],
+        summary=summary,
     )
 
 

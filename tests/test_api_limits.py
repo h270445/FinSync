@@ -55,6 +55,15 @@ class RequestLimitTest(unittest.TestCase):
         self.assertEqual(self._post("/v1/transactions/bulk", too_big).status_code, 413)
         self.assertEqual(self._stored(), 20)
 
+    def test_a_file_import_has_the_larger_limit_too(self) -> None:
+        lines = ["date,amount,description"] + [f"2026-09-05,-{index + 1},{'x' * 4000}" for index in range(20)]
+        body = json.dumps({"content": "\n".join(lines), "dry_run": True}).encode()
+        self.assertGreater(len(body), MAX_BODY_BYTES)
+        self.assertEqual(self._post("/v1/imports", body).status_code, 200)
+        too_big = json.dumps({"content": "date,amount,description\n" + "x" * MAX_BULK_BODY_BYTES}).encode()
+        self.assertEqual(self._post("/v1/imports", too_big).status_code, 413)
+        self.assertEqual(self._stored(), 0)
+
     def test_chunked_bodies_are_counted(self) -> None:
         def chunks(body: bytes):
             for start in range(0, len(body), 4096):
@@ -107,6 +116,9 @@ class RequestLimitTest(unittest.TestCase):
             "empty message": ("/v1/notifications/ingest", json.dumps({"message": " "}).encode()),
             "post time without offset": ("/v1/notifications/ingest", json.dumps({"message": "-4 990 Ft, Minta Anna", "posted_at": "2026-11-12T09:15"}).encode()),
             "sign-in without password": ("/v1/session", json.dumps({"login": "user-a"}).encode()),
+            "import without content": ("/v1/imports", json.dumps({"dry_run": True}).encode()),
+            "import with a bad row": ("/v1/imports", json.dumps({"content": "date,amount,description\n2026-09-05,x,Bolt\n"}).encode()),
+            "import with a missing column": ("/v1/imports", json.dumps({"content": "datum,amount,description\n2026-09-05,-1,Bolt\n"}).encode()),
         }
         for name, (path, content) in cases.items():
             with self.subTest(name):
