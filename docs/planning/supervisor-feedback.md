@@ -17,13 +17,13 @@ Each entry lists the points as actions; ticked actions link to where they were d
 **Actions (M2, 2026-12-04)**
 
 - [ ] **A. Hybrid categorizer with abstention.** On top of `finsync/evaluation/categories.py`: a deterministic Hungarian merchant and keyword layer for clear cases, and a model/LLM layer that sees merchant, description, amount and context for mixed merchants. An explicit abstention threshold ("Bizonytalan kategória"); on the 200-item dataset measure coverage vs. accuracy, latency and cost.
-- [ ] **B1. ADR 0008 in code:** separate `posted_at` and `ingested_at`; Europe/Budapest calendar-day comparison; offset-less times as Budapest wall-clock time.
-- [ ] **B2. PostgreSQL behind `FinSyncStorage`:** SQLite stays runnable for fast local/CI tests (the unit suite keeps running in seconds), PostgreSQL is the production/integration profile.
-- [ ] **C1. Decision history in W4:** the API returns the event's `match_decisions` (when and with what score `auto_linked`, who confirmed, rejected or split).
+- [x] **B1. ADR 0008 in code:** separate `posted_at` and `ingested_at`; Europe/Budapest calendar-day comparison; offset-less times as Budapest wall-clock time. (Done 2026-11-12: `posted_at` from the phone, arrival time in `created_at`, `finsync/ingestion/local_time.py`, matching dataset v3 reproduces the 2026-10-29 results.)
+- [x] **B2. PostgreSQL behind `FinSyncStorage`:** SQLite stays runnable for fast local/CI tests (the unit suite keeps running in seconds), PostgreSQL is the production/integration profile. (Done 2026-11-12: SQLAlchemy Core and Alembic, `tests/run_on_postgres.py`, Docker Compose; the SQLite suite runs in about 9 s.)
+- [x] **C1. Decision history in W4:** the API returns the event's `match_decisions` (when and with what score `auto_linked`, who confirmed, rejected or split). Done in PR #25: `GET /v1/events/{event_id}/decisions` and the timeline on the event detail page ([API](../guides/api.md)).
 - [ ] **C2. W6 manual entry and W7 bulk import preview** wired to `POST /v1/transactions` and `POST /v1/transactions/bulk`.
 - [ ] **C3. W2 overview:** monthly and per-category group totals with the split by member.
 - [ ] **C4. W8 settings / backoffice:** group and members, create and revoke API tokens without the CLI (for the Android client), override merchant–category rules.
-- [ ] **D1. One versioned agent skill** in the repository (for example the leak-free dev/test evaluation protocol, or a group-isolation and OpenAPI-sync check for new endpoints), presented in the methods chapter.
+- [ ] **D1. One versioned agent skill** in the repository (for example the leak-free dev/test evaluation protocol, or a group-isolation and OpenAPI-sync check for new endpoints), presented in the methods chapter. (2026-11-12: five versioned skills in [`.claude/skills/`](../../.claude/skills/README.md), with a usage log in [ai-usage.md](../ai-usage.md#skill-usage); the one presented in the thesis is chosen after it has been used.)
 - [ ] **D2. Six design views in `docs/`:** use-case, page flow (W1–W8 and Android), ingest → normalise → match → store/review flowchart, event and decision state diagram (`auto_linked` / `needs_review` / `confirmed` / `rejected` / `split`), architecture, security (SHA-256 Bearer tokens and `group_id` isolation).
 
 Open design questions on the PostgreSQL switch or the hybrid categorizer measurement can be sent to the supervisor at any time.
@@ -55,7 +55,7 @@ Literature for the thesis: the three-zone decision model is a domain adaptation 
 **Actions**
 
 - [x] M1 (2026-11-06): the reverse-order case investigated with both directions compared on the development split, the time-zone ADR, and an updated evaluation summary ([M1](milestones/m1-2026-11-06-working-core.md), tag `v0.2.0` on 2026-11-02).
-- [ ] M2 (2026-12-04): token authentication and web screens W3, W4, W5, then W1, W6, W7 ([user interface](../design/user-interface.md)). API tokens done on 2026-11-02 ([ADR 0009](../architecture/decisions/0009-api-tokens.md)).
+- [ ] M2 (2026-12-04): token authentication and web screens W3, W4, W5, then W1, W6, W7 ([user interface](../design/user-interface.md)). API tokens done on 2026-11-02 ([ADR 0009](../architecture/decisions/0009-api-tokens.md)); W3, W4, W5 on 2026-11-08; W1 with password sign-in on 2026-11-12 ([ADR 0010](../architecture/decisions/0010-web-sign-in.md)); W6 and W7 open.
 - [ ] Turn one recurring, discipline-heavy FinSync workflow into a versioned agent skill in the repository, with clear input, output, prohibitions and mandatory human checkpoints. Candidates: a bank-notification anonymiser and parser checker that guarantees no personal financial data reaches tests or docs, or an evaluation skill that enforces the dev/test split. Log what it sped up, where it failed and how it was refined, for the methods chapter.
 - [ ] Keep documentation in step with development. By the end of Szakdolgozat I. the six design views form one coherent frame: use-case diagram, W1–W8 and A1–A2 page flow, matching and review flowchart, event and decision state diagram, layered architecture diagram, and a security diagram of token authentication and group isolation.
 

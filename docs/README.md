@@ -14,6 +14,7 @@ Everything about FinSync beyond the code lives here. Documents describe the **ac
 | [planning/](planning/README.md) | Semester roadmap and milestone targets with deadlines |
 | [releases/](releases/README.md) | Milestone release notes and the fix log for the final package |
 | [ai-usage.md](ai-usage.md) | Where AI tools were used and how their output was checked |
+| [thesis-map.md](thesis-map.md) | Where the material for the thesis chapters and the defence questions lives |
 
 ## Conventions
 

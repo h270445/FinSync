@@ -20,7 +20,8 @@ Privacy requirements will be considered during design, with GDPR principles such
 | Group membership check on every use case | Implemented |
 | Parameterised SQL | Implemented |
 | Server-side validation of manual input | Implemented (amount, currency, description, timestamp) |
-| Authentication | **Missing.** The user identifier is supplied by the client, so stronger identity verification is required before the system can safely handle real users' financial data. |
+| Authentication | Implemented: per-member API tokens stored as SHA-256 hashes ([ADR 0009](decisions/0009-api-tokens.md)); web sign-in with e-mail or member id and a scrypt-hashed password, an HttpOnly `Secure` `SameSite=Strict` session cookie and a CSRF token on every change ([ADR 0010](decisions/0010-web-sign-in.md)). Client identity headers are ignored. No limit on failed sign-in attempts yet. |
+| Personal data | Member ids, group ids and, for sign-in, an e-mail address per member; passwords only as salted hashes, tokens and sessions only as SHA-256 hashes |
 | Request size limits | Implemented: 64 KiB per request, 1 MiB for bulk import, 413 above it; the bytes that arrive are counted, so chunked bodies cannot bypass it |
 | Audit trail | Planned through `match_decisions` |
 

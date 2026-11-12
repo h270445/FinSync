@@ -15,7 +15,7 @@ from finsync.storage import FinSyncStorage
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m finsync.api.tokens", description="Manage FinSync API tokens.")
-    parser.add_argument("--db", default="finsync.db", help="SQLite database file (default: finsync.db)")
+    parser.add_argument("--db", default="finsync.db", help="SQLite database file or database URL (default: finsync.db)")
     commands = parser.add_subparsers(dest="command", required=True)
 
     create = commands.add_parser("create", help="Add the member to the group if needed and issue a token")

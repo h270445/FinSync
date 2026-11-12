@@ -8,7 +8,7 @@ from finsync.api.server import run_server
 parser = argparse.ArgumentParser(prog="python -m finsync.api", description="Run the FinSync API.")
 parser.add_argument("--host", default="127.0.0.1")
 parser.add_argument("--port", type=int, default=8080)
-parser.add_argument("--db", default="finsync.db", help="SQLite database file (default: finsync.db)")
+parser.add_argument("--db", default="finsync.db", help="SQLite database file or database URL, e.g. postgresql+psycopg://user:password@host/finsync (default: finsync.db)")
 parser.add_argument("--openapi", action="store_true", help="print the OpenAPI schema and exit")
 args = parser.parse_args()
 if args.openapi:

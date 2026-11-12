@@ -1,6 +1,6 @@
 # 0008. Notification time and the calendar day
 
-- Status: Accepted
+- Status: Accepted (implemented 2026-11-12)
 - Date: 2026-10-29
 
 ## Context
@@ -32,5 +32,5 @@ The supervisor approved the approach on 2026-10-29 ([feedback](../../planning/su
 - A notification read late keeps its true time, so a delayed read does not push it outside the matching window.
 - A purchase near midnight abroad may fall on a different local day in Budapest than the one the person remembers; this is accepted for the prototype and visible through the recorded `device_zone`.
 - Follow-up work:
-  - The Android ingest (M2, Nov 9–15) sends `posted_at`; `/v1/notifications/ingest` accepts it, and `happened_at` comes from it.
-  - Manual and notification-text times without an offset are read as `Europe/Budapest` instead of UTC, with tests for a late-evening purchase and for both summer-time changes. The synthetic dataset's notification text then prints local time, so the evaluation data and its results are regenerated and re-checked in the same change.
+  - The Android ingest (M2, Nov 9–15) sends `posted_at`; `/v1/notifications/ingest` accepts it, and `happened_at` comes from it. Done 2026-11-12; the arrival time is the record's `created_at`.
+  - Manual and notification-text times without an offset are read as `Europe/Budapest` instead of UTC, with tests for a late-evening purchase and for both summer-time changes. The synthetic dataset's notification text then prints local time, so the evaluation data and its results are regenerated and re-checked in the same change. Done 2026-11-12 (`finsync/ingestion/local_time.py`, `tests/test_local_time.py`, [dataset v3](../../evaluation/datasets.md#testsdatamatching_eval_v3csv--matching-version-3)): the matching results on version 3 equal the 2026-10-29 results on version 2.

@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router'
 
 import { App } from '@/App'
-import { TokenProvider } from '@/auth/token'
+import { SessionProvider } from '@/auth/session'
 import { Toaster } from '@/components/ui/sonner'
 import '@/index.css'
 
@@ -15,11 +15,11 @@ const queryClient = new QueryClient({
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <TokenProvider>
+      <SessionProvider>
         <BrowserRouter>
           <App />
         </BrowserRouter>
-      </TokenProvider>
+      </SessionProvider>
       <Toaster position="bottom-right" />
     </QueryClientProvider>
   </StrictMode>,

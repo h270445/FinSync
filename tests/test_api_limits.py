@@ -105,6 +105,8 @@ class RequestLimitTest(unittest.TestCase):
             "rows not a list": ("/v1/transactions/bulk", json.dumps({"rows": "x"}).encode()),
             "one bad row": ("/v1/transactions/bulk", json.dumps({"rows": [ROW, {**ROW, "amount": "x"}]}).encode()),
             "empty message": ("/v1/notifications/ingest", json.dumps({"message": " "}).encode()),
+            "post time without offset": ("/v1/notifications/ingest", json.dumps({"message": "-4 990 Ft, Minta Anna", "posted_at": "2026-11-12T09:15"}).encode()),
+            "sign-in without password": ("/v1/session", json.dumps({"login": "user-a"}).encode()),
         }
         for name, (path, content) in cases.items():
             with self.subTest(name):
@@ -126,8 +128,13 @@ class RequestLimitTest(unittest.TestCase):
                 with self.subTest(path=path, method=method):
                     # Validation errors are answered with 400, never 422.
                     self.assertNotIn("422", operation["responses"])
-                    # Every route takes the bearer token, so /docs and generated clients send it.
-                    self.assertEqual(operation["security"], [{"HTTPBearer": []}])
+                    # Every data route takes the bearer token, so /docs and generated clients send it.
+                    # Signing in needs nothing; the other session routes take the session cookie.
+                    if path == "/v1/session":
+                        expected = [] if method == "post" else [{"SessionCookie": []}]
+                    else:
+                        expected = [{"HTTPBearer": []}]
+                    self.assertEqual(operation["security"], expected)
         bulk = schema["components"]["schemas"]["BulkIn"]["properties"]["rows"]
         self.assertEqual(bulk["items"], {"$ref": "#/components/schemas/ManualTransactionIn"})
 

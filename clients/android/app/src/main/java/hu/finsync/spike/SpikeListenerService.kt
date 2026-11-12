@@ -16,6 +16,7 @@ import org.json.JSONObject
  */
 class SpikeListenerService : NotificationListenerService() {
     private val store by lazy { CaptureStore(this) }
+    private val forwarder by lazy { Forwarder(this) }
 
     override fun onListenerConnected() {
         store.append(JSONObject().put("type", "listener_connected"))
@@ -23,7 +24,11 @@ class SpikeListenerService : NotificationListenerService() {
         // are not replayed by Android; those still in the shade are caught here.
         activeNotifications.orEmpty()
             .filter { isWatched(it.packageName) }
-            .forEach { store.append(toRecord("active_on_connect", it)) }
+            .forEach {
+                store.append(toRecord("active_on_connect", it))
+                forward(it)
+            }
+        Forwarder.schedule(this)
     }
 
     override fun onListenerDisconnected() {
@@ -33,6 +38,27 @@ class SpikeListenerService : NotificationListenerService() {
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         if (isWatched(sbn.packageName)) {
             store.append(toRecord("posted", sbn))
+            forward(sbn)
+        }
+    }
+
+    /**
+     * M2 forwarding: an OTP Bank notification that matches a known transaction pattern goes to the
+     * outbox and on to the server; any other bank notification is only counted per bank and
+     * channel. Debug builds also forward simulated notifications (posted with adb or with the Test button).
+     */
+    private fun forward(sbn: StatusBarNotification) {
+        val notification = sbn.notification
+        if (notification.flags and Notification.FLAG_GROUP_SUMMARY != 0) return
+        val simulated = isDebugBuild && (sbn.packageName == BankApps.ADB_SHELL || sbn.packageName == packageName)
+        val forwardable = sbn.packageName == OtpFormat.PACKAGE || simulated
+        if (!BankApps.isBank(sbn.packageName) && !forwardable) return
+        val extras = notification.extras
+        val text = (extras.getCharSequence(Notification.EXTRA_BIG_TEXT) ?: extras.getCharSequence(Notification.EXTRA_TEXT))?.toString()
+        if (forwardable && OtpFormat.isTransaction(text)) {
+            forwarder.enqueue(sbn.packageName, sbn.postTime, extras.getCharSequence(Notification.EXTRA_TITLE)?.toString(), text!!.trim(), sbn.tag)
+        } else {
+            forwarder.countDropped(sbn.packageName, notification.channelId, sbn.key, sbn.postTime)
         }
     }
 

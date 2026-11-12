@@ -64,7 +64,7 @@ Steps 1 to 5 below run on every ingest path since 2026-10-17, on the existing SQ
 
 Choices made while implementing, open to change:
 
-- **Time:** everything is stored in UTC. A date-only manual value is kept as that date at 00:00 UTC with `happened_at_precision = day`; calendar days of minute-precision records are taken in Europe/Budapest. Notification times are still read as UTC (open question 1).
+- **Time:** everything is stored in UTC. A date-only manual value is kept as that date at 00:00 UTC with `happened_at_precision = day`; calendar days of minute-precision records are taken in Europe/Budapest. A time without an offset (manual entry or a notification text that prints one) is Europe/Budapest wall-clock time, converted to UTC on input ([ADR 0008](../architecture/decisions/0008-notification-time-and-calendar-day.md), in code since 2026-11-12).
 - **Direction:** a manual row may send `direction` (`expense` or `income`), which sets the sign; without it the typed sign decides, as before.
 - **Below 0.60:** the decision row still names the best candidate event, so a near miss can be inspected later.
 - **Concurrency:** each ingest call runs inside `BEGIN IMMEDIATE`, so two calls cannot both read the same candidates.
@@ -200,7 +200,7 @@ Every endpoint keeps `ensure_authorized(user_id, group_id)`; every lookup by id 
 
 ## Open questions
 
-1. Do the target banks print notification times in local time? If so, the parser needs a Europe/Budapest default before matching is evaluated.
+1. ~~Do the target banks print notification times in local time?~~ Answered: OTP Bank prints no time; the phone's post time is used, and any printed time without an offset is read as Europe/Budapest ([ADR 0008](../architecture/decisions/0008-notification-time-and-calendar-day.md)).
 2. Should two manual entries from the same member ever be linked, or always go to review?
 3. Is a 48-hour window right for manual entries, or do people log expenses days later?
 4. Foreign-currency card purchases are out of scope; confirm with the supervisor.

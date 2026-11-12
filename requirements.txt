@@ -2,5 +2,10 @@
 fastapi==0.116.1
 uvicorn==0.35.0
 httpx==0.28.1
+# Storage (ADR 0006, step 2): SQLAlchemy Core on SQLite or PostgreSQL, schema migrations with Alembic,
+# psycopg as the PostgreSQL driver (binary wheels, no compiler needed).
+sqlalchemy==2.0.57
+alembic==1.20.1
+psycopg[binary]==3.3.9
 # Time-zone data for zoneinfo; Linux and macOS ship it with the operating system, Windows does not.
 tzdata; sys_platform == "win32"

@@ -32,6 +32,12 @@ ENDPOINTS = (
     ("POST", "/v1/matches/{decision}/reject"),
     ("POST", "/v1/events/{event}/split"),
 )
+# The web sign-in routes work with the session cookie, not a token; tests/test_sessions.py covers them.
+SESSION_ENDPOINTS = (
+    ("POST", "/v1/session"),
+    ("GET", "/v1/session"),
+    ("DELETE", "/v1/session"),
+)
 
 
 class TokenServiceTest(unittest.TestCase):
@@ -54,6 +60,7 @@ class TokenServiceTest(unittest.TestCase):
         self.assertEqual((principal.user_id, principal.group_id, principal.token_id), ("user-a", "group-1", record.id))
         self.assertIsNotNone(self.tokens.list("user-a")[0].last_used_at)
 
+    @unittest.skipIf(os.environ.get("FINSYNC_TEST_DATABASE_URL"), "reads the SQLite file directly")
     def test_only_the_hash_is_stored(self) -> None:
         token, _ = self.tokens.create("user-a", "group-1", "phone")
         connection = sqlite3.connect(self.db_path)
@@ -89,11 +96,18 @@ class TokenServiceTest(unittest.TestCase):
         self.tokens.revoke(phone_record.id)
         self.assertEqual(self.tokens.authenticate(f"bearer {sheet}").user_id, "user-a")
 
+    @unittest.skipIf(os.environ.get("FINSYNC_TEST_DATABASE_URL"), "reads the SQLite file directly")
     def test_a_version_2_database_gets_the_token_table(self) -> None:
         connection = sqlite3.connect(self.db_path)
         with connection:
+            # Turn the new database into a file from before Alembic, at schema version 4.
+            connection.execute("DROP TABLE alembic_version")
+            connection.execute("CREATE TABLE schema_version (version INTEGER NOT NULL)")
+            connection.executemany("INSERT INTO schema_version (version) VALUES (?)", [(2,), (3,), (4,)])
             connection.execute("DROP TABLE api_tokens")
-            connection.execute("DELETE FROM schema_version WHERE version = 3")
+            connection.execute("DROP TABLE member_accounts")
+            connection.execute("DROP TABLE web_sessions")
+            connection.execute("DELETE FROM schema_version WHERE version >= 3")
         connection.close()
         token, _ = TokenService(FinSyncStorage(self.db_path)).create("user-a", "group-1", "phone")
         self.assertEqual(self.tokens.authenticate(f"Bearer {token}").user_id, "user-a")
@@ -177,7 +191,7 @@ class AuthApiTest(unittest.TestCase):
             if isinstance(route, APIRoute)
             for method in route.methods
         }
-        self.assertEqual(routes, set(ENDPOINTS))
+        self.assertEqual(routes, set(ENDPOINTS) | set(SESSION_ENDPOINTS))
 
     def _endpoints(self):
         for method, path in ENDPOINTS:

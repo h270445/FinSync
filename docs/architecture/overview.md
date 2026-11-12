@@ -4,7 +4,7 @@ This document has two parts: the architecture **as implemented** today, and the 
 
 ## 1. Current architecture (implemented)
 
-A single Python process: FastAPI on Uvicorn for HTTP, the standard library and SQLite below it:
+A single Python process: FastAPI on Uvicorn for HTTP, SQLAlchemy Core on SQLite or PostgreSQL below it:
 
 ```text
 HTTP client
@@ -18,7 +18,7 @@ finsync.core         TokenService: token → member and group; FinSyncService: m
     ├──► finsync.ingestion       notification text parser
     ├──► finsync.categorization  keyword rules
     ├──► finsync.matching        normalise, fingerprint, score, decide (pure rules)
-    └──► finsync.storage         SQLite: group_memberships, api_tokens, transactions, events, match_decisions
+    └──► finsync.storage         SQLite or PostgreSQL (Alembic): memberships, tokens, sessions, transactions, events, decisions
 ```
 
 Each incoming record is stored unchanged and linked to an event: an exact re-delivery joins its original, a confident cross-source match is linked, an uncertain one is flagged for review, anything else gets its own event. Every decision is logged, and a member can confirm, reject or split through the review endpoints.
@@ -74,7 +74,7 @@ finsync/
   ingestion/       one parser per source: notifications, csv     (exists: notifications)
   matching/        normalize, fingerprint, scoring, decision     (planned)
   categorization/  rules (baseline), llm (comparison)            (exists: rules)
-  storage/         sqlite, migrations                            (exists: sqlite)
+  storage/         database (SQLite or PostgreSQL), migrations   (exists)
   evaluation/      dataset replay and metrics runner             (planned)
 tests/
   data/            labelled synthetic datasets                   (planned)
@@ -124,13 +124,13 @@ The direction column is proposed in [ADR 0006](decisions/0006-framework-based-st
 | Concern | Now | Direction |
 | --- | --- | --- |
 | Language | Python with FastAPI and Pydantic | Python with FastAPI and Pydantic |
-| Storage | SQLite | PostgreSQL with SQLAlchemy 2.0 and Alembic migrations |
+| Storage | SQLAlchemy 2.0 Core and Alembic, on SQLite (default, tests) or PostgreSQL (since 2026-11-12) | PostgreSQL with SQLAlchemy 2.0 and Alembic migrations |
 | API | FastAPI on Uvicorn, OpenAPI schema (since 2026-11-07) | FastAPI on Uvicorn, OpenAPI schema |
 | Tests | `unittest` | pytest (existing tests run unchanged), PostgreSQL in tests, labelled datasets under `tests/data/` |
 | Web UI | none | React, TypeScript, Vite, TanStack Query, Tailwind CSS, shadcn/ui ([ADR 0005](decisions/0005-web-client-first.md)) |
 | Clients | none | Android: Kotlin, Jetpack Compose, WorkManager; Sheets: Apps Script with clasp |
 | LLM | none | One provider's SDK, only for categorization, output validated |
-| Delivery | Local run (`python -m finsync.api`) | Docker Compose (db, api, web), GitHub Actions CI |
+| Delivery | Local run (`python -m finsync.api`), or Docker Compose with `db` and `api` (since 2026-11-12) | Docker Compose (db, api, web), GitHub Actions CI |
 
 ## 5. Known architectural gaps
 

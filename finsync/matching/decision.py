@@ -1,3 +1,10 @@
+"""Matching decision: from the best score per candidate event to auto-link, review or a separate event.
+
+The thresholds and the two order-independence rules were chosen on the development split of the
+matching dataset ([results](../../docs/evaluation/results/2026-10-29-matching-rules-3.md)). Frozen since
+2026-11-11: change only with a new measurement.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

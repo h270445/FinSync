@@ -1,6 +1,6 @@
 # `clients/android/` — notification-listener spike
 
-A throwaway Android app (Kotlin, Jetpack Compose) that answers the open questions about reading banking notifications on a real device before the M2 Android app is built ([roadmap](../../docs/planning/roadmap.md), Oct 19–25 side track). It only logs; it does not send anything to the FinSync API yet.
+A throwaway Android app (Kotlin, Jetpack Compose) that answers the open questions about reading banking notifications on a real device before the M2 Android app is built ([roadmap](../../docs/planning/roadmap.md), Oct 19–25 side track). It logs bank notifications on the phone and, since 2026-11-12, forwards OTP Bank transactions to the FinSync API (see [Forwarding](#forwarding-to-finsync-m2-otp-bank)).
 
 Findings go in [docs/design/android-notification-spike.md](../../docs/design/android-notification-spike.md).
 
@@ -58,7 +58,17 @@ adb shell "cmd notification post -t 'OTP Bank' sim-1 'Kartyas vasarlas: -4500 HU
 
 Reposting with the same tag (`sim-1`) updates the notification under the same key, which is how question 3 (updates versus new posts) can be rehearsed. Simulated text only tests the pipeline; the real formats, times and delays come from the bank apps on the phone.
 
+## Forwarding to FinSync (M2, OTP Bank)
+
+Since 2026-11-12 the app also sends OTP Bank transaction notifications to `POST /v1/notifications/ingest`:
+
+- **Allow-list:** only a notification from `hu.otpbank.mobile` whose text matches a known OTP pattern ([`OtpFormat.kt`](app/src/main/java/hu/finsync/spike/OtpFormat.kt): signed amount and currency first, then a comma and the counterparty, or a merchant in capitals) leaves the phone. Every other bank notification is only counted per bank and channel ("Dropped on the phone"). Debug builds also forward simulated notifications (adb or the **Test** button).
+- **What is sent:** text, title, `posted_at` (the post time as an ISO 8601 instant) and `source_ref` (the number at the end of the notification tag).
+- **No duplicates:** each matched notification goes into an outbox file first; WorkManager sends it when a network is available and retries with backoff. The server treats the same four fields as a re-delivery, and the phone remembers what it has sent, so a notification re-read on reconnect is not sent again. `400` (not a transaction for the server) drops it, `401`/`403` waits for a new token.
+- **Setup:** enter the server address and the member's API token on the main screen and press **Save**. On the emulator the local API is `http://10.0.2.2:8080` (start it with `--host 0.0.0.0`); plain HTTP works only in debug builds, a release build needs the HTTPS tunnel ([ADR 0007](../../docs/architecture/decisions/0007-how-external-clients-reach-the-api.md)).
+- **Known limits:** the token is not encrypted yet; the spike's capture log still runs next to forwarding; an updated notification (same key, new post time) would be sent as a new purchase, which the OTP app has not been seen doing.
+
 ## Rules for this folder
 
-- Spike code: no API calls, no tokens, no network permission.
-- The M2 app (setup and status screens, WorkManager sending, Room queue, encrypted token, see [technology stack](../../docs/architecture/technology-stack.md#android)) replaces this code; the spike's findings decide its parser and `source_ref`.
+- Synthetic data only in code, tests and docs; real captures never leave the phone ([bank-notification-privacy skill](../../.claude/skills/bank-notification-privacy/SKILL.md)).
+- The parser rule exists twice, here (gate) and in `finsync/ingestion/notifications.py` (authority); change both together, with the same test cases (`OtpFormatTest.kt`, `tests/test_android_ingest.py`).

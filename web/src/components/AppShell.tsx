@@ -2,7 +2,7 @@ import { ClipboardCheck, FileUp, LayoutDashboard, List, LogOut, Plus, Settings }
 import { NavLink, Outlet } from 'react-router'
 
 import { useReviews } from '@/api/queries'
-import { useToken } from '@/auth/token'
+import { useSession } from '@/auth/session'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -16,7 +16,7 @@ const NAV = [
 ]
 
 export function AppShell() {
-  const { signOut } = useToken()
+  const { session, signOut } = useSession()
   const reviews = useReviews()
   const waiting = reviews.data?.length ?? 0
 
@@ -24,10 +24,17 @@ export function AppShell() {
     <div className="min-h-dvh">
       <header className="flex h-14 items-center justify-between border-b bg-card px-4">
         <span className="text-lg font-semibold">FinSync</span>
-        <Button variant="ghost" size="sm" onClick={signOut}>
-          <LogOut />
-          Kijelentkezés
-        </Button>
+        <div className="flex items-center gap-2">
+          {session && (
+            <span className="hidden text-sm text-muted-foreground sm:inline">
+              {session.user_id} · {session.group_id}
+            </span>
+          )}
+          <Button variant="ghost" size="sm" onClick={() => void signOut()}>
+            <LogOut />
+            Kijelentkezés
+          </Button>
+        </div>
       </header>
       <div className="md:flex">
         <nav aria-label="Fő navigáció" className="border-b bg-card md:min-h-[calc(100dvh-3.5rem)] md:w-56 md:border-r md:border-b-0">

@@ -27,7 +27,7 @@ Local and deployment: Docker Compose (api, web, db) · CI: GitHub Actions
 | Database access | **SQLAlchemy 2.0** (Core and ORM, typed) | Explicit transactions and row locks, which the matching step needs; the same models work against PostgreSQL in production and in tests. |
 | Migrations | **Alembic** | Replaces the hand-written schema versioning planned for Phase 1; every schema change is a reviewed, reversible file. |
 | Database | **PostgreSQL** (current stable major version) | Real concurrent writers (several members and clients), row-level locks and transaction-scoped advisory locks for "match one record per group at a time", `JSONB` for raw payloads, and the database used in industry. |
-| Authentication | **Random API tokens stored as SHA-256 hashes** for the Android app and Sheets script ([ADR 0009](decisions/0009-api-tokens.md): a 256-bit random token needs no slow hash; Argon2 is kept for passwords); **password login with an HttpOnly session cookie** for the web app | Clients cannot keep a password but can store a revocable token; browsers should not keep long-lived secrets in JavaScript-readable storage. Both resolve to the same user and group checks. The cookie is `Secure`, `HttpOnly`, `SameSite=Lax`; state-changing requests from the web app also need a matching `Origin` header and a CSRF token (double-submit), so a cross-site page cannot confirm, split or import on a member's behalf. |
+| Authentication | **Random API tokens stored as SHA-256 hashes** for the Android app and Sheets script ([ADR 0009](decisions/0009-api-tokens.md): a 256-bit random token needs no slow hash; passwords use scrypt from the standard library, [ADR 0010](decisions/0010-web-sign-in.md)); **password login with an HttpOnly session cookie** for the web app | Clients cannot keep a password but can store a revocable token; browsers should not keep long-lived secrets in JavaScript-readable storage. Both resolve to the same user and group checks. The cookie is `Secure`, `HttpOnly`, `SameSite=Strict`; state-changing requests from the web app also need the session's CSRF token in a header, so a cross-site page cannot confirm, split or import on a member's behalf (ADR 0010; the planned `Origin` check was dropped as redundant). |
 | LLM | Official SDK of one provider, called only from `finsync.categorization` | Behind the categorizer interface, sends only description and merchant, output validated against the category list. Provider chosen in November. |
 | Server | **Uvicorn** | The standard ASGI server for FastAPI. |
 
@@ -58,6 +58,8 @@ Angular was considered: it is complete and opinionated, but heavier for eight sc
 | Sending and retry | **WorkManager** with a local queue in **Room** | Sends survive restarts and offline periods; each notification carries a stable `source_ref`, so retries are re-deliveries, not new purchases. |
 | HTTP | **Retrofit + OkHttp** (kotlinx.serialization) | Standard, typed HTTP client. |
 | Token storage | **DataStore**, encrypted with an Android Keystore key | The token never sits in plain text. |
+
+Current state (2026-11-12, first M2 version): sending uses WorkManager as planned, but the queue is a JSON-lines file in app-private storage instead of Room, HTTP uses the platform `HttpURLConnection` instead of Retrofit (one request type), and the token sits in app-private `SharedPreferences`, not yet encrypted. The encrypted token is open; Room and Retrofit are adopted only if the app grows beyond one request.
 
 ## Google Sheets (optional this semester)
 

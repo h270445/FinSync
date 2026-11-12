@@ -9,18 +9,22 @@ from __future__ import annotations
 
 import argparse
 import csv
-from dataclasses import asdict, dataclass, fields
+from dataclasses import asdict, dataclass, fields, replace
 from datetime import datetime, timedelta, timezone
 from decimal import ROUND_HALF_UP, Decimal
 import hashlib
 from pathlib import Path
 import random
+import re
 from typing import Callable
+from zoneinfo import ZoneInfo
 
 GROUP_ID = "eval-group"
 MEMBERS = ("member-a", "member-b")
 START = datetime(2026, 9, 1, tzinfo=timezone.utc)
 DAYS = 28
+# Matching compares calendar days in this zone (ADR 0008); version 3 prints notification times in it.
+LOCAL_TIME_ZONE = ZoneInfo("Europe/Budapest")
 
 # (bank notification text, merchant a member would type, description a member would type, typical amounts)
 MERCHANTS = (
@@ -338,6 +342,31 @@ def generate_v2(records: int = 100, seed: int = 2026) -> list[Row]:
                    for index, row in enumerate(added, start=len(base) + 1)]
 
 
+_TEXT_TIME = re.compile(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2})$")
+
+
+def generate_v3(records: int = 100, seed: int = 2026) -> list[Row]:
+    """Version 2 with the notification text printing Budapest wall-clock time instead of UTC (ADR 0008).
+
+    The parser reads a time without an offset as Budapest time, so the same instants as in version 2
+    reach the matcher; every other field is unchanged record for record.
+    """
+    def local(match: re.Match[str]) -> str:
+        instant = datetime.strptime(match.group(1), "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
+        return f"{instant.astimezone(LOCAL_TIME_ZONE):%Y-%m-%d %H:%M}"
+
+    return [replace(row, message=_TEXT_TIME.sub(local, row.message)) if row.message else row
+            for row in generate_v2(records, seed)]
+
+
+GENERATORS = {1: generate, 2: generate_v2, 3: generate_v3}
+DEFAULT_PATHS = {
+    1: "tests/data/matching_eval.csv",
+    2: "tests/data/matching_eval_v2.csv",
+    3: "tests/data/matching_eval_v3.csv",
+}
+
+
 def write_csv(rows: list[Row], path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as handle:
@@ -355,11 +384,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Generate the synthetic matching dataset.")
     parser.add_argument("--records", type=int, default=100)
     parser.add_argument("--seed", type=int, default=2026)
-    parser.add_argument("--version", type=int, choices=(1, 2), default=2)
+    parser.add_argument("--version", type=int, choices=(1, 2, 3), default=3)
     parser.add_argument("--out", type=Path)
     args = parser.parse_args()
-    rows = (generate_v2 if args.version == 2 else generate)(args.records, args.seed)
-    args.out = args.out or Path("tests/data/matching_eval_v2.csv" if args.version == 2 else "tests/data/matching_eval.csv")
+    rows = GENERATORS[args.version](args.records, args.seed)
+    args.out = args.out or Path(DEFAULT_PATHS[args.version])
     write_csv(rows, args.out)
     events = len({row.true_event for row in rows})
     print(f"Wrote {len(rows)} records describing {events} purchases to {args.out}")

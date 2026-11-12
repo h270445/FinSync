@@ -20,8 +20,9 @@ Requirements: Node.js 22 and the backend's requirements (see [getting started](.
 # Terminal 1, repository root: the API on port 8080
 python -m finsync.api
 
-# Terminal 2: a token for the sign-in screen
-python -m finsync.api.tokens create --user anna --group lakas --name "Webes fejlesztés"
+# Terminal 2: a member with a password (the token command also adds anna to the group)
+python -m finsync.api.tokens create --user anna --group lakas --name "Anna telefon"
+python -m finsync.api.passwords set --user anna --email anna@example.com
 
 # Terminal 3, web/
 npm install
@@ -30,7 +31,7 @@ npm run dev        # http://localhost:5173
 
 The Vite dev server forwards `/v1` to `http://127.0.0.1:8080` (override with `FINSYNC_API`), so the browser talks to one origin and the API needs no CORS rules.
 
-**Sign-in is temporary.** Until password login with an HttpOnly session cookie exists (W1, M2), the sign-in screen takes an API token and keeps it in `sessionStorage` for the tab. That is acceptable for local development only; the [technology stack](../docs/architecture/technology-stack.md) explains why a browser must not keep long-lived secrets in JavaScript-readable storage.
+**Sign-in (W1)** takes the e-mail address or the member id and the password. The server keeps the session in an HttpOnly, `Secure`, `SameSite=Strict` cookie that scripts cannot read; the app keeps only the member, the group and the CSRF token in memory and sends the token with every change ([ADR 0010](../docs/architecture/decisions/0010-web-sign-in.md)). The `Secure` cookie works on `http://localhost`, not on a LAN address over plain HTTP.
 
 ## Scripts
 
@@ -56,7 +57,7 @@ Both files are committed, so the diff shows how the API changed. Set `PYTHON` if
 
 ```text
 src/api/          generated schema, typed client, TanStack Query hooks
-src/auth/         development token sign-in
+src/auth/         session context: sign-in, sign-out, CSRF token, back to sign-in on 401
 src/components/   app shell, badges, loading/error/empty states; ui/ holds shadcn/ui components
 src/lib/          Hungarian formatting (amounts, dates, scores) and event helpers
 src/pages/        one file per screen

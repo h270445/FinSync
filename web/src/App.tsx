@@ -1,7 +1,8 @@
 import { Route, Routes } from 'react-router'
 
-import { useToken } from '@/auth/token'
+import { useSession } from '@/auth/session'
 import { AppShell } from '@/components/AppShell'
+import { LoadingRows } from '@/components/states'
 import { EventDetailPage } from '@/pages/EventDetailPage'
 import { EventsPage } from '@/pages/EventsPage'
 import { PlaceholderPage } from '@/pages/PlaceholderPage'
@@ -10,8 +11,14 @@ import { SignInPage } from '@/pages/SignInPage'
 
 // Screen ids (W1–W8) follow docs/design/user-interface.md#web-app.
 export function App() {
-  const { token } = useToken()
-  if (!token) return <SignInPage />
+  const { session } = useSession()
+  if (session === undefined)
+    return (
+      <main className="mx-auto max-w-md p-4" aria-busy="true">
+        <LoadingRows rows={3} />
+      </main>
+    )
+  if (session === null) return <SignInPage />
 
   return (
     <Routes>

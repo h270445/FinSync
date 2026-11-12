@@ -7,6 +7,7 @@ export type FinSyncEvent = components['schemas']['EventOut']
 export type Review = components['schemas']['ReviewOut']
 export type StoreResult = components['schemas']['StoreResultOut']
 export type Decision = components['schemas']['DecisionOut']
+export type Session = components['schemas']['SessionOut']
 
 /** A refused request, with the backend's `{"error": "..."}` message. */
 export class ApiError extends Error {
@@ -18,16 +19,22 @@ export class ApiError extends Error {
   }
 }
 
-let token: string | null = null
+let csrfToken: string | null = null
 
-/** The bearer token sent with every request (see auth/token.tsx). */
-export function setApiToken(value: string | null) {
-  token = value
+/**
+ * The signed-in session's CSRF token (see auth/session.tsx). The session itself travels in an
+ * HttpOnly cookie that scripts cannot read; the browser sends it on its own. Every request that
+ * changes something also carries this token, which a page on another site cannot know.
+ */
+export function setCsrfToken(value: string | null) {
+  csrfToken = value
 }
+
+const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 
 const auth: Middleware = {
   onRequest({ request }) {
-    if (token) request.headers.set('Authorization', `Bearer ${token}`)
+    if (csrfToken && !SAFE_METHODS.has(request.method)) request.headers.set('X-CSRF-Token', csrfToken)
     return request
   },
 }
