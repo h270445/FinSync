@@ -37,6 +37,8 @@ class Forwarder(context: Context) {
     private val prefs = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     private val outbox = File(app.filesDir, "outbox.jsonl")
     private val sentKeys = File(app.filesDir, "sent-keys.txt")
+    // Hashes only: the key of some bank notifications contains their text (Revolut).
+    private val droppedKeys = File(app.filesDir, "dropped-keys.txt")
 
     var serverUrl: String
         get() = prefs.getString("server_url", "").orEmpty()
@@ -57,9 +59,16 @@ class Forwarder(context: Context) {
         prefs.all.filterKeys { it.startsWith("dropped:") }.mapKeys { it.key.removePrefix("dropped:") }
             .mapValues { (it.value as? Int) ?: 0 }
 
-    fun countDropped(packageName: String, channel: String?) {
-        val key = "dropped:$packageName/${channel ?: "-"}"
-        synchronized(LOCK) { prefs.edit().putInt(key, prefs.getInt(key, 0) + 1).apply() }
+    /** Counts a dropped notification once, even when it is read again on reconnect (same key and post time). */
+    fun countDropped(packageName: String, channel: String?, notificationKey: String, postTimeMs: Long) {
+        val counter = "dropped:$packageName/${channel ?: "-"}"
+        val seen = TransactionFilter.hash("$notificationKey|$postTimeMs")
+        synchronized(LOCK) {
+            val keys = if (droppedKeys.exists()) droppedKeys.readLines().filter { it.isNotBlank() } else emptyList()
+            if (seen in keys) return
+            droppedKeys.writeText((keys + seen).takeLast(MAX_SENT_KEYS).joinToString("\n"))
+            prefs.edit().putInt(counter, prefs.getInt(counter, 0) + 1).apply()
+        }
     }
 
     /** Queues one matched notification and asks WorkManager to send. A notification already queued or sent is ignored. */

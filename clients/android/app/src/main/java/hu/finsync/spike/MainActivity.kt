@@ -88,7 +88,7 @@ class MainActivity : ComponentActivity() {
 
     /** M2: where to send, the member's API token, and what happened to the last notifications. */
     @Composable
-    private fun ForwardingSection(@Suppress("UNUSED_PARAMETER") tick: Int) {
+    private fun ForwardingSection(tick: Int) {
         var url by remember { mutableStateOf(forwarder.serverUrl) }
         var token by remember { mutableStateOf(forwarder.token) }
         Text("Forwarding to FinSync (OTP Bank only)", style = MaterialTheme.typography.titleSmall)
@@ -109,9 +109,15 @@ class MainActivity : ComponentActivity() {
             }) { Text("Save") }
             Button(onClick = { Forwarder.schedule(this@MainActivity); refresh++ }) { Text("Send now") }
         }
-        Text("Waiting: ${forwarder.pending()}, sent: ${forwarder.sentCount}, refused by server: ${forwarder.refusedCount}")
-        Text("Last: ${forwarder.lastResult}")
-        val dropped = forwarder.droppedCounts()
+        // Read again on every refresh (onResume, Refresh, Save, Send now): Compose skips a section
+        // whose inputs did not change, so the status must depend on tick.
+        val status = remember(tick) {
+            "Waiting: ${forwarder.pending()}, sent: ${forwarder.sentCount}, refused by server: ${forwarder.refusedCount}"
+        }
+        val last = remember(tick) { forwarder.lastResult }
+        val dropped = remember(tick) { forwarder.droppedCounts() }
+        Text(status)
+        Text("Last: $last")
         if (dropped.isNotEmpty()) Text("Dropped on the phone: " + dropped.entries.joinToString { "${it.key} ${it.value}" })
     }
 

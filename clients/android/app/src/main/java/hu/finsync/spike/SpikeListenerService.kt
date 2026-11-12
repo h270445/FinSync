@@ -58,7 +58,7 @@ class SpikeListenerService : NotificationListenerService() {
         if (forwardable && OtpFormat.isTransaction(text)) {
             forwarder.enqueue(sbn.packageName, sbn.postTime, extras.getCharSequence(Notification.EXTRA_TITLE)?.toString(), text!!.trim(), sbn.tag)
         } else {
-            forwarder.countDropped(sbn.packageName, notification.channelId)
+            forwarder.countDropped(sbn.packageName, notification.channelId, sbn.key, sbn.postTime)
         }
     }
 

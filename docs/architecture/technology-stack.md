@@ -59,6 +59,8 @@ Angular was considered: it is complete and opinionated, but heavier for eight sc
 | HTTP | **Retrofit + OkHttp** (kotlinx.serialization) | Standard, typed HTTP client. |
 | Token storage | **DataStore**, encrypted with an Android Keystore key | The token never sits in plain text. |
 
+Current state (2026-11-12, first M2 version): sending uses WorkManager as planned, but the queue is a JSON-lines file in app-private storage instead of Room, HTTP uses the platform `HttpURLConnection` instead of Retrofit (one request type), and the token sits in app-private `SharedPreferences`, not yet encrypted. The encrypted token is open; Room and Retrofit are adopted only if the app grows beyond one request.
+
 ## Google Sheets (optional this semester)
 
 | Concern | Choice | Why |
