@@ -1,3 +1,5 @@
+"""Fingerprint of a raw record per group and channel, so a re-delivered record is recognised exactly."""
+
 from __future__ import annotations
 
 import hashlib

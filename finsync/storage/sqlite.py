@@ -1,3 +1,9 @@
+"""SQLite storage: schema, migrations and every query, always filtered by group.
+
+`FinSyncStorage` opens connections and runs migrations up to `SCHEMA_VERSION`; `StorageSession` is one
+transaction used by a service method. Instants are stored as UTC ISO strings.
+"""
+
 from __future__ import annotations
 
 from contextlib import contextmanager

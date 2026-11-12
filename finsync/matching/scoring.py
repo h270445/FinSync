@@ -1,3 +1,8 @@
+"""Pairwise score of a new record against an existing one: amount, time and merchant, weighted.
+
+Weights and windows are described in the [matching design](../../docs/design/transaction-matching.md).
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

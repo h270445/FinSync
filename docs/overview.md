@@ -19,35 +19,33 @@ The main goal is to develop and evaluate a system that can:
 
 ## Current implementation status
 
-The repository currently contains a minimal backend flow:
+Status on 2026-11-12. The flow that runs today:
 
-`Notification-like text / manual input → Parsing → Normalization → Rule-based categorization → SQLite storage → Group-scoped access`
+`Android notification / manual entry / bulk rows → Parsing and normalisation → Matching (event, decision log) → Rule-based categorization → SQLite storage → Review and correction in the web app`
 
 ### Implemented
 
-* **Notification text parsing:** Deterministic parsing for a limited set of supported notification formats.
-* **Normalized transactions:** Conversion of supported input data into a common transaction representation.
-* **Manual transaction creation:** API endpoint for creating individual transactions.
-* **Bulk transaction input:** API endpoint for importing multiple transactions from structured payloads, including rows prepared from a spreadsheet export.
-* **Rule-based categorization:** Basic deterministic transaction categorization.
-* **Persistent storage:** SQLite-based transaction persistence.
-* **Transaction matching and duplicate detection (first version):** every record is linked to an event; exact re-deliveries, confident cross-source matches and uncertain cases are told apart by a rule-based score, and each decision is logged with its reason ([design](design/transaction-matching.md)).
-* **Group membership checks:** Read and write operations check whether the supplied user identifier belongs to the requested group.
-* **Modular backend structure:** Separate packages for API, application core, ingestion, categorization, matching and storage ([finsync/README.md](../finsync/README.md)).
-* **Automated tests:** A test suite is included in the repository ([tests/README.md](../tests/README.md)).
+* **Ingestion:** the OTP Bank notification format and the synthetic prototype formats ([ingestion](../finsync/ingestion/README.md)); manual entries and atomic bulk import of rows prepared from a spreadsheet export. Times without an offset are read as Europe/Budapest ([ADR 0008](architecture/decisions/0008-notification-time-and-calendar-day.md)).
+* **Transaction matching (main contribution):** every record is linked to an event; exact re-deliveries, confident cross-source matches and uncertain cases are told apart by an explainable rule-based score, and each decision is logged with its reason ([design](design/transaction-matching.md)). Frozen at `rules-3` after measurement.
+* **Review and correction:** uncertain matches are listed, confirmed or rejected, a wrong link can be split, and every action supersedes the previous decision.
+* **Measured matching results:** synthetic labelled datasets, a leak-free dev/test protocol and the store-every-row baseline ([results](evaluation/README.md)).
+* **Rule-based categorization:** the baseline for the planned hybrid and LLM categorizers ([result](evaluation/results/2026-11-08-categorization-rules.md)).
+* **Authentication:** per-member API tokens for the Android app ([ADR 0009](architecture/decisions/0009-api-tokens.md)); password sign-in for the web app with an HttpOnly session cookie and CSRF protection ([ADR 0010](architecture/decisions/0010-web-sign-in.md)); every endpoint has a cross-group access test.
+* **HTTP API:** FastAPI with an OpenAPI schema and request size limits ([API guide](guides/api.md)).
+* **Web app:** sign-in, review queue, event detail with split, decision history ([web/](../web/README.md)).
+* **Android app:** forwards OTP Bank transaction notifications with an outbox and retries that never create a second event; tested on the emulator ([clients/android/](../clients/android/README.md)).
+* **Storage and structure:** SQLite with schema migrations; separate packages for API, core, ingestion, categorization, matching and storage ([finsync/](../finsync/README.md)); automated tests ([tests/](../tests/README.md)).
 
 ### Planned — not yet implemented
 
-* **Match review and correction:** Handling of uncertain matches, user confirmation, and correction of incorrect decisions.
-* **Measured matching results:** Evaluation dataset and runner, compared with the store-every-row baseline.
-* **Web app:** Browser-based interface for reviewing events and matches, correcting decisions, manual entry and file import.
-* **Android integration:** Collection of supported banking notification data on an Android device.
-* **Spreadsheet input:** Import of spreadsheet exports; a direct Google Sheets script only if time allows.
-* **LLM-based categorization:** Comparison of language-model categorization against the existing rule-based baseline.
-* **Authentication and stronger access control:** Establishing user identity rather than trusting a client-supplied identifier.
-* **Security and privacy evaluation:** Testing access-control boundaries, input validation, data minimization, and other relevant safeguards.
+* **PostgreSQL** behind the same storage interface, with Docker Compose; SQLite stays for fast tests ([ADR 0006](architecture/decisions/0006-framework-based-stack.md)).
+* **File import** of spreadsheet exports with `import_batch_id`; a direct Google Sheets script only if time allows.
+* **Web app:** overview with totals (W2), manual entry (W6), import preview (W7), settings and token management (W8).
+* **Hybrid and LLM categorization,** measured against the rule-based baseline; category correction and money transfers between the group's own accounts.
+* **Security and privacy evaluation:** access-control boundaries, input validation, data minimisation.
+* **Android:** test on the real phone; the token is still kept in plain app preferences.
 
-The items above describe intended development work, not completed functionality. The current parser supports only predefined notification formats; the repository does not yet provide a complete Android notification collector or direct Google Sheets integration.
+The [roadmap](planning/roadmap.md) holds the order and dates, and the [M2 milestone](planning/milestones/m2-2026-12-04-integrated-prototype.md) what is still open.
 
 All of these items are committed for this semester (Szakdolgozat I.), the Android app and spreadsheet input in a reduced scope; the order and dates are in the [roadmap](planning/roadmap.md#semester-scope).
 
@@ -57,7 +55,7 @@ Different input sources may represent the same financial event. For example, a p
 
 Simply comparing transaction amounts and timestamps is not sufficient. Two separate purchases may have the same amount and occur close together, while duplicate records may differ slightly in their descriptions or timestamps.
 
-The planned matching process will investigate how to:
+The matching process addresses how to:
 
 1. Identify potential duplicates using available transaction attributes.
 2. Distinguish duplicate records from separate but similar transactions.
@@ -65,4 +63,4 @@ The planned matching process will investigate how to:
 4. Preserve source information and make matching decisions traceable.
 5. Allow incorrect matches to be corrected.
 
-The matching strategy and its thresholds will be evaluated against a prepared dataset with known expected outcomes. The proposed design is in [design/transaction-matching.md](design/transaction-matching.md); the evaluation method is in [evaluation/evaluation-plan.md](evaluation/evaluation-plan.md).
+The matching strategy and its thresholds are evaluated against prepared datasets with known expected outcomes ([results](evaluation/README.md)). The design is in [design/transaction-matching.md](design/transaction-matching.md); the evaluation method is in [evaluation/evaluation-plan.md](evaluation/evaluation-plan.md).

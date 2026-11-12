@@ -1,3 +1,10 @@
+"""HTTP layer: the FastAPI app, request and response models, and how a caller is identified.
+
+Routes only translate between HTTP and `FinSyncService`; every rule lives in the service. Identity comes
+from an API token or the web session cookie, never from the request body or headers (ADR 0009, 0010).
+Errors are 400/403/404/409/413 with `{"error": ...}`, never 422 ([API guide](../../docs/guides/api.md)).
+"""
+
 from decimal import Decimal
 from typing import Annotated, Any, Literal
 

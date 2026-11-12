@@ -1,3 +1,8 @@
+"""Rule-based categorization: the first matching keyword pattern in the description decides the category.
+
+The baseline the hybrid and LLM categorizers are measured against ([design](../../docs/design/categorization.md)).
+"""
+
 from __future__ import annotations
 
 import re

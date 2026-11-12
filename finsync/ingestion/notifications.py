@@ -1,3 +1,9 @@
+"""Bank notification text to a `ParsedNotification`: the OTP Bank format and the synthetic prototype formats.
+
+Only known formats are accepted; anything else raises `ValueError`, which the API answers with 400 so the
+phone drops it instead of retrying ([README](README.md)).
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

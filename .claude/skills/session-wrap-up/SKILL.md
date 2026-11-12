@@ -5,7 +5,7 @@ description: Use at the end of every FinSync working session, before the pull re
 
 # Session wrap-up
 
-- Version: 1.0 (2026-11-12)
+- Version: 1.1 (2026-11-12)
 - Owner: Bence Varga
 - Why it exists: every session ends with the same bookkeeping (time log, roadmap, milestone checklist, AI-usage log, one pull request). Done from memory, totals drifted and decisions were missed. This skill makes the closing steps the same every time and checks the arithmetic.
 
@@ -64,6 +64,7 @@ Run every gate and copy the result lines into the report. A gate that cannot run
 ```bash
 python -m unittest discover -s tests                    # all OK
 python .claude/skills/session-wrap-up/check_time_log.py   # OK
+python .claude/skills/docs-and-comments/check_docs.py     # OK (links, folder READMEs, module docstrings)
 cd web && npm run lint && npm test && npm run build      # only if web/ changed in the session
 git status --short                                       # nothing left uncommitted that belongs to the session
 ```
@@ -94,3 +95,4 @@ A hit is checked by hand; synthetic test tokens and `noreply@anthropic.com` in a
 | Version | Date | Change |
 | --- | --- | --- |
 | 1.0 | 2026-11-12 | First version, from the closing steps of the sessions between 2026-10-17 and 2026-11-12, with a checker for the weekly totals. |
+| 1.1 | 2026-11-12 | The documentation checker of the docs-and-comments skill joins the self-check. |

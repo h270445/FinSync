@@ -1,3 +1,8 @@
+"""Normalisation for matching: direction, whole currency units, the local calendar day and merchant tokens.
+
+Calendar days are taken in Europe/Budapest (ADR 0008).
+"""
+
 from __future__ import annotations
 
 from datetime import date, datetime

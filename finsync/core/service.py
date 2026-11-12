@@ -1,3 +1,10 @@
+"""Application core: every use case (ingest, manual and bulk entry, review, split) as one `FinSyncService`.
+
+Each public method first checks that the member belongs to the group, then runs its writes in one
+storage transaction, so a refused or failing request leaves the database unchanged. Every record goes
+through the same matching pipeline whatever its source ([matching design](../../docs/design/transaction-matching.md)).
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
