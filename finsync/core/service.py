@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
+import json
 import re
 from typing import Any
 import uuid
@@ -83,10 +84,42 @@ class FinSyncService:
         if not self._storage.is_user_in_group(user_id, group_id):
             raise AuthorizationError("User is not authorized for this group")
 
-    def ingest_notification(self, user_id: str, group_id: str, message: str) -> StoreResult:
+    def ingest_notification(
+        self,
+        user_id: str,
+        group_id: str,
+        message: str,
+        *,
+        title: str | None = None,
+        posted_at: str | None = None,
+        source_ref: str | None = None,
+    ) -> StoreResult:
+        """Store one bank notification.
+
+        The Android app also sends the notification's title, ``posted_at`` (the phone's post time,
+        an ISO 8601 instant with offset, ADR 0008) and ``source_ref`` (the bank's transaction id
+        when the notification carries one). Their canonical JSON is the raw payload, so a retry of
+        the same notification is recognised as a re-delivery, while two identical texts with
+        different times or references stay two records.
+        """
         self.ensure_authorized(user_id, group_id)
         raw = message.strip()
         parsed = parse_notification(raw)
+        happened_at = _instant(posted_at) if posted_at is not None else parsed.happened_at
+        if happened_at is None:
+            raise ValueError("posted_at is required: the notification text has no time")
+        source_ref = (source_ref or "").strip() or None
+        if title is not None or posted_at is not None or source_ref is not None:
+            raw = json.dumps(
+                {
+                    "text": raw,
+                    "title": (title or "").strip() or None,
+                    "posted_at": happened_at.astimezone(timezone.utc).isoformat() if posted_at is not None else None,
+                    "source_ref": source_ref,
+                },
+                sort_keys=True,
+                ensure_ascii=False,
+            )
         record = {
             "user_id": user_id,
             "group_id": group_id,
@@ -96,10 +129,11 @@ class FinSyncService:
             "merchant": parsed.merchant_or_counterparty,
             "category": categorize_transaction(parsed.description + " " + parsed.merchant_or_counterparty),
             "source": "android_notification",
-            "happened_at": parsed.happened_at.astimezone(timezone.utc),
+            "happened_at": happened_at.astimezone(timezone.utc),
             "direction": direction_of(parsed.amount),
             "happened_at_precision": "minute",
             "raw_payload": raw,
+            "source_ref": source_ref,
         }
         with self._storage.transaction() as session:
             return self._store_and_match(session, record)
@@ -444,6 +478,17 @@ class FinSyncService:
             direction=direction,
             source_ref=source_ref,
         )
+
+
+def _instant(value: str) -> datetime:
+    """An ISO 8601 instant with an offset (the phone's post time), as UTC."""
+    try:
+        parsed = datetime.fromisoformat(value.strip())
+    except ValueError as error:
+        raise ValueError("posted_at must be an ISO 8601 time with an offset") from error
+    if parsed.tzinfo is None:
+        raise ValueError("posted_at must be an ISO 8601 time with an offset")
+    return parsed.astimezone(timezone.utc)
 
 
 def _contested(session: StorageSession, blocked_by_event: dict[int, Any]) -> dict[int, Any]:

@@ -105,6 +105,7 @@ class RequestLimitTest(unittest.TestCase):
             "rows not a list": ("/v1/transactions/bulk", json.dumps({"rows": "x"}).encode()),
             "one bad row": ("/v1/transactions/bulk", json.dumps({"rows": [ROW, {**ROW, "amount": "x"}]}).encode()),
             "empty message": ("/v1/notifications/ingest", json.dumps({"message": " "}).encode()),
+            "post time without offset": ("/v1/notifications/ingest", json.dumps({"message": "-4 990 Ft, Minta Anna", "posted_at": "2026-11-12T09:15"}).encode()),
             "sign-in without password": ("/v1/session", json.dumps({"login": "user-a"}).encode()),
         }
         for name, (path, content) in cases.items():

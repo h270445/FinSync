@@ -288,6 +288,12 @@ export interface components {
         NotificationIn: {
             /** Message */
             message: string;
+            /** Title */
+            title?: string | null;
+            /** Posted At */
+            posted_at?: string | null;
+            /** Source Ref */
+            source_ref?: string | null;
         };
         /** ReviewOut */
         ReviewOut: {

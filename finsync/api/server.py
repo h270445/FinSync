@@ -41,7 +41,13 @@ _SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
 
 
 class NotificationIn(BaseModel):
+    # The notification text (for Android: the notification's text, which carries the amount).
     message: str
+    # Sent by the Android app: the notification title, the phone's post time as an ISO 8601 instant
+    # with offset (ADR 0008), and the bank's transaction id when the notification carries one.
+    title: str | None = None
+    posted_at: str | None = None
+    source_ref: str | None = None
 
 
 class ManualTransactionIn(BaseModel):
@@ -331,7 +337,16 @@ def create_app(storage: FinSyncStorage) -> FastAPI:
         message = body.message.strip()
         if not message:
             raise ValueError("message is required")
-        return _result(service.ingest_notification(caller.user_id, caller.group_id, message))
+        return _result(
+            service.ingest_notification(
+                caller.user_id,
+                caller.group_id,
+                message,
+                title=body.title,
+                posted_at=body.posted_at,
+                source_ref=body.source_ref,
+            )
+        )
 
     @app.post("/v1/transactions", status_code=201)
     def create_transaction(body: ManualTransactionIn, caller: Caller) -> StoreResultOut:
