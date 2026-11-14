@@ -24,7 +24,7 @@ Each entry lists the points as actions; ticked actions link to where they were d
 - [ ] **C3. W2 overview:** monthly and per-category group totals with the split by member.
 - [ ] **C4. W8 settings / backoffice:** group and members, create and revoke API tokens without the CLI (for the Android client), override merchant–category rules.
 - [ ] **D1. One versioned agent skill** in the repository (for example the leak-free dev/test evaluation protocol, or a group-isolation and OpenAPI-sync check for new endpoints), presented in the methods chapter. (2026-11-12: five versioned skills in [`.claude/skills/`](../../.claude/skills/README.md), with a usage log in [ai-usage.md](../ai-usage.md#skill-usage); the one presented in the thesis is chosen after it has been used.)
-- [ ] **D2. Six design views in `docs/`:** use-case, page flow (W1–W8 and Android), ingest → normalise → match → store/review flowchart, event and decision state diagram (`auto_linked` / `needs_review` / `confirmed` / `rejected` / `split`), architecture, security (SHA-256 Bearer tokens and `group_id` isolation).
+- [ ] **D2. Six design views in `docs/`:** use-case, page flow (W1–W8 and Android), ingest → normalise → match → store/review flowchart, event and decision state diagram (`auto_linked` / `needs_review` / `confirmed` / `rejected` / `split`), architecture, security (SHA-256 Bearer tokens and `group_id` isolation). (2026-11-14: views 3–6 drafted in [design-views.md](../architecture/design-views.md); all six finalised at the end of November.)
 
 Open design questions on the PostgreSQL switch or the hybrid categorizer measurement can be sent to the supervisor at any time.
 
