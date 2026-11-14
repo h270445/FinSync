@@ -10,7 +10,8 @@ The member-facing web client: React 19, TypeScript, Vite, Tailwind CSS 4 and sha
 | W3 Events | `/esemenyek` | Built: filters by month, member, category, source and merchant; table on desktop, cards below 768 px |
 | W4 Event detail | `/esemenyek/:id` | Built: source records, re-delivery count, raw record toggle, split with confirmation. Decision history waits for an API endpoint |
 | W5 Review queue | `/ellenorzes` | Built: score breakdown, identical manual entry, runner-up and contested notes; confirm (with undo by split) and reject |
-| W2, W6, W7, W8 | `/`, `/uj-tetel`, `/importalas`, `/beallitasok` | Placeholders |
+| W6 Add transaction | `/uj-tetel` | Built: manual entry with Hungarian validation, optional Budapest time (date only means a calendar day), the match outcome with a link to the event or the review queue |
+| W2, W7, W8 | `/`, `/importalas`, `/beallitasok` | Placeholders |
 
 ## Run it
 
