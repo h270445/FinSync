@@ -84,6 +84,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import File
+         * @description Import a spreadsheet export (CSV): every row or none; with dry_run, only the preview.
+         */
+        post: operations["import_file_v1_imports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/matches/{decision_id}/confirm": {
         parameters: {
             query?: never;
@@ -202,6 +222,44 @@ export interface components {
             /** Results */
             results: components["schemas"]["StoreResultOut"][];
         };
+        /** ColumnMappingIn */
+        ColumnMappingIn: {
+            /**
+             * Date
+             * @default date
+             */
+            date: string;
+            /**
+             * Amount
+             * @default amount
+             */
+            amount: string;
+            /**
+             * Description
+             * @default description
+             */
+            description: string;
+            /**
+             * Merchant
+             * @default merchant
+             */
+            merchant: string | null;
+            /**
+             * Currency
+             * @default currency
+             */
+            currency: string | null;
+            /**
+             * Reference
+             * @default reference
+             */
+            reference: string | null;
+            /**
+             * Default Currency
+             * @default HUF
+             */
+            default_currency: string;
+        };
         /** DecisionOut */
         DecisionOut: {
             /** Id */
@@ -267,6 +325,64 @@ export interface components {
             /** Events */
             events: components["schemas"]["EventOut"][];
         };
+        /** ImportIn */
+        ImportIn: {
+            /** Content */
+            content?: string | null;
+            /** Xlsx Base64 */
+            xlsx_base64?: string | null;
+            /**
+             * @default {
+             *       "date": "date",
+             *       "amount": "amount",
+             *       "description": "description",
+             *       "merchant": "merchant",
+             *       "currency": "currency",
+             *       "reference": "reference",
+             *       "default_currency": "HUF"
+             *     }
+             */
+            mapping: components["schemas"]["ColumnMappingIn"];
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run: boolean;
+        };
+        /** ImportOut */
+        ImportOut: {
+            /** Import Batch Id */
+            import_batch_id: string;
+            /** Already Imported */
+            already_imported: boolean;
+            /** Rows */
+            rows: components["schemas"]["ImportRowOut"][];
+            /** Errors */
+            errors: components["schemas"]["RowErrorOut"][];
+            /** Results */
+            results: components["schemas"]["StoreResultOut"][];
+            /** Summary */
+            summary: {
+                [key: string]: number;
+            };
+        };
+        /** ImportRowOut */
+        ImportRowOut: {
+            /** Line */
+            line: number;
+            /** Happened On */
+            happened_on: string;
+            /** Amount */
+            amount: string;
+            /** Currency */
+            currency: string;
+            /** Description */
+            description: string;
+            /** Merchant */
+            merchant: string | null;
+            /** Reference */
+            reference: string | null;
+        };
         /** ManualTransactionIn */
         ManualTransactionIn: {
             /** Amount */
@@ -312,6 +428,13 @@ export interface components {
         ReviewsOut: {
             /** Reviews */
             reviews: components["schemas"]["ReviewOut"][];
+        };
+        /** RowErrorOut */
+        RowErrorOut: {
+            /** Line */
+            line: number;
+            /** Error */
+            error: string;
         };
         /** SessionOut */
         SessionOut: {
@@ -920,6 +1043,102 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BulkOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    import_file_v1_imports_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImportIn"];
+            };
+        };
+        responses: {
+            /** @description Preview (dry_run) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportOut"];
+                };
+            };
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportOut"];
                 };
             };
             /** @description Bad Request */

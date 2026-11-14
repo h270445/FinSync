@@ -17,6 +17,7 @@ from finsync.storage import FinSyncStorage
 
 NOTIFICATION = "CARD PURCHASE -4500 HUF at Tesco on 2026-09-05 16:42"
 MANUAL = {"amount": "-4500", "currency": "HUF", "description": "Weekly shop", "happened_at": "2026-09-05"}
+EXPORT = "date,amount,description,merchant\n2026-09-05,-4500,Weekly shop,Tesco\n"
 
 # Every route of finsync/api/server.py. A new route must be added here, so it gets the checks below;
 # test_every_route_is_listed fails otherwise.
@@ -24,6 +25,7 @@ ENDPOINTS = (
     ("POST", "/v1/notifications/ingest"),
     ("POST", "/v1/transactions"),
     ("POST", "/v1/transactions/bulk"),
+    ("POST", "/v1/imports"),
     ("GET", "/v1/transactions"),
     ("GET", "/v1/events"),
     ("GET", "/v1/events/{event}/decisions"),
@@ -202,6 +204,8 @@ class AuthApiTest(unittest.TestCase):
             return {"message": NOTIFICATION}
         if path.endswith("/bulk"):
             return {"rows": [MANUAL]}
+        if path.endswith("/imports"):
+            return {"content": EXPORT}
         if path.endswith("/split"):
             return {"transaction_id": self.group_1_record}
         return MANUAL

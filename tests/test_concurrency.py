@@ -7,7 +7,7 @@ import tempfile
 import threading
 import unittest
 
-from finsync.core import FinSyncService
+from finsync.core import ConflictError, FinSyncService
 from finsync.storage import FinSyncStorage
 
 TEXT = "CARD PURCHASE -4500 HUF at Tesco on 2026-09-05 16:42"
@@ -46,6 +46,29 @@ class ConcurrentIngestTest(unittest.TestCase):
         self.assertEqual(len(originals), 1)
         self.assertEqual(len(storage.list_transactions("lakas")), threads)
         self.assertEqual(len(storage.list_events("lakas")), 1)
+
+    def test_the_same_file_uploaded_at_once_is_imported_once(self) -> None:
+        content = "date,amount,description\n2026-09-05,-4500,Bolt\n2026-09-06,-990,Pekseg\n"
+        threads, start, outcomes = 4, threading.Barrier(4), []
+
+        def upload() -> None:
+            try:
+                service = FinSyncService(FinSyncStorage(self.path))
+                start.wait()
+                service.import_file("anna", "lakas", content)
+                outcomes.append("imported")
+            except ConflictError:
+                outcomes.append("refused")
+            except Exception as error:  # reported below
+                outcomes.append(repr(error))
+
+        workers = [threading.Thread(target=upload) for _ in range(threads)]
+        for worker in workers:
+            worker.start()
+        for worker in workers:
+            worker.join(timeout=60)
+        self.assertEqual(sorted(outcomes), ["imported"] + ["refused"] * (threads - 1))
+        self.assertEqual(len(FinSyncStorage(self.path).list_transactions("lakas")), 2)
 
 
 if __name__ == "__main__":

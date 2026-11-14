@@ -682,6 +682,120 @@
         ]
       }
     },
+    "/v1/imports": {
+      "post": {
+        "summary": "Import File",
+        "description": "Import a spreadsheet export (CSV): every row or none; with dry_run, only the preview.",
+        "operationId": "import_file_v1_imports_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Content Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Preview (dry_run)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportOut"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/v1/matches/{decision_id}/confirm": {
       "post": {
         "summary": "Confirm Match",
@@ -1337,6 +1451,68 @@
         ],
         "title": "BulkOut"
       },
+      "ColumnMappingIn": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "title": "Date",
+            "default": "date"
+          },
+          "amount": {
+            "type": "string",
+            "title": "Amount",
+            "default": "amount"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": "description"
+          },
+          "merchant": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Merchant",
+            "default": "merchant"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency",
+            "default": "currency"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference",
+            "default": "reference"
+          },
+          "default_currency": {
+            "type": "string",
+            "title": "Default Currency",
+            "default": "HUF"
+          }
+        },
+        "type": "object",
+        "title": "ColumnMappingIn"
+      },
       "DecisionOut": {
         "properties": {
           "id": {
@@ -1549,6 +1725,158 @@
         ],
         "title": "EventsOut"
       },
+      "ImportIn": {
+        "properties": {
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content"
+          },
+          "xlsx_base64": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Xlsx Base64"
+          },
+          "mapping": {
+            "$ref": "#/components/schemas/ColumnMappingIn",
+            "default": {
+              "date": "date",
+              "amount": "amount",
+              "description": "description",
+              "merchant": "merchant",
+              "currency": "currency",
+              "reference": "reference",
+              "default_currency": "HUF"
+            }
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "ImportIn"
+      },
+      "ImportOut": {
+        "properties": {
+          "import_batch_id": {
+            "type": "string",
+            "title": "Import Batch Id"
+          },
+          "already_imported": {
+            "type": "boolean",
+            "title": "Already Imported"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/ImportRowOut"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/RowErrorOut"
+            },
+            "type": "array",
+            "title": "Errors"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/StoreResultOut"
+            },
+            "type": "array",
+            "title": "Results"
+          },
+          "summary": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Summary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "import_batch_id",
+          "already_imported",
+          "rows",
+          "errors",
+          "results",
+          "summary"
+        ],
+        "title": "ImportOut"
+      },
+      "ImportRowOut": {
+        "properties": {
+          "line": {
+            "type": "integer",
+            "title": "Line"
+          },
+          "happened_on": {
+            "type": "string",
+            "title": "Happened On"
+          },
+          "amount": {
+            "type": "string",
+            "title": "Amount"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "merchant": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Merchant"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference"
+          }
+        },
+        "type": "object",
+        "required": [
+          "line",
+          "happened_on",
+          "amount",
+          "currency",
+          "description",
+          "merchant",
+          "reference"
+        ],
+        "title": "ImportRowOut"
+      },
       "ManualTransactionIn": {
         "properties": {
           "amount": {
@@ -1728,6 +2056,24 @@
           "reviews"
         ],
         "title": "ReviewsOut"
+      },
+      "RowErrorOut": {
+        "properties": {
+          "line": {
+            "type": "integer",
+            "title": "Line"
+          },
+          "error": {
+            "type": "string",
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "line",
+          "error"
+        ],
+        "title": "RowErrorOut"
       },
       "SessionOut": {
         "properties": {
