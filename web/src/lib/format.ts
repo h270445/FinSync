@@ -88,3 +88,10 @@ const OUTCOMES: Record<string, string> = {
 export const sourceLabel = (source: string) => SOURCES[source] ?? source
 export const categoryLabel = (category: string) => CATEGORIES[category] ?? category
 export const outcomeLabel = (outcome: string) => OUTCOMES[outcome] ?? outcome
+
+/** "4 990" or "12,50" as "4990" / "12.50"; null when it is not a positive amount with at most 2 decimals. */
+export function parseAmount(text: string): string | null {
+  const value = text.replace(/\s/g, '').replace(',', '.')
+  if (!/^\d+(\.\d{1,2})?$/.test(value) || Number(value) <= 0) return null
+  return value
+}

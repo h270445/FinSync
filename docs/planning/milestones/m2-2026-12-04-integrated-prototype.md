@@ -21,7 +21,7 @@ The core flows committed for the semester work together, with proper data handli
 - [ ] Hybrid categorizer (Hungarian merchant and keyword layer, then model/LLM layer for mixed merchants) with an abstention threshold; coverage vs. accuracy, latency and cost measured on the 200-item dataset (supervisor, 2026-11-11).
 - [x] ADR 0008 implemented: `posted_at` and `ingested_at` stored separately, offset-less times read as Europe/Budapest (2026-11-12: `posted_at` becomes `happened_at`, the arrival time is `created_at`; matching dataset v3; 2026-11-14: the phone's `device_zone` kept with the raw record).
 - [x] The test suite runs on SQLite and on PostgreSQL behind `FinSyncStorage`; the SQLite run stays fast (2026-11-12: 149 tests in about 9 s on SQLite; `tests/run_on_postgres.py` runs them on PostgreSQL 16).
-- [ ] The web app is a whole: W2 overview with group totals by month, category and member; W4 decision history from the API; W6 manual entry; W7 bulk import preview; W8 settings with members, API tokens (create, revoke) and merchant–category rule overrides.
+- [ ] The web app is a whole: W2 overview with group totals by month, category and member; W4 decision history from the API; W6 manual entry; W7 bulk import preview; W8 settings with members, API tokens (create, revoke) and merchant–category rule overrides. (W4 decision history done 2026-11-12, W6 manual entry 2026-11-14.)
 - [ ] One versioned agent skill in the repository, and the six design views in `docs/` (skills done 2026-11-12: five in [`.claude/skills/`](../../../.claude/skills/README.md); design views open).
 
 ## Checklist
