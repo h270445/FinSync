@@ -54,8 +54,9 @@ export function AppShell() {
                 >
                   <Icon className="size-4" aria-hidden />
                   {label}
+                  {/* relative: keeps the absolutely positioned sr-only text inside the scrolling nav on a phone */}
                   {counter && waiting > 0 && (
-                    <span className="ml-auto rounded-full bg-warning px-2 text-xs font-medium text-warning-foreground">
+                    <span className="relative ml-auto rounded-full bg-warning px-2 text-xs font-medium text-warning-foreground">
                       <span className="sr-only">várakozó tétel: </span>
                       {waiting}
                     </span>

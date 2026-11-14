@@ -28,7 +28,7 @@ Three different things look like duplicates. They need different handling, and m
 | Source | Re-delivery risk (A) | Identity key, strongest first | Notes |
 | --- | --- | --- | --- |
 | **Android notifications** | High: retries, restarts, re-posted notifications | Client idempotency key per notification (generated once on the phone and resent on every retry); then the fingerprint of the notification text | Some banks send an authorization and a later booking notification for one purchase; that is the same channel, so the parser must tell the two types apart (check during the Android spike). Notification time is minute-precise. |
-| **File import (CSV/XLSX export)** | High: the same file twice, overlapping date ranges | Bank transaction reference column if the export has one; else `source_ref` built from the row; whole-file hash per `import_batch_id` | Re-importing a known file is reported before anything is stored. Two identical rows inside one file are not merged automatically (two equal tickets are possible); they go to review. Exports often carry the booking date, 1–3 days after the purchase, so rows are day-precision. |
+| **File import (CSV/XLSX export)** | High: the same file twice, overlapping date ranges | Bank transaction reference column if the export has one; else `source_ref` built from the row; whole-file hash per `import_batch_id` | Re-importing a known file is reported before anything is stored. Two identical rows inside one file are not merged automatically (two equal tickets are possible); the second goes to review against the first (author's decision, 2026-11-12: better to ask than to be wrong). Exports often carry the booking date, 1–3 days after the purchase, so rows are day-precision. |
 | **Google Sheets script** | Medium: resending rows after an edit or a failed run | A stable row id column written by the script, used as `source_ref` | An edited row is a new version of the same record, not a new purchase (open question 7). |
 | **Manual entry (web app)** | Low: double submit | Idempotency key per form submission | Manual entries are the main cause of kind B; typed amounts may be rounded and the time is often day-precision. |
 
@@ -61,6 +61,7 @@ Steps 1 to 5 below run on every ingest path since 2026-10-17, on the existing SQ
 | `POST /v1/notifications/ingest` | `android_notification` + member | Fingerprint of the notification text | Yes |
 | `POST /v1/transactions` | `manual` + member | Fingerprint of the row; only with a `source_ref`, else an identical row goes to review | Yes |
 | `POST /v1/transactions/bulk` | `manual` + member | Same as manual; all rows in one transaction with one `import_batch_id` | Yes, per row |
+| `POST /v1/imports` (since 2026-11-12) | `file_import` + member | The bank's reference with amount and currency, or the row's values with its count among identical rows of the file; the file's SHA-256 as `import_batch_id`, and a known file is refused (409) | Yes, per row |
 
 Choices made while implementing, open to change:
 

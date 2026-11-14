@@ -6,6 +6,7 @@ import { LoadingRows } from '@/components/states'
 import { EventDetailPage } from '@/pages/EventDetailPage'
 import { EventsPage } from '@/pages/EventsPage'
 import { NewTransactionPage } from '@/pages/NewTransactionPage'
+import { ImportPage } from '@/pages/ImportPage'
 import { PlaceholderPage } from '@/pages/PlaceholderPage'
 import { ReviewPage } from '@/pages/ReviewPage'
 import { SignInPage } from '@/pages/SignInPage'
@@ -29,7 +30,7 @@ export function App() {
         <Route path="esemenyek/:eventId" element={<EventDetailPage />} />
         <Route path="ellenorzes" element={<ReviewPage />} />
         <Route path="uj-tetel" element={<NewTransactionPage />} />
-        <Route path="importalas" element={<PlaceholderPage title="Importálás" screen="W7" />} />
+        <Route path="importalas" element={<ImportPage />} />
         <Route path="beallitasok" element={<PlaceholderPage title="Beállítások" screen="W8" />} />
         <Route path="*" element={<PlaceholderPage title="Nincs ilyen oldal" screen="404" />} />
       </Route>

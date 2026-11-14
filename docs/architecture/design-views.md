@@ -22,6 +22,7 @@ flowchart TD
     A1[Android notification<br/>POST /v1/notifications/ingest] --> V
     A2[Manual entry, W6<br/>POST /v1/transactions] --> V
     A3[Bulk import<br/>POST /v1/transactions/bulk] --> V
+    A4[File import, W7<br/>POST /v1/imports] --> V
     V{Valid input and<br/>caller in the group?} -- no --> E[400 / 403, nothing stored]
     V -- yes --> N[Normalise: Decimal amount and sign,<br/>UTC instant or calendar day ADR 0008,<br/>merchant key, category rules]
     N --> F{Same fingerprint<br/>already stored?}
