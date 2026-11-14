@@ -69,10 +69,10 @@ Response `200` with the cookie `finsync_session` (`HttpOnly`, `Secure`, `SameSit
 The Android app sends the notification text with its title, the phone's post time and, when the notification carries one, the bank's transaction number:
 
 ```json
-{"message": "-4 990 Ft ... PELDABOLT KFT ...", "title": "...", "posted_at": "2026-11-12T09:15:00.123+00:00", "source_ref": "000000101"}
+{"message": "-4 990 Ft ... PELDABOLT KFT ...", "title": "...", "posted_at": "2026-11-12T09:15:00.123+00:00", "source_ref": "000000101", "device_zone": "Europe/Budapest"}
 ```
 
-`posted_at` must be an ISO 8601 instant with an offset; it becomes `happened_at` ([ADR 0008](../architecture/decisions/0008-notification-time-and-calendar-day.md)). A format that prints no time (OTP Bank) needs it, otherwise `400`. The four fields together identify the notification, so sending the same one again (a retry) is answered with `exact_duplicate` and counted once, while two identical texts with different references or times are two purchases. A text that matches no supported format is `400`; the app then drops it and does not retry.
+`posted_at` must be an ISO 8601 instant with an offset; it becomes `happened_at` ([ADR 0008](../architecture/decisions/0008-notification-time-and-calendar-day.md)). A format that prints no time (OTP Bank) needs it, otherwise `400`. `device_zone` is the phone's zone id at capture; it is optional, kept with the raw record for diagnosis only (travel abroad, a wrong phone clock) and never changes the time or the calendar day, and a value that does not look like a zone id is left out rather than refused. The other four fields together identify the notification, so sending the same one again (a retry) is answered with `exact_duplicate` and counted once, while two identical texts with different references or times are two purchases. A text that matches no supported format is `400`; the app then drops it and does not retry.
 
 Response `201`: `{"transaction_id": 1, "event_id": 1, "match_outcome": "separate"}`. `match_outcome` is `separate`, `auto_linked`, `needs_review` or `exact_duplicate` ([matching design](../design/transaction-matching.md)). Supported formats are listed in [finsync/ingestion/README.md](../../finsync/ingestion/README.md).
 

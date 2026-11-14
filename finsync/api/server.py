@@ -55,6 +55,8 @@ class NotificationIn(BaseModel):
     title: str | None = None
     posted_at: str | None = None
     source_ref: str | None = None
+    # The phone's IANA time zone at capture, kept with the raw record for diagnosis only (ADR 0008).
+    device_zone: str | None = None
 
 
 class ManualTransactionIn(BaseModel):
@@ -352,6 +354,7 @@ def create_app(storage: FinSyncStorage) -> FastAPI:
                 title=body.title,
                 posted_at=body.posted_at,
                 source_ref=body.source_ref,
+                device_zone=body.device_zone,
             )
         )
 
