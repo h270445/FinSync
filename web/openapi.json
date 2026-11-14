@@ -1659,6 +1659,17 @@
               }
             ],
             "title": "Source Ref"
+          },
+          "device_zone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Zone"
           }
         },
         "type": "object",

@@ -101,6 +101,7 @@ class FinSyncService:
         title: str | None = None,
         posted_at: str | None = None,
         source_ref: str | None = None,
+        device_zone: str | None = None,
     ) -> StoreResult:
         """Store one bank notification.
 
@@ -109,6 +110,10 @@ class FinSyncService:
         when the notification carries one). Their canonical JSON is the raw payload, so a retry of
         the same notification is recognised as a re-delivery, while two identical texts with
         different times or references stay two records.
+
+        ``device_zone`` (the phone's zone id when it captured the notification) is kept in
+        the raw payload for diagnosis only (ADR 0008, point 6): it decides neither the time nor the
+        calendar day, and it is not part of the identity, so a retry still counts once.
         """
         self.ensure_authorized(user_id, group_id)
         raw = message.strip()
@@ -117,16 +122,18 @@ class FinSyncService:
         if happened_at is None:
             raise ValueError("posted_at is required: the notification text has no time")
         source_ref = (source_ref or "").strip() or None
+        device_zone = _zone_name(device_zone)
+        identity = None
         if title is not None or posted_at is not None or source_ref is not None:
-            raw = json.dumps(
-                {
-                    "text": raw,
-                    "title": (title or "").strip() or None,
-                    "posted_at": happened_at.astimezone(timezone.utc).isoformat() if posted_at is not None else None,
-                    "source_ref": source_ref,
-                },
-                sort_keys=True,
-                ensure_ascii=False,
+            fields = {
+                "text": raw,
+                "title": (title or "").strip() or None,
+                "posted_at": happened_at.astimezone(timezone.utc).isoformat() if posted_at is not None else None,
+                "source_ref": source_ref,
+            }
+            identity = json.dumps(fields, sort_keys=True, ensure_ascii=False)
+            raw = identity if device_zone is None else json.dumps(
+                {**fields, "device_zone": device_zone}, sort_keys=True, ensure_ascii=False
             )
         record = {
             "user_id": user_id,
@@ -143,6 +150,8 @@ class FinSyncService:
             "raw_payload": raw,
             "source_ref": source_ref,
         }
+        if identity is not None:
+            record["identity"] = identity
         with self._storage.transaction() as session:
             return self._store_and_match(session, record)
 
@@ -208,7 +217,9 @@ class FinSyncService:
         """Store one record and link it to an event, writing the decision that explains the link."""
         group_id = record["group_id"]
         channel = _channel(record["source"], record["user_id"])
-        record["fingerprint"] = fingerprint(group_id, channel, record["raw_payload"])
+        # The identity is the raw payload unless the caller set a narrower one (the notification
+        # without its diagnostic device zone).
+        record["fingerprint"] = fingerprint(group_id, channel, record.pop("identity", record["raw_payload"]))
 
         # Step 2: exact re-delivery. A manual row without a client reference may be a second,
         # identical purchase (two bus tickets), so it goes to review instead.
@@ -499,6 +510,19 @@ def _instant(value: str) -> datetime:
     if parsed.tzinfo is None:
         raise ValueError("posted_at must be an ISO 8601 time with an offset")
     return parsed.astimezone(timezone.utc)
+
+
+_ZONE_NAME = re.compile(r"[A-Za-z0-9_+:./-]{1,64}")
+
+
+def _zone_name(value: str | None) -> str | None:
+    """The phone's zone id as sent (``Europe/Budapest``, or ``GMT+01:00`` on some phones), or None.
+
+    The zone is only a diagnostic note, so it is not checked against the zone database and a value
+    that does not look like a zone id is left out instead of refusing the notification.
+    """
+    name = (value or "").strip()
+    return name if _ZONE_NAME.fullmatch(name) else None
 
 
 def _contested(session: StorageSession, blocked_by_event: dict[int, Any]) -> dict[int, Any]:
