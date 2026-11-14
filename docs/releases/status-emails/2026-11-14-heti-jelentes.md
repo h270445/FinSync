@@ -1,7 +1,7 @@
 # 2026-11-14 — Heti jelentés (M2 felé)
 
 - Címzett: Dr. Bilicki Vilmos (válasz a 2026-11-11-i levélre)
-- Tag: nincs, heti jelentés (commit: `5f9231fa35e7ff912684d9d8782dd7e83aec5409`, a #28-as pull request utolsó kódváltozása)
+- Tag: nincs, heti jelentés (commit: `701ac41403e44d36051b2f23631985b56d872d4c`, a #28-as pull request, a #27-es beolvasztása után)
 - Státusz: vázlat
 
 ---
@@ -41,7 +41,7 @@ Köszönöm a november 11-i visszajelzését. Ezen a héten a levelében kért M
 - W2 és W8, majd a hibrid kategorizáló és a mérése, végül a hat tervezési nézet véglegesítése és a teljes bemutató.
 - Ezen a héten (november 9–15.) kb. 6 órát dolgoztam a projekten; a részletes időnapló: `docs/planning/time-log.md`.
 
-A repository: https://github.com/h270445/FinSync (commit: https://github.com/h270445/FinSync/commit/5f9231fa35e7ff912684d9d8782dd7e83aec5409)
+A repository: https://github.com/h270445/FinSync (commit: https://github.com/h270445/FinSync/commit/701ac41403e44d36051b2f23631985b56d872d4c)
 
 Üdvözlettel:  
 Varga Bence Tamás  
