@@ -25,6 +25,7 @@ Time spent on the project, for the weekly-effort figure the supervisor asked for
 | 2026-11-12 | 10:06–12:15 | 129 | Plan for finishing the week; five versioned agent skills (endpoint and screen checklist, session wrap-up, dev/test evaluation, bank notification privacy, status e-mail) with a time-log checker and a capture-masking script; web sign-in (W1) with e-mail or member id, session cookie and CSRF token, ADR 0010; Android forwarding and OTP ingest, two emulator test runs through Remote Control, the android-emulator-e2e skill; ADR 0008 in code with matching dataset v3; docs-and-comments skill and thesis map; storage on SQLAlchemy and Alembic with PostgreSQL and Docker Compose; plan and AI-usage docs | Project messages and commits |
 | 2026-11-14 | 12:43–12:55 | 12 | ADR 0008 checked against the code; the phone's `device_zone` sent by the Android app and kept with the raw record outside the notification's identity; tests, web types, Android build, PR | Project messages and commits |
 | 2026-11-14 | 19:23–19:40 | 17 | W6 manual entry screen (form, Hungarian validation, Budapest time, match outcome) with tests and a browser check; summary of the supervisor's diagram expectations (D2) | Project messages and commits |
+| 2026-11-14 | 19:40–20:45 | 65 | Design views 3–6 as Mermaid drafts (flowchart, states, architecture, security), rendered and checked; weekly status e-mail to the supervisor; PR update | Project messages and commits |
 
 ## Weekly totals
 
@@ -36,5 +37,5 @@ Time spent on the project, for the weekly-effort figure the supervisor asked for
 | 2026-10-19 – 10-25 | 63 | 1.1 |
 | 2026-10-26 – 11-01 | 264 | 4.4 |
 | 2026-11-02 – 11-08 | 149 | 2.5 |
-| 2026-11-09 – 11-15 | 262 | 4.4 |
-| **Total** | **1116** | **18.6** |
+| 2026-11-09 – 11-15 | 327 | 5.5 |
+| **Total** | **1181** | **19.7** |
