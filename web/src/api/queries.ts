@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { api, unwrap } from './client'
+import { api, type ManualTransaction, unwrap } from './client'
 import type { components } from './schema'
 
 export function useEvents() {
@@ -59,6 +59,15 @@ export function useSplitEvent() {
           body: { transaction_id: transactionId },
         }),
       ),
+    onSuccess,
+  })
+}
+
+/** W6 manual entry. A new record may create an event, join one or open a review, so everything is refetched. */
+export function useCreateTransaction() {
+  const onSuccess = useInvalidateAll()
+  return useMutation({
+    mutationFn: async (body: ManualTransaction) => unwrap(await api.POST('/v1/transactions', { body })),
     onSuccess,
   })
 }

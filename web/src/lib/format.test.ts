@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { describeDelta, formatAmount, formatDate, formatDateTime, formatScore, localMonth } from './format'
+import { describeDelta, formatAmount, formatDate, formatDateTime, formatScore, localMonth, parseAmount } from './format'
 
 // Intl uses no-break spaces as thousand separators; compare with plain spaces.
 const plain = (text: string | null) => text?.replace(/\s/g, ' ')
@@ -52,4 +52,14 @@ describe('describeDelta', () => {
 
 it('formats scores with a decimal comma', () => {
   expect(formatScore(0.8)).toBe('0,80')
+})
+
+describe('parseAmount', () => {
+  it('reads Hungarian amounts', () => {
+    expect(parseAmount('4 990')).toBe('4990')
+    expect(parseAmount('12,50')).toBe('12.50')
+    expect(parseAmount('0')).toBeNull()
+    expect(parseAmount('-5')).toBeNull()
+    expect(parseAmount('1,234')).toBeNull()
+  })
 })

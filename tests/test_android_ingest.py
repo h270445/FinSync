@@ -1,4 +1,4 @@
-"""Android ingest: the OTP Bank format, posted_at and source_ref (ADR 0008, M2 Android app).
+"""Android ingest: the OTP Bank format, posted_at, source_ref and device_zone (ADR 0008, M2 Android app).
 
 Every notification text here is made up; it follows the masked shapes recorded in
 docs/design/android-notification-spike.md (2026-10-27 and 2026-10-28).
@@ -7,11 +7,13 @@ docs/design/android-notification-spike.md (2026-10-27 and 2026-10-28).
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import json
 import os
 import tempfile
 import unittest
 
 from fastapi.testclient import TestClient
+from sqlalchemy import text as sql
 
 from finsync.api import create_app
 from finsync.core import FinSyncService, TokenService
@@ -80,6 +82,12 @@ class AndroidIngestServiceTest(unittest.TestCase):
     def _stored(self, transaction_id: int):
         return next(tx for tx in self.storage.list_transactions("lakas") if tx.id == transaction_id)
 
+    def _raw(self, transaction_id: int) -> dict:
+        # The raw payload is stored for audit and diagnosis and has no read API, so the test reads the column.
+        with self.storage._engine.connect() as connection:
+            raw = connection.execute(sql("SELECT raw_payload FROM transactions WHERE id = :id"), {"id": transaction_id}).scalar_one()
+        return json.loads(raw)
+
     def _ingest(self, text: str = PURCHASE, **fields):
         fields = {"title": PURCHASE_TITLE, "posted_at": POSTED_AT, "source_ref": "000000101", **fields}
         return self.service.ingest_notification("anna", "lakas", text, **fields)
@@ -126,6 +134,31 @@ class AndroidIngestServiceTest(unittest.TestCase):
             reviews = self.service.list_open_reviews("anna", "lakas")
             self.assertEqual([item.candidate_event.id for item in reviews], [manual.event_id])
 
+    def test_the_device_zone_is_kept_for_diagnosis_only(self) -> None:
+        # ADR 0008, point 6: a purchase captured abroad keeps its instant; the zone is only recorded.
+        result = self._ingest(posted_at="2026-11-12T23:30:00+00:00", device_zone="America/New_York")
+        stored = self._stored(result.transaction_id)
+        self.assertEqual(stored.happened_at, datetime(2026, 11, 12, 23, 30, tzinfo=timezone.utc))
+        self.assertEqual(self._raw(result.transaction_id)["device_zone"], "America/New_York")
+        # Not part of the identity: the same notification sent again, with or without a zone, counts once.
+        for zone in ("America/New_York", None, "Europe/Budapest"):
+            with self.subTest(zone=zone):
+                again = self._ingest(posted_at="2026-11-12T23:30:00+00:00", device_zone=zone)
+                self.assertEqual(again.match_outcome, "exact_duplicate")
+                self.assertEqual(again.event_id, result.event_id)
+
+    def test_without_a_device_zone_the_raw_payload_is_unchanged(self) -> None:
+        self.assertNotIn("device_zone", self._raw(self._ingest().transaction_id))
+
+    def test_an_odd_device_zone_never_costs_the_notification(self) -> None:
+        # Some phones report a fixed offset; anything that is not a zone id is left out, not refused.
+        kept = self._ingest(source_ref="000000301", device_zone="GMT+01:00")
+        self.assertEqual(self._raw(kept.transaction_id)["device_zone"], "GMT+01:00")
+        for index, junk in enumerate(("", "Europe/Budapest; DROP TABLE", "x" * 65)):
+            with self.subTest(junk=junk):
+                result = self._ingest(source_ref=f"00000040{index}", device_zone=junk)
+                self.assertNotIn("device_zone", self._raw(result.transaction_id))
+
     def test_refused_input_stores_nothing(self) -> None:
         cases = {
             "no time anywhere": (PURCHASE, {"posted_at": None}),
@@ -163,6 +196,11 @@ class AndroidIngestApiTest(unittest.TestCase):
         retry = self.client.post("/v1/notifications/ingest", json=body, headers=self.headers)
         self.assertEqual(retry.json()["match_outcome"], "exact_duplicate")
         self.assertEqual(retry.json()["event_id"], first.json()["event_id"])
+
+    def test_the_phone_may_send_its_time_zone(self) -> None:
+        body = {"message": TRANSFER, "posted_at": POSTED_AT, "source_ref": "000000202", "device_zone": "Europe/Budapest"}
+        response = self.client.post("/v1/notifications/ingest", json=body, headers=self.headers)
+        self.assertEqual(response.status_code, 201, response.text)
 
     def test_a_non_transaction_is_a_400_so_the_phone_does_not_retry(self) -> None:
         body = {"message": "Nyerj 10 EUR jóváírást!", "posted_at": POSTED_AT}

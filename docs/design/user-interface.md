@@ -1,6 +1,6 @@
 # User interface
 
-- Status: **In progress**: W3, W4 and W5 are built in [`web/`](../../web/README.md) (2026-11-08); the other screens are placeholders
+- Status: **In progress**: W3, W4 and W5 are built in [`web/`](../../web/README.md) (2026-11-08), W1 and W7 (2026-11-12) and W6 (2026-11-14); the other screens are placeholders
 - Date: 2026-10-09
 - Decision record: [ADR 0005](../architecture/decisions/0005-web-client-first.md)
 - Figma prompts: [figma-prompts.md](figma-prompts.md)
@@ -37,7 +37,7 @@ UI text is Hungarian, amounts in HUF (`12 990 Ft`), dates `2026. 10. 09.`. All e
 | W3 | Events | Deduplicated list: date, merchant, amount, category, source badges (notification, sheet, manual, file), review flag; filter by month, member, category, source | `GET /v1/events` | M1 side track (read-only) |
 | W4 | Event detail | The records behind one event, raw payload, source reference, import batch, decision history; **Split** action; category correction | `GET /v1/events`, `GET /v1/events/{id}/decisions`, `POST /v1/events/{id}/split` | M2 |
 | W5 | Review queue | Two records side by side, score and feature breakdown (amount, time, merchant), **Same purchase** / **Different purchases** | `GET /v1/matches/review`, `POST /v1/matches/{id}/confirm`, `.../reject` | M2 |
-| W6 | Add transaction | Manual entry form; after saving, show the match outcome | `POST /v1/transactions` | M2 |
+| W6 | Add transaction | Manual entry form (built 2026-11-14): direction, amount, currency, date with an optional Budapest time (without a time the entry is a calendar day), merchant, description; the member is the signed-in one and the category is automatic; after saving, the match outcome with a link to the event or the review queue | `POST /v1/transactions` | M2 |
 | W7 | Import file | Upload a spreadsheet export, preview rows, import, summary per outcome (new, linked, needs review, re-delivery, rejected rows with reasons) | `POST /v1/imports` (`dry_run` for the preview; implemented 2026-11-12, CSV and XLSX) | M2 |
 | W8 | Settings | Member and group settings, see [Settings](#settings) | Token and settings endpoints (planned, M2) | M2 |
 

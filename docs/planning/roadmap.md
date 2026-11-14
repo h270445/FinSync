@@ -1,6 +1,6 @@
 # Semester roadmap (Szakdolgozat I., autumn 2026)
 
-- Last updated: 2026-11-12
+- Last updated: 2026-11-14
 - Owner: Bence Varga
 
 This roadmap turns the course deadlines into concrete, verifiable steps. Each deadline has a target file in [milestones/](milestones/README.md) with acceptance criteria and a checklist.

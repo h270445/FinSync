@@ -79,6 +79,8 @@ class Forwarder(context: Context) {
             .put("title", title ?: JSONObject.NULL)
             .put("posted_at", POSTED_AT.format(Instant.ofEpochMilli(postTimeMs).atOffset(ZoneOffset.UTC)))
             .put("source_ref", OtpFormat.sourceReference(tag) ?: JSONObject.NULL)
+            // The phone's zone, for diagnosis only; the server decides the day in Europe/Budapest (ADR 0008).
+            .put("device_zone", ZoneId.systemDefault().id)
         synchronized(LOCK) {
             if (key in readSentKeys() || readOutbox().any { it.optString("key") == key }) return
             outbox.appendText(JSONObject().put("key", key).put("payload", payload).toString() + "\n")

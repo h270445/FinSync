@@ -410,6 +410,8 @@ export interface components {
             posted_at?: string | null;
             /** Source Ref */
             source_ref?: string | null;
+            /** Device Zone */
+            device_zone?: string | null;
         };
         /** ReviewOut */
         ReviewOut: {
