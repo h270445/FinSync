@@ -28,6 +28,7 @@ Time spent on the project, for the weekly-effort figure the supervisor asked for
 | 2026-11-14 | 12:43–12:55 | 12 | ADR 0008 checked against the code; the phone's `device_zone` sent by the Android app and kept with the raw record outside the notification's identity; tests, web types, Android build, PR | Project messages and commits |
 | 2026-11-14 | 19:23–19:40 | 17 | W6 manual entry screen (form, Hungarian validation, Budapest time, match outcome) with tests and a browser check; summary of the supervisor's diagram expectations (D2) | Project messages and commits |
 | 2026-11-14 | 19:40–20:45 | 65 | Design views 3–6 as Mermaid drafts (flowchart, states, architecture, security), rendered and checked; weekly status e-mail to the supervisor; PR update | Project messages and commits |
+| 2026-11-16 | 19:36–19:42 | 6 | Supervisor reply to the weekly report stored and summarised; ADR 0010 accepted; W2, W8, hybrid categorizer measurement, real-phone test, skill choice and Hungarian manuscript skeleton added to the plan, M2 and the thesis map | Project messages and commits |
 
 ## Weekly totals
 
@@ -40,4 +41,5 @@ Time spent on the project, for the weekly-effort figure the supervisor asked for
 | 2026-10-26 – 11-01 | 264 | 4.4 |
 | 2026-11-02 – 11-08 | 149 | 2.5 |
 | 2026-11-09 – 11-15 | 363 | 6.1 |
-| **Total** | **1217** | **20.3** |
+| 2026-11-16 – 11-22 | 6 | 0.1 |
+| **Total** | **1223** | **20.4** |

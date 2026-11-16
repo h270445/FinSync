@@ -1,6 +1,6 @@
 # Design views
 
-- Status: **Draft** (2026-11-14). Views 3–6 are first drafts drawn from the code and the design documents; all six are finalised at the end of November, after the W2, W7 and W8 screens are settled, and before M2 (2026-12-04).
+- Status: **Draft** (2026-11-14). Views 3–6 are first drafts drawn from the code and the design documents; all six are finalised at the end of November, after the W2, W7 and W8 screens are settled, and before M2 (2026-12-04). The supervisor judged views 3–6 accurate and consistent with the code and agreed to finalising views 1–2 after W2 and W8 ([feedback, 2026-11-16](../planning/supervisor-feedback.md#2026-11-16--reply-to-the-weekly-report-of-nov-915)).
 - Asked for by the supervisor: six design views that form one coherent frame ([feedback, action D2](../planning/supervisor-feedback.md#2026-11-11--reply-to-the-m1-e-mail)).
 - Notation: [Mermaid](https://mermaid.js.org/), which GitHub renders, so each view is versioned and reviewed like code. Names (states, routes, packages, screen ids) are the ones used in the code, so the views can be checked against it.
 

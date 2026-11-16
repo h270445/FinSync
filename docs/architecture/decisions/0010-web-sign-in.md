@@ -1,6 +1,6 @@
 # 0010. Web sign-in: e-mail or member id, scrypt password hash, HttpOnly session cookie
 
-- Status: Proposed
+- Status: Accepted (implemented 2026-11-12, approved by the supervisor 2026-11-16)
 - Date: 2026-11-12
 
 ## Context

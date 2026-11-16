@@ -1,6 +1,6 @@
 # Thesis map
 
-Where the material for the thesis, the report and the defence already lives in the repository (BSc thesis, written in Szakdolgozat II.). It points to evidence; it does not repeat it. Kept up to date with the [docs-and-comments skill](../.claude/skills/docs-and-comments/SKILL.md): a session that adds a decision, a measurement or a limitation adds its link here.
+Where the material for the thesis, the report and the defence already lives in the repository (BSc thesis, written in Szakdolgozat II.). It points to evidence; it does not repeat it. The thesis itself is written in Hungarian in the SZTE format; the skeleton of chapters 1–3 is started in December from this map (supervisor, 2026-11-16), the English `docs/` stay as the supporting package for the electronic appendix. Kept up to date with the [docs-and-comments skill](../.claude/skills/docs-and-comments/SKILL.md): a session that adds a decision, a measurement or a limitation adds its link here.
 
 ## Chapters and their evidence
 
@@ -15,7 +15,7 @@ Where the material for the thesis, the report and the defence already lives in t
 | Security and privacy | [Security and privacy](architecture/security-and-privacy.md), ADRs [0009](architecture/decisions/0009-api-tokens.md) and [0010](architecture/decisions/0010-web-sign-in.md), [bank-notification-privacy skill](../.claude/skills/bank-notification-privacy/SKILL.md) |
 | Evaluation method | [Evaluation plan](evaluation/evaluation-plan.md), [datasets](evaluation/datasets.md), [dev-test-evaluation skill](../.claude/skills/dev-test-evaluation/SKILL.md) |
 | Results | [All result reports](evaluation/README.md), key ones: [matching rules-3 (Oct 29)](evaluation/results/2026-10-29-matching-rules-3.md), [regression check on dataset v3 (Nov 12)](evaluation/results/2026-11-12-matching-rules-3-v3.md) |
-| Development method and AI use | [AI usage log, author decisions, skill usage](ai-usage.md), [agent skills](../.claude/skills/README.md), [time log](planning/time-log.md) |
+| Development method and AI use | [AI usage log, author decisions, skill usage](ai-usage.md), [agent skills](../.claude/skills/README.md), [time log](planning/time-log.md); 1 (at most 2) skills presented in depth, candidates [endpoint-and-screen-checklist](../.claude/skills/endpoint-and-screen-checklist/SKILL.md) and [dev-test-evaluation](../.claude/skills/dev-test-evaluation/SKILL.md) ([supervisor, 2026-11-16](planning/supervisor-feedback.md#2026-11-16--reply-to-the-weekly-report-of-nov-915)) |
 | Limitations and future work | "Known limits" in [datasets](evaluation/datasets.md), "Consequences" of each ADR, [roadmap risks and Szakdolgozat II.](planning/roadmap.md) |
 
 ## Defence questions
@@ -31,6 +31,8 @@ Questions the committee is likely to ask, and where the answer is backed. A ques
 | Why synthetic data, and how realistic is it? | [Datasets](evaluation/datasets.md), [Android spike](design/android-notification-spike.md) (masked real formats) |
 | How is sensitive financial data protected? | [Security and privacy](architecture/security-and-privacy.md), ADRs [0009](architecture/decisions/0009-api-tokens.md), [0010](architecture/decisions/0010-web-sign-in.md); *open*: the December security evaluation |
 | Why scrypt and not Argon2? | [ADR 0010](architecture/decisions/0010-web-sign-in.md) |
-| Rules or LLM for categorization? | [Categorization design](design/categorization.md); *open*: the hybrid categorizer measurement (M2) |
+| Rules or LLM for categorization? | [Categorization design](design/categorization.md), [baseline result](evaluation/results/2026-11-08-categorization-rules.md); *open*: the hybrid categorizer measurement (coverage–accuracy curve, latency, cost; Nov 23–27) |
+| Do the totals count a purchase twice? | *open*: W2 overview built on deduplicated events, transfers within the group excluded, items waiting for review flagged (M2) |
+| Is the work balanced (volume, UI, algorithmic depth)? | [Supervisor feedback, 2026-11-16](planning/supervisor-feedback.md#2026-11-16--reply-to-the-weekly-report-of-nov-915): volume outstanding, L3–L4 complexity, G3 UI closed by W2 and W8 |
 | How was AI used, and how was its output checked? | [AI usage](ai-usage.md), [agent skills](../.claude/skills/README.md) |
 | What does the system not do? | Scope in the [overview](overview.md), "Known limits" in [datasets](evaluation/datasets.md) |
