@@ -1,6 +1,6 @@
 # Categorization of ambiguous purchases
 
-- Status: **Partly implemented**: group merchant rules, transfers and the deterministic layer with the built-in Hungarian dictionary (2026-11-19); the LLM layer, category correction, review and measurement are planned for Nov 23–27
+- Status: **Partly implemented**: group merchant rules, transfers and the deterministic layer with the built-in Hungarian dictionary (2026-11-19); the LLM layer and its measurement runner (2026-11-19, [ADR 0011](../architecture/decisions/0011-llm-categorization-layer.md); not yet called when a record is stored); category correction, review, wiring the LLM into the core and the measured run are planned for Nov 23–27
 - Date: 2026-10-17
 
 ## Summary
@@ -44,6 +44,8 @@ The first step that gives an answer wins:
 
    **Built 2026-11-19 ([`dictionary.py`](../../finsync/categorization/dictionary.py), [`hybrid.py`](../../finsync/categorization/hybrid.py)):** steps 3–4 as the hybrid categorizer's deterministic layer, `categorize_record()`. Below the group's rules it uses a built-in Hungarian dictionary (version `hu-1`): 96 merchant keys and 179 keywords (SPAR, Tesco, dm, MOL, MÁV-START, BKK, Wolt, MVM, Telekom, Benu, H&M, IKEA, …), where the mixed-assortment ones are marked, with the keywords in Hungarian and English, matched accent-free, with `*` as a word prefix for Hungarian suffixes ("étterem*" covers "étteremben"). Within the layer: a clear merchant (`high`) beats keywords; keywords naming one category are `high`, several are `low`; a mixed merchant's usual category comes last and is `low`, so "Tesco" with "zokni" is clothing. With no answer the result is `other` with source `none`, the case the LLM layer will take. The dictionary was written from general knowledge, not from the labelled dataset; because both name the common Hungarian chains, the measurement (Nov 23–27) reports this overlap next to the dictionary's numbers. The keyword baseline in `rules.py` is unchanged.
 5. **LLM**, only when the steps above give nothing or only `low`. It must answer with one allowed category or `unknown`; anything else is rejected. Its answer is always `low` unless it agrees with a rule.
+
+   **Built 2026-11-19 ([`llm.py`](../../finsync/categorization/llm.py), [ADR 0011](../architecture/decisions/0011-llm-categorization-layer.md)):** five answers per record; the share of the most frequent category is the confidence. At or above the abstention threshold (tuned on dev) the LLM category is settled (`llm`, `high`); below it the record is "Bizonytalan": the dictionary's `low` suggestion is kept, else the LLM's top answer as a `low` suggestion, else `uncategorized`. This replaces "always `low` unless it agrees with a rule" with a computed, measured confidence; agreement with a rule is not used as a bonus in the first measurement.
 6. Otherwise `uncategorized`.
 
 When events are linked by matching, the event takes the highest-precedence category of its records, so a manual "clothing" beats the notification's guessed "groceries".
@@ -51,11 +53,21 @@ When events are linked by matching, the event takes the highest-precedence categ
 ## LLM rules
 
 - **Abstaining is a valid answer.** The prompt lists the allowed categories plus `unknown`, and states that a mixed-assortment merchant without further detail is `unknown` or the usual category marked uncertain. A wrong confident answer is the worst outcome, the same principle as false merges in matching.
-- **Structured output, temperature 0**, validated against the allowed list ([security](../architecture/security-and-privacy.md)).
+- **Structured output**, validated against the allowed list. (Temperature 0 was planned; current models no longer take a temperature, so the answer varies between calls and that variation is used as the confidence, see below.) ([security](../architecture/security-and-privacy.md)).
 - **Only description, merchant and amount are sent**, never member names or group data.
 - **The group's own corrections go into the prompt as examples** (few-shot), so the model learns household habits without fine-tuning.
 - **Self-reported confidence is not trusted**; confidence comes from agreement with rules or memory.
 - Results are cached by merchant key and description, so the same text is not sent twice.
+
+## When the LLM is called (proposed by the author, 2026-11-19)
+
+Before the LLM is asked, the members get the chance to set an uncertain category themselves; when the LLM runs is a setting. Details proposed on 2026-11-19, awaiting the author's confirmation, scheduled for Nov 23–27 with the category correction:
+
+- **Group setting, admins only (W8):** *never* (default, because data leaves the system), *X hours after the purchase* (24 by default), *daily at a set time*, *weekly on a set day and time*. A member only chooses whether to be notified about uncertain items.
+- **"Ask for a suggestion now"** on selected uncertain items works in every mode.
+- **Manual first:** the "uncertain categories" filter shows the dictionary's suggestion and two or three quick choices; a member's choice is `user`, never overwritten, and teaches merchant memory; a scheduled run skips items decided in the meantime.
+- **Cost guard:** a monthly budget per group (the run stops and says so when it is used up); daily and weekly runs can use the provider's batch interface at half price; identical texts are sent once (cache); an optional small-amount limit below which the LLM is not asked.
+- **Implementation:** each uncertain event gets a due time (`llm_due_at`) from the group setting; an in-process task processes due events every few minutes, so no external scheduler is needed. The measurement is unaffected: it measures the answers, not their timing.
 
 ## Per input platform
 
@@ -72,7 +84,7 @@ When the category is uncertain, the member is asked with a short reason and the 
 
 **When to ask.** A model's self-reported percentage is not calibrated, so it is not used directly. Confidence is computed instead:
 
-- the probability of the top category from token log-probabilities over the allowed list, where the provider exposes them, or the share of the top answer in five samples otherwise;
+- the probability of the top category from token log-probabilities over the allowed list, where the provider exposes them, or the share of the top answer in five samples otherwise (the provider chosen in November exposes no log-probabilities, so five samples are used);
 - **ask when the top category is below 0.80, or the gap to the second is below 0.20**, or the merchant is on the mixed-assortment list without a group memory entry, or rules and LLM disagree.
 
 0.80 and 0.20 are starting values. Like the matching thresholds they are tuned on the development split: the target is at most 5 % wrong answers among the categories set without asking, with as few questions as that allows; both rates are reported.
