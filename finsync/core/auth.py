@@ -21,6 +21,9 @@ _TOKEN_FORMAT = re.compile(r"^fs_[A-Za-z0-9_-]{43}$")
 _SHOWN_PREFIX_LENGTH = 8
 
 
+_MAX_NAME_LENGTH = 80
+
+
 class AuthenticationError(Exception):
     """Raised when a request carries no token, or one that is unknown or revoked."""
 
@@ -33,6 +36,16 @@ class Principal:
     group_id: str
     token_id: int | None = None
     session_id: int | None = None
+
+
+class WebSessionRequired(PermissionError):
+    """Raised when an API token tries to manage tokens: only a signed-in web session may (W8)."""
+
+
+def _require_web_session(principal: Principal) -> None:
+    # A leaked phone or spreadsheet token must not be able to issue new tokens or hide its tracks.
+    if principal.session_id is None:
+        raise WebSessionRequired("API tokens can be managed only from the web app, after signing in")
 
 
 def hash_token(token: str) -> str:
@@ -70,6 +83,27 @@ class TokenService:
             raise AuthenticationError("Invalid API token")
         self._storage.touch_api_token(record.id)
         return Principal(user_id=record.user_id, group_id=record.group_id, token_id=record.id)
+
+    def list_own(self, principal: Principal) -> list[ApiTokenRecord]:
+        """The caller's tokens in the caller's group, newest first. Only from a web session."""
+        _require_web_session(principal)
+        tokens = [t for t in self._storage.list_api_tokens(principal.user_id) if t.group_id == principal.group_id]
+        return sorted(tokens, key=lambda t: t.id, reverse=True)
+
+    def create_own(self, principal: Principal, name: str) -> tuple[str, ApiTokenRecord]:
+        """A new token for the caller in the caller's group, for the W8 screen. Only from a web session."""
+        _require_web_session(principal)
+        name = name.strip()
+        if not name:
+            raise ValueError("name is required, for example \"Anna phone\"")
+        if len(name) > _MAX_NAME_LENGTH:
+            raise ValueError(f"name is at most {_MAX_NAME_LENGTH} characters")
+        return self.create(principal.user_id, principal.group_id, name)
+
+    def revoke_own(self, principal: Principal, token_id: int) -> ApiTokenRecord | None:
+        """Revoke one of the caller's tokens; None when the id is not the caller's token in this group."""
+        _require_web_session(principal)
+        return self._storage.revoke_member_api_token(token_id, principal.user_id, principal.group_id)
 
     def revoke(self, token_id: int) -> bool:
         return self._storage.revoke_api_token(token_id)

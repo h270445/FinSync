@@ -458,6 +458,34 @@ class FinSyncStorage:
             )
         return cursor.rowcount == 1
 
+    def revoke_member_api_token(self, token_id: int, user_id: str, group_id: str) -> ApiTokenRecord | None:
+        """Revoke one of a member's own tokens in a group (already revoked is fine); None if it is not theirs."""
+        with self._session() as connection:
+            connection.execute(
+                """
+                UPDATE api_tokens SET revoked_at = ?
+                WHERE id = ? AND user_id = ? AND group_id = ? AND revoked_at IS NULL
+                """,
+                (_now(), token_id, user_id, group_id),
+            )
+            row = connection.execute(
+                "SELECT * FROM api_tokens WHERE id = ? AND user_id = ? AND group_id = ?", (token_id, user_id, group_id)
+            ).fetchone()
+        return _row_to_api_token(row) if row else None
+
+    def list_group_members(self, group_id: str) -> list[tuple[str, str | None]]:
+        """The group's members with their sign-in e-mail address, if they have one."""
+        with self._session() as connection:
+            rows = connection.execute(
+                """
+                SELECT m.user_id, a.email FROM group_memberships m
+                LEFT JOIN member_accounts a ON a.user_id = m.user_id
+                WHERE m.group_id = ? ORDER BY m.user_id
+                """,
+                (group_id,),
+            ).fetchall()
+        return [(str(row["user_id"]), row["email"]) for row in rows]
+
     def list_api_tokens(self, user_id: str | None = None) -> list[ApiTokenRecord]:
         with self._session() as connection:
             if user_id is None:

@@ -30,10 +30,17 @@ ENDPOINTS = (
     ("GET", "/v1/events"),
     ("GET", "/v1/events/{event}/decisions"),
     ("GET", "/v1/overview"),
+    ("GET", "/v1/members"),
     ("GET", "/v1/matches/review"),
     ("POST", "/v1/matches/{decision}/confirm"),
     ("POST", "/v1/matches/{decision}/reject"),
     ("POST", "/v1/events/{event}/split"),
+)
+# Token management works only with the web session cookie (an API token gets 403); tests/test_tokens_api.py.
+WEB_SESSION_ENDPOINTS = (
+    ("GET", "/v1/tokens"),
+    ("POST", "/v1/tokens"),
+    ("POST", "/v1/tokens/{token}/revoke"),
 )
 # The web sign-in routes work with the session cookie, not a token; tests/test_sessions.py covers them.
 SESSION_ENDPOINTS = (
@@ -189,12 +196,17 @@ class AuthApiTest(unittest.TestCase):
 
     def test_every_route_is_listed(self) -> None:
         routes = {
-            (method, route.path.replace("{decision_id}", "{decision}").replace("{event_id}", "{event}"))
+            (
+                method,
+                route.path.replace("{decision_id}", "{decision}")
+                .replace("{event_id}", "{event}")
+                .replace("{token_id}", "{token}"),
+            )
             for route in self.app.routes
             if isinstance(route, APIRoute)
             for method in route.methods
         }
-        self.assertEqual(routes, set(ENDPOINTS) | set(SESSION_ENDPOINTS))
+        self.assertEqual(routes, set(ENDPOINTS) | set(WEB_SESSION_ENDPOINTS) | set(SESSION_ENDPOINTS))
 
     def _endpoints(self):
         for method, path in ENDPOINTS:

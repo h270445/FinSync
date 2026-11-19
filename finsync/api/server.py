@@ -30,11 +30,12 @@ from finsync.core import (
     SessionService,
     StoreResult,
     TokenService,
+    WebSessionRequired,
 )
 from finsync.core.overview import Bucket
 from finsync.core.sessions import SESSION_LIFETIME, csrf_token
 from finsync.ingestion import ColumnMapping
-from finsync.storage import EventRecord, FinSyncStorage, TransactionRecord, WebSessionRecord
+from finsync.storage import ApiTokenRecord, EventRecord, FinSyncStorage, TransactionRecord, WebSessionRecord
 
 # Request body limits. A bulk import or an export file carries many rows; every other request is one small object.
 MAX_BODY_BYTES = 64 * 1024
@@ -108,6 +109,11 @@ class ImportIn(BaseModel):
 
 class SplitIn(BaseModel):
     transaction_id: StrictInt
+
+
+class TokenIn(BaseModel):
+    # What the token is for, shown in the list, for example "Anna phone".
+    name: str
 
 
 class SignInIn(BaseModel):
@@ -254,6 +260,38 @@ class OverviewOut(BaseModel):
     transfer_count: int
 
 
+class MemberOut(BaseModel):
+    user_id: str
+    # The member's sign-in address, if they have a web password.
+    email: str | None
+    # True for the signed-in caller.
+    is_me: bool
+
+
+class MembersOut(BaseModel):
+    members: list[MemberOut]
+
+
+class TokenOut(BaseModel):
+    id: int
+    name: str
+    # The first 8 characters, to recognise the token; the token itself is never stored.
+    prefix: str
+    created_at: str
+    last_used_at: str | None
+    revoked_at: str | None
+
+
+class TokensOut(BaseModel):
+    tokens: list[TokenOut]
+
+
+class CreatedTokenOut(BaseModel):
+    # Shown once: only its hash is stored, so it cannot be retrieved again.
+    token: str
+    record: TokenOut
+
+
 class SessionOut(BaseModel):
     user_id: str
     group_id: str
@@ -367,6 +405,10 @@ def create_app(storage: FinSyncStorage) -> FastAPI:
 
     @app.exception_handler(AuthorizationError)
     async def forbidden(_: Request, error: AuthorizationError) -> JSONResponse:
+        return JSONResponse({"error": str(error)}, status_code=403)
+
+    @app.exception_handler(WebSessionRequired)
+    async def web_session_required(_: Request, error: WebSessionRequired) -> JSONResponse:
         return JSONResponse({"error": str(error)}, status_code=403)
 
     @app.exception_handler(NotFoundError)
@@ -484,6 +526,34 @@ def create_app(storage: FinSyncStorage) -> FastAPI:
         events = service.list_group_events(caller.user_id, caller.group_id)
         return EventsOut(events=[_event(event) for event in events])
 
+    @app.get("/v1/members")
+    def list_members(caller: Caller) -> MembersOut:
+        members = service.list_members(caller.user_id, caller.group_id)
+        return MembersOut(members=[
+            MemberOut(user_id=user_id, email=email, is_me=user_id == caller.user_id) for user_id, email in members
+        ])
+
+    # Token management (W8) works only with the web session cookie; an API token gets 403, so a leaked
+    # phone token cannot issue new tokens. A member sees and revokes only their own tokens in this group.
+    @app.get("/v1/tokens")
+    def list_tokens(caller: Caller) -> TokensOut:
+        service.ensure_authorized(caller.user_id, caller.group_id)
+        return TokensOut(tokens=[_token(t) for t in tokens.list_own(caller)])
+
+    @app.post("/v1/tokens", status_code=201)
+    def create_token(body: TokenIn, caller: Caller) -> CreatedTokenOut:
+        service.ensure_authorized(caller.user_id, caller.group_id)
+        secret, record = tokens.create_own(caller, body.name)
+        return CreatedTokenOut(token=secret, record=_token(record))
+
+    @app.post("/v1/tokens/{token_id}/revoke")
+    def revoke_token(token_id: int, caller: Caller) -> TokenOut:
+        service.ensure_authorized(caller.user_id, caller.group_id)
+        record = tokens.revoke_own(caller, token_id)
+        if record is None:
+            raise NotFoundError("Token not found")
+        return _token(record)
+
     @app.get("/v1/overview")
     def overview(caller: Caller, month: str | None = None) -> OverviewOut:
         result = service.overview(caller.user_id, caller.group_id, month)
@@ -559,6 +629,17 @@ def _import(result: ImportResult) -> ImportOut:
         errors=[RowErrorOut(line=error.line, error=error.error) for error in result.errors],
         results=[_result(item) for item in result.results],
         summary=summary,
+    )
+
+
+def _token(record: ApiTokenRecord) -> TokenOut:
+    return TokenOut(
+        id=record.id,
+        name=record.name,
+        prefix=record.prefix,
+        created_at=record.created_at.isoformat(),
+        last_used_at=record.last_used_at.isoformat() if record.last_used_at else None,
+        revoked_at=record.revoked_at.isoformat() if record.revoked_at else None,
     )
 
 

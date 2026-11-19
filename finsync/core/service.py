@@ -412,6 +412,11 @@ class FinSyncService:
         self.ensure_authorized(user_id, group_id)
         return self._storage.list_events(group_id)
 
+    def list_members(self, user_id: str, group_id: str) -> list[tuple[str, str | None]]:
+        """W8: the group's members (id and sign-in e-mail address)."""
+        self.ensure_authorized(user_id, group_id)
+        return self._storage.list_group_members(group_id)
+
     def overview(self, user_id: str, group_id: str, month: str | None = None) -> Overview:
         """W2: the month's totals over deduplicated events (see finsync/core/overview.py for the rules)."""
         self.ensure_authorized(user_id, group_id)
