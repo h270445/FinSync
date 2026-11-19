@@ -30,6 +30,6 @@ Privacy requirements will be considered during design, with GDPR principles such
 
 - All initial development and evaluation use synthetic test data.
 - Banking credentials are never collected or stored; only notification text or user-entered data.
-- An LLM component never gets direct database access; it receives only the fields it needs and its output is validated before use.
+- An LLM component never gets direct database access; it receives only the fields it needs and its output is validated before use. The categorization layer ([ADR 0011](decisions/0011-llm-categorization-layer.md)) sends one record's merchant, description and amount, uses a JSON schema with the allowed categories plus `unknown`, and treats any other answer as `unknown`; the measurement uses synthetic data only.
 
 How these properties are tested is in [evaluation-plan.md](../evaluation/evaluation-plan.md#3-security-and-privacy).

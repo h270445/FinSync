@@ -39,6 +39,8 @@ The goal is to determine where an LLM provides a measurable benefit over determi
 
 Ambiguous merchants (for example a supermarket that also sells clothing) are labelled separately, and abstaining is scored as its own outcome; the details are in the [categorization design](../design/categorization.md#evaluation).
 
+**Hybrid categorizer** (`python -m finsync.evaluation.hybrid`, since 2026-11-19): the dictionary layer, the LLM layer and an abstention threshold together. A record is *settled* when the dictionary answers `high` or the LLM's vote share reaches the threshold, otherwise it is "Bizonytalan". Reported: the coverage-accuracy curve over every threshold on dev; the threshold chosen on dev as the highest coverage with at most 5 % wrong settled answers (ties to the higher threshold); test once at that threshold next to the rule-based baseline; records with a dictionary merchant apart from the others (the dictionary and the dataset name the same chains); latency per call and per record; tokens and cost; every settled wrong answer by id.
+
 ## 3. Security and privacy
 
 Requirements are in [architecture/security-and-privacy.md](../architecture/security-and-privacy.md). They are verified with automated tests where possible:

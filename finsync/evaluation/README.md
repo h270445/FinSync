@@ -9,6 +9,7 @@ Tooling for the evaluation in [docs/evaluation/](../../docs/evaluation/README.md
 | `runner.py` | Replays a split through a fresh database, scores the events against the labels, and the store-every-row baseline |
 | `__main__.py` | The report (`python -m finsync.evaluation [--out docs/evaluation/results/<date>-matching.md]`): threshold sweep on dev, test split at the chosen threshold in arrival and reverse order, false merges and missed duplicates listed |
 | `categories.py` | Categorization report (`python -m finsync.evaluation.categories [--out docs/evaluation/results/<date>-categorization-rules.md]`): the rule-based categorizer with its labels mapped to the dataset's nine categories, accuracy per split, ambiguity and scenario |
+| `hybrid.py` | Hybrid categorizer report (`python -m finsync.evaluation.hybrid [--estimate \| --call-llm] [--out ...]`): dictionary layer + LLM layer + abstention threshold; coverage-accuracy curve and threshold choice on dev, test once at the chosen threshold next to the rule-based baseline, dictionary-overlap split, latency and cost, settled wrong answers by id. Without `--call-llm` it uses only cached answers (`docs/evaluation/results/llm-cache/`) and stops if one is missing |
 
 ## Rules for this folder
 
