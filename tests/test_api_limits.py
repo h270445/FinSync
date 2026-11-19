@@ -43,6 +43,10 @@ class RequestLimitTest(unittest.TestCase):
         self.assertEqual(response.status_code, 413)
         self.assertIn("larger than", response.json()["error"])
         self.assertEqual(self._stored(), 0)
+        # PUT bodies are counted too (W8 rule updates).
+        padded_rule = json.dumps({"merchant": "x" * MAX_BODY_BYTES, "category": "other"}).encode()
+        response = self.client.put("/v1/merchant-rules/1", content=padded_rule, headers=self.headers)
+        self.assertEqual(response.status_code, 413)
 
     def test_bulk_import_has_a_larger_limit(self) -> None:
         # Few, long rows: the size is what matters here, and matching cost grows with the row count.
@@ -118,6 +122,8 @@ class RequestLimitTest(unittest.TestCase):
             "sign-in without password": ("/v1/session", json.dumps({"login": "user-a"}).encode()),
             "import without content": ("/v1/imports", json.dumps({"dry_run": True}).encode()),
             "import with a bad row": ("/v1/imports", json.dumps({"content": "date,amount,description\n2026-09-05,x,Bolt\n"}).encode()),
+            "rule without category": ("/v1/merchant-rules", json.dumps({"merchant": "Bolt"}).encode()),
+            "rule with an unknown category": ("/v1/merchant-rules", json.dumps({"merchant": "Bolt", "category": "food"}).encode()),
             "import with a missing column": ("/v1/imports", json.dumps({"content": "datum,amount,description\n2026-09-05,-1,Bolt\n"}).encode()),
         }
         for name, (path, content) in cases.items():

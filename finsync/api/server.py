@@ -32,10 +32,18 @@ from finsync.core import (
     TokenService,
     WebSessionRequired,
 )
+from finsync.categorization import CATEGORIES
 from finsync.core.overview import Bucket
 from finsync.core.sessions import SESSION_LIFETIME, csrf_token
 from finsync.ingestion import ColumnMapping
-from finsync.storage import ApiTokenRecord, EventRecord, FinSyncStorage, TransactionRecord, WebSessionRecord
+from finsync.storage import (
+    ApiTokenRecord,
+    EventRecord,
+    FinSyncStorage,
+    MerchantCategoryRecord,
+    TransactionRecord,
+    WebSessionRecord,
+)
 
 # Request body limits. A bulk import or an export file carries many rows; every other request is one small object.
 MAX_BODY_BYTES = 64 * 1024
@@ -49,6 +57,8 @@ _LARGE_BODY_PATHS = {_BULK_PATH, _IMPORT_PATH}
 SESSION_COOKIE = "finsync_session"
 CSRF_HEADER = "X-CSRF-Token"
 _SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
+# Methods whose body BodySizeLimit counts.
+_BODY_METHODS = {"POST", "PUT", "PATCH"}
 
 
 # Request bodies. The service validates the values again, so the HTTP layer and the tests on the
@@ -109,6 +119,13 @@ class ImportIn(BaseModel):
 
 class SplitIn(BaseModel):
     transaction_id: StrictInt
+
+
+class MerchantRuleIn(BaseModel):
+    # The merchant as the member types it ("SPAR"); matched on its normalised words.
+    merchant: str
+    # One of the allowed categories (GET /v1/merchant-rules lists them).
+    category: str
 
 
 class TokenIn(BaseModel):
@@ -260,6 +277,23 @@ class OverviewOut(BaseModel):
     transfer_count: int
 
 
+class MerchantRuleOut(BaseModel):
+    id: int
+    merchant: str
+    # The normalised words the rule matches: "SPAR 0123 Kft." -> "spar".
+    merchant_key: str
+    category: str
+    created_by: str
+    created_at: str
+    updated_at: str
+
+
+class MerchantRulesOut(BaseModel):
+    rules: list[MerchantRuleOut]
+    # The categories a rule may name.
+    categories: list[str]
+
+
 class MemberOut(BaseModel):
     user_id: str
     # The member's sign-in address, if they have a web password.
@@ -307,7 +341,7 @@ _ERRORS: dict[int | str, dict[str, Any]] = {
 
 
 class BodySizeLimit:
-    """Rejects a POST body over the path's limit with 413, before the app parses it.
+    """Rejects a POST or PUT body over the path's limit with 413, before the app parses it.
 
     A declared ``Content-Length`` over the limit is refused at once. Every body is also counted
     as it arrives and buffered up to the limit, so chunked bodies, or a ``Content-Length`` that
@@ -318,7 +352,7 @@ class BodySizeLimit:
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if scope["type"] != "http" or scope["method"] != "POST":
+        if scope["type"] != "http" or scope["method"] not in _BODY_METHODS:
             await self.app(scope, receive, send)
             return
         limit = MAX_BULK_BODY_BYTES if scope["path"] in _LARGE_BODY_PATHS else MAX_BODY_BYTES
@@ -526,6 +560,27 @@ def create_app(storage: FinSyncStorage) -> FastAPI:
         events = service.list_group_events(caller.user_id, caller.group_id)
         return EventsOut(events=[_event(event) for event in events])
 
+    # W8 group merchant → category rules, the first layer of the hybrid categorizer.
+    @app.get("/v1/merchant-rules")
+    def list_merchant_rules(caller: Caller) -> MerchantRulesOut:
+        rules = service.list_merchant_rules(caller.user_id, caller.group_id)
+        return MerchantRulesOut(rules=[_rule(r) for r in rules], categories=list(CATEGORIES))
+
+    @app.post("/v1/merchant-rules", status_code=201)
+    def create_merchant_rule(body: MerchantRuleIn, caller: Caller) -> MerchantRuleOut:
+        return _rule(service.create_merchant_rule(caller.user_id, caller.group_id, body.merchant, body.category))
+
+    @app.put("/v1/merchant-rules/{rule_id}")
+    def update_merchant_rule(rule_id: int, body: MerchantRuleIn, caller: Caller) -> MerchantRuleOut:
+        return _rule(
+            service.update_merchant_rule(caller.user_id, caller.group_id, rule_id, body.merchant, body.category)
+        )
+
+    @app.delete("/v1/merchant-rules/{rule_id}")
+    def delete_merchant_rule(rule_id: int, caller: Caller) -> MerchantRuleOut:
+        """Deletes the rule and answers it as it was, so the screen can offer to add it back."""
+        return _rule(service.delete_merchant_rule(caller.user_id, caller.group_id, rule_id))
+
     @app.get("/v1/members")
     def list_members(caller: Caller) -> MembersOut:
         members = service.list_members(caller.user_id, caller.group_id)
@@ -537,17 +592,21 @@ def create_app(storage: FinSyncStorage) -> FastAPI:
     # phone token cannot issue new tokens. A member sees and revokes only their own tokens in this group.
     @app.get("/v1/tokens")
     def list_tokens(caller: Caller) -> TokensOut:
+        """The signed-in member's API tokens in this group. Web session cookie only; an API token gets 403."""
         service.ensure_authorized(caller.user_id, caller.group_id)
         return TokensOut(tokens=[_token(t) for t in tokens.list_own(caller)])
 
     @app.post("/v1/tokens", status_code=201)
     def create_token(body: TokenIn, caller: Caller) -> CreatedTokenOut:
+        """Issue an API token for the Android app or the Sheets script; it is shown only in this answer.
+        Web session cookie only; an API token gets 403."""
         service.ensure_authorized(caller.user_id, caller.group_id)
         secret, record = tokens.create_own(caller, body.name)
         return CreatedTokenOut(token=secret, record=_token(record))
 
     @app.post("/v1/tokens/{token_id}/revoke")
     def revoke_token(token_id: int, caller: Caller) -> TokenOut:
+        """Revoke one of the signed-in member's tokens. Web session cookie only; an API token gets 403."""
         service.ensure_authorized(caller.user_id, caller.group_id)
         record = tokens.revoke_own(caller, token_id)
         if record is None:
@@ -629,6 +688,18 @@ def _import(result: ImportResult) -> ImportOut:
         errors=[RowErrorOut(line=error.line, error=error.error) for error in result.errors],
         results=[_result(item) for item in result.results],
         summary=summary,
+    )
+
+
+def _rule(record: MerchantCategoryRecord) -> MerchantRuleOut:
+    return MerchantRuleOut(
+        id=record.id,
+        merchant=record.merchant_label,
+        merchant_key=record.merchant_key,
+        category=record.category,
+        created_by=record.created_by,
+        created_at=record.created_at.isoformat(),
+        updated_at=record.updated_at.isoformat(),
     )
 
 

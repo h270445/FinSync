@@ -74,6 +74,21 @@ class ApiTokenRecord:
 
 
 @dataclass(frozen=True)
+class MerchantCategoryRecord:
+    """A group's merchant → category rule (W8), the first layer of the hybrid categorizer."""
+
+    id: int
+    group_id: str
+    merchant_key: str
+    merchant_label: str
+    category: str
+    times_confirmed: int
+    created_by: str
+    created_at: datetime
+    updated_at: datetime
+
+
+@dataclass(frozen=True)
 class WebSessionRecord:
     """A web app session as stored: the SHA-256 hash of its id, never the id itself."""
 
@@ -486,6 +501,58 @@ class FinSyncStorage:
             ).fetchall()
         return [(str(row["user_id"]), row["email"]) for row in rows]
 
+    def list_merchant_categories(self, group_id: str) -> list[MerchantCategoryRecord]:
+        with self._session() as connection:
+            rows = connection.execute(
+                "SELECT * FROM merchant_categories WHERE group_id = ? ORDER BY merchant_key, id", (group_id,)
+            ).fetchall()
+        return [_row_to_merchant_category(row) for row in rows]
+
+    def get_merchant_category(self, group_id: str, rule_id: int) -> MerchantCategoryRecord | None:
+        with self._session() as connection:
+            row = connection.execute(
+                "SELECT * FROM merchant_categories WHERE id = ? AND group_id = ?", (rule_id, group_id)
+            ).fetchone()
+        return _row_to_merchant_category(row) if row else None
+
+    def insert_merchant_category(self, group_id: str, key: str, label: str, category: str, created_by: str) -> int:
+        """Raises ValueError when the group already has a rule for this merchant key."""
+        now = _now()
+        try:
+            with self._session() as connection:
+                return connection.insert(
+                    """
+                    INSERT INTO merchant_categories
+                        (group_id, merchant_key, merchant_label, category, created_by, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (group_id, key, label, category, created_by, now, now),
+                )
+        except IntegrityError as error:
+            raise ValueError("duplicate merchant key") from error
+
+    def update_merchant_category(self, group_id: str, rule_id: int, key: str, label: str, category: str) -> bool:
+        """False when the rule is not in the group; ValueError when another rule has the key."""
+        try:
+            with self._session() as connection:
+                cursor = connection.execute(
+                    """
+                    UPDATE merchant_categories SET merchant_key = ?, merchant_label = ?, category = ?, updated_at = ?
+                    WHERE id = ? AND group_id = ?
+                    """,
+                    (key, label, category, _now(), rule_id, group_id),
+                )
+        except IntegrityError as error:
+            raise ValueError("duplicate merchant key") from error
+        return cursor.rowcount == 1
+
+    def delete_merchant_category(self, group_id: str, rule_id: int) -> bool:
+        with self._session() as connection:
+            cursor = connection.execute(
+                "DELETE FROM merchant_categories WHERE id = ? AND group_id = ?", (rule_id, group_id)
+            )
+        return cursor.rowcount == 1
+
     def list_api_tokens(self, user_id: str | None = None) -> list[ApiTokenRecord]:
         with self._session() as connection:
             if user_id is None:
@@ -679,6 +746,13 @@ class StorageSession:
 
     def __init__(self, connection: _Connection) -> None:
         self._connection = connection
+
+    def merchant_categories(self, group_id: str) -> list[MerchantCategoryRecord]:
+        """The group's merchant rules, read in the write transaction that categorizes a new record."""
+        rows = self._connection.execute(
+            "SELECT * FROM merchant_categories WHERE group_id = ? ORDER BY id", (group_id,)
+        ).fetchall()
+        return [_row_to_merchant_category(row) for row in rows]
 
     def find_original_by_fingerprint(self, group_id: str, fingerprint: str) -> TransactionRecord | None:
         row = self._connection.execute(
@@ -977,6 +1051,20 @@ def candidate_time_range(happened_at: datetime, days: int) -> tuple[datetime, da
 
 def _optional_time(value: Any) -> datetime | None:
     return datetime.fromisoformat(str(value)) if value is not None else None
+
+
+def _row_to_merchant_category(row: Mapping[str, Any]) -> MerchantCategoryRecord:
+    return MerchantCategoryRecord(
+        id=int(row["id"]),
+        group_id=str(row["group_id"]),
+        merchant_key=str(row["merchant_key"]),
+        merchant_label=str(row["merchant_label"]),
+        category=str(row["category"]),
+        times_confirmed=int(row["times_confirmed"]),
+        created_by=str(row["created_by"]),
+        created_at=datetime.fromisoformat(str(row["created_at"])),
+        updated_at=datetime.fromisoformat(str(row["updated_at"])),
+    )
 
 
 def _row_to_api_token(row: Mapping[str, Any]) -> ApiTokenRecord:

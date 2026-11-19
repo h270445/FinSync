@@ -11,7 +11,7 @@ from sqlalchemy import create_engine, inspect
 from sqlalchemy.pool import NullPool
 
 from finsync.storage import FinSyncStorage
-from finsync.storage.database import BASELINE_REVISION
+from finsync.storage.database import BASELINE_REVISION, _head_revision
 
 
 def _describe(path: str) -> dict[str, object]:
@@ -79,7 +79,10 @@ class SchemaTest(unittest.TestCase):
         FinSyncStorage(legacy)  # reopening must not run the old migrations again
         connection = sqlite3.connect(legacy)
         try:
-            self.assertEqual(connection.execute("SELECT version_num FROM alembic_version").fetchall(), [(BASELINE_REVISION,)])
+            # Stamped with the baseline, then upgraded by the later revisions (0002: merchant_categories).
+            self.assertNotEqual(BASELINE_REVISION, _head_revision())
+            self.assertEqual(connection.execute("SELECT version_num FROM alembic_version").fetchall(), [(_head_revision(),)])
+            self.assertEqual(connection.execute("SELECT COUNT(*) FROM merchant_categories").fetchone(), (0,))
             self.assertEqual(connection.execute("SELECT MAX(version) FROM schema_version").fetchone(), (4,))
         finally:
             connection.close()

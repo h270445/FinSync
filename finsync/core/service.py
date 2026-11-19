@@ -16,7 +16,7 @@ import re
 from typing import Any
 import uuid
 
-from finsync.categorization import categorize_transaction
+from finsync.categorization import MerchantRule, categorize_transaction, find_rule, validate_rule
 from finsync.core.overview import Overview, build_overview, parse_month
 from finsync.ingestion import ColumnMapping, ImportRow, RowError, parse_export, parse_notification, parse_xlsx
 from finsync.ingestion.csv_import import normalize_content
@@ -36,6 +36,7 @@ from finsync.matching.scoring import DAY_WINDOW_DAYS
 from finsync.storage import (
     EventRecord,
     FinSyncStorage,
+    MerchantCategoryRecord,
     StorageSession,
     TransactionRecord,
     candidate_time_range,
@@ -329,6 +330,7 @@ class FinSyncService:
     def _store_and_match(session: StorageSession, record: dict[str, Any]) -> StoreResult:
         """Store one record and link it to an event, writing the decision that explains the link."""
         group_id = record["group_id"]
+        _apply_merchant_rules(session, record)
         channel = _channel(record["source"], record["user_id"])
         # The identity is the raw payload unless the caller set a narrower one (the notification
         # without its diagnostic device zone).
@@ -411,6 +413,48 @@ class FinSyncService:
     def list_group_events(self, user_id: str, group_id: str) -> list[EventRecord]:
         self.ensure_authorized(user_id, group_id)
         return self._storage.list_events(group_id)
+
+    # W8 merchant → category rules. Every member of the group may change them (author's decision,
+    # 2026-11-19: no owner role this semester). A rule applies to records stored after it, not to
+    # existing events; changing those is the category correction's job (logged).
+
+    def list_merchant_rules(self, user_id: str, group_id: str) -> list[MerchantCategoryRecord]:
+        self.ensure_authorized(user_id, group_id)
+        return self._storage.list_merchant_categories(group_id)
+
+    def create_merchant_rule(self, user_id: str, group_id: str, merchant: str, category: str) -> MerchantCategoryRecord:
+        self.ensure_authorized(user_id, group_id)
+        label, key, category = validate_rule(merchant, category)
+        try:
+            rule_id = self._storage.insert_merchant_category(group_id, key, label, category, user_id)
+        except ValueError as error:
+            raise ConflictError(f"The group already has a rule for this merchant ({key})") from error
+        return self._merchant_rule(group_id, rule_id)
+
+    def update_merchant_rule(
+        self, user_id: str, group_id: str, rule_id: int, merchant: str, category: str
+    ) -> MerchantCategoryRecord:
+        self.ensure_authorized(user_id, group_id)
+        label, key, category = validate_rule(merchant, category)
+        try:
+            updated = self._storage.update_merchant_category(group_id, rule_id, key, label, category)
+        except ValueError as error:
+            raise ConflictError(f"The group already has a rule for this merchant ({key})") from error
+        if not updated:
+            raise NotFoundError("Rule not found")
+        return self._merchant_rule(group_id, rule_id)
+
+    def delete_merchant_rule(self, user_id: str, group_id: str, rule_id: int) -> MerchantCategoryRecord:
+        self.ensure_authorized(user_id, group_id)
+        rule = self._merchant_rule(group_id, rule_id)
+        self._storage.delete_merchant_category(group_id, rule_id)
+        return rule
+
+    def _merchant_rule(self, group_id: str, rule_id: int) -> MerchantCategoryRecord:
+        rule = self._storage.get_merchant_category(group_id, rule_id)
+        if rule is None:
+            raise NotFoundError("Rule not found")
+        return rule
 
     def list_members(self, user_id: str, group_id: str) -> list[tuple[str, str | None]]:
         """W8: the group's members (id and sign-in e-mail address)."""
@@ -623,6 +667,17 @@ class FinSyncService:
             direction=direction,
             source_ref=source_ref,
         )
+
+
+def _apply_merchant_rules(session: StorageSession, record: dict[str, Any]) -> None:
+    """The group's merchant rule wins over the keyword category the record was built with (hybrid layer 1).
+
+    The rule is looked up by the merchant; a manual entry without a merchant is looked up by its description.
+    """
+    rules = [MerchantRule(r.id, r.merchant_key, r.category) for r in session.merchant_categories(record["group_id"])]
+    rule = find_rule(rules, record.get("merchant") or record.get("description"))
+    if rule is not None:
+        record["category"] = rule.category
 
 
 def _instant(value: str) -> datetime:
