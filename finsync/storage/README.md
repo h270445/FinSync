@@ -5,7 +5,7 @@ Group memberships, API tokens, web sessions, transactions, events and match deci
 | File | Contents |
 | --- | --- |
 | `database.py` | `FinSyncStorage` (opens the database, brings the schema up to date, one transaction per call, `transaction()` for a write unit), `StorageSession` (reads and writes inside one transaction), the record types |
-| `migrations/` | Alembic: `env.py` (runs on the connection `FinSyncStorage` hands over) and `versions/` (hand-written revisions; `0001_baseline.py` is the schema of SQLite version 4) |
+| `migrations/` | Alembic: `env.py` (runs on the connection `FinSyncStorage` hands over) and `versions/` (hand-written revisions; `0001_baseline.py` is the schema of SQLite version 4, `0002_merchant_categories.py` adds the group merchant rules) |
 | `__init__.py` | Public names |
 
 ## How it works
@@ -18,7 +18,7 @@ The queries are plain SQL with `?` placeholders that both databases accept, so t
 
 **Types.** Amounts are stored as decimal text (exact) and instants as UTC ISO 8601 text, on both databases, so ordering and range queries behave the same and no value changes on the way. Native `numeric` and `timestamptz` columns would be a later migration.
 
-## Schema (current, Alembic revision `0001`)
+## Schema (current, Alembic revision `0002`)
 
 | Table | Columns |
 | --- | --- |
@@ -28,6 +28,7 @@ The queries are plain SQL with `?` placeholders that both databases accept, so t
 | `web_sessions` | `id`, `user_id`, `group_id`, `session_hash` (SHA-256, unique), `created_at`, `expires_at`, `revoked_at` |
 | `transactions` | `id`, `user_id`, `group_id`, `amount` (decimal as text), `currency`, `description`, `merchant`, `category`, `source`, `happened_at` (UTC), `created_at` (arrival time), `event_id`, `direction`, `happened_at_precision`, `fingerprint`, `duplicate_of_id`, `raw_payload`, `source_ref`, `import_batch_id` |
 | `events` | `id`, `group_id`, display values copied from the primary record, `primary_transaction_id`, `review_state`, `created_at`, `updated_at` |
+| `merchant_categories` | Group merchant → category rules (W8, revision `0002`): `id`, `group_id`, `merchant_key` (normalised words, unique per group), `merchant_label` (as typed), `category`, `times_confirmed`, `created_by`, `created_at`, `updated_at` |
 | `match_decisions` | Append-only: `transaction_id`, `candidate_event_id`, `outcome`, `score`, `features` (JSON), `matcher_version`, `decided_by`, `supersedes_id`, `created_at` |
 
 ## Migrations

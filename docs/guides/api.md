@@ -6,8 +6,8 @@ Status: describes the endpoints **implemented** in `finsync/api/server.py`.
 
 - Every request needs an API token, `Authorization: Bearer fs_...`, or the web app's session cookie (see [`/v1/session`](#post-v1session)). The token or the session decides the member and the group; `X-User-Id` and `X-Group-Id` headers are ignored ([ADR 0009](../architecture/decisions/0009-api-tokens.md), [ADR 0010](../architecture/decisions/0010-web-sign-in.md)). A token wins over a cookie.
 - With the session cookie, every `POST`, `PUT`, `PATCH` and `DELETE` also needs `X-CSRF-Token: <csrf_token>` from the session; without it the answer is `403` and nothing is written.
-- Tokens are issued with `python -m finsync.api.tokens create --user <member> --group <group> --name <what for>` and revoked with `... revoke <id>`; see [getting started](getting-started.md#create-an-api-token).
-- Request and response bodies are JSON objects. Bodies are limited to 64 KiB, and to 1 MiB for `/v1/transactions/bulk` and `/v1/imports`.
+- A signed-in member issues and revokes their own tokens on the web app's settings screen (W8, [`/v1/tokens`](#get-v1tokens-post-v1tokens-post-v1tokenstoken_idrevoke)). On the server, `python -m finsync.api.tokens create --user <member> --group <group> --name <what for>` and `... revoke <id>` still work, for example for the first member; see [getting started](getting-started.md#create-an-api-token).
+- Request and response bodies are JSON objects. `POST` and `PUT` bodies are limited to 64 KiB, and to 1 MiB for `/v1/transactions/bulk` and `/v1/imports`.
 - Validation errors are `400`, not FastAPI's usual `422`.
 - The OpenAPI schema is served at `/openapi.json`, with an interactive page at `/docs`; `python -m finsync.api --openapi` prints it without starting the server.
 
@@ -17,9 +17,9 @@ Status: describes the endpoints **implemented** in `finsync/api/server.py`.
 | `200` | Read succeeded |
 | `400` | Invalid JSON, validation error (`{"error": "..."}`) |
 | `401` | No token, or a malformed, unknown or revoked one (`WWW-Authenticate: Bearer`); no valid session; a failed sign-in |
-| `403` | The member is no longer in the group, the member is not in the named group at sign-in, or a cookie request without a valid CSRF token |
+| `403` | The member is no longer in the group, the member is not in the named group at sign-in, a cookie request without a valid CSRF token, or an API token used on `/v1/tokens` (web session only) |
 | `404` | Unknown path, or an id that does not exist in the requested group |
-| `409` | A review action that no longer fits, such as answering a decision twice; a file that was already imported |
+| `409` | A review action that no longer fits, such as answering a decision twice; a file that was already imported; a second merchant rule for the same merchant |
 | `413` | A body over the size limit |
 
 ## Endpoints
@@ -40,6 +40,15 @@ Status: describes the endpoints **implemented** in `finsync/api/server.py`.
 | `POST` | `/v1/matches/{decision_id}/confirm` | Confirm: the record joins the candidate event |
 | `POST` | `/v1/matches/{decision_id}/reject` | Reject: the record stays separate and the pair is not proposed again |
 | `POST` | `/v1/events/{event_id}/split` | Move one record out of an event (undo a wrong link) |
+| `GET` | `/v1/overview` | W2: a month's totals per currency, category and member over deduplicated events |
+| `GET` | `/v1/members` | W8: the group's members |
+| `GET` | `/v1/tokens` | W8: the signed-in member's API tokens in this group (web session only) |
+| `POST` | `/v1/tokens` | W8: issue an API token, shown once (web session only) |
+| `POST` | `/v1/tokens/{token_id}/revoke` | W8: revoke one of the member's own tokens (web session only) |
+| `GET` | `/v1/merchant-rules` | W8: the group's merchant → category rules and the allowed categories |
+| `POST` | `/v1/merchant-rules` | W8: add a rule |
+| `PUT` | `/v1/merchant-rules/{rule_id}` | W8: change a rule's merchant or category |
+| `DELETE` | `/v1/merchant-rules/{rule_id}` | W8: delete a rule (answers it as it was) |
 
 These endpoints describe the current prototype. They do not imply that direct Android or Google Sheets integrations are available.
 
@@ -157,3 +166,54 @@ No body. Response `200`: `{"transaction_id": 2, "event_id": 1, "match_outcome": 
 Moves that record, with its re-deliveries, to a new event and logs a `split` decision. Response `200`: `{"transaction_id": 1, "event_id": 3, "match_outcome": "split"}`. Naming a re-delivery returns `400`, an event with a single record `409`.
 
 Design: [matching design](../design/transaction-matching.md#user-flow-and-api).
+
+### `GET /v1/overview`
+
+Query: `month=YYYY-MM` (optional; without it, the current month in Budapest time). Response `200`:
+
+```json
+{
+  "month": "2026-11",
+  "months": ["2026-11", "2026-10"],
+  "totals": [{"key": "all", "currency": "HUF", "expense": "241370", "income": "420000",
+              "event_count": 9, "review_count": 1, "review_amount": "8200"}],
+  "categories": [{"key": "housing", "currency": "HUF", "expense": "185000", "income": "0",
+                  "event_count": 1, "review_count": 0, "review_amount": "0"}],
+  "members": [{"key": "anna", "currency": "HUF", "expense": "31680", "income": "420000",
+               "event_count": 5, "review_count": 0, "review_amount": "0"}],
+  "transfer_count": 0
+}
+```
+
+The rules ([`finsync/core/overview.py`](../../finsync/core/overview.py)):
+
+- Sums are over **events**, so a purchase reported by a notification and a sheet row counts once.
+- An event belongs to the Europe/Budapest calendar month of its primary record ([ADR 0008](../architecture/decisions/0008-notification-time-and-calendar-day.md)) and to the member whose primary record it is.
+- `expense` and `income` are positive sums, never netted; every currency has its own rows.
+- Events with the direction `transfer` are left out of every sum and only counted in `transfer_count`.
+- Events waiting for review are **in** the sums and also counted in `review_count`, with their amount in `review_amount`: if the flagged record turns out to be the same purchase as another, the total is that much lower.
+- `months` lists the months that have events, newest first. A month in the wrong format returns `400`.
+
+### `GET /v1/members`
+
+Response `200`: `{"members": [{"user_id": "anna", "email": "anna@example.org", "is_me": true}, {"user_id": "balint", "email": null, "is_me": false}]}`. `email` is the sign-in address, `null` for a member without a web password.
+
+### `GET /v1/tokens`, `POST /v1/tokens`, `POST /v1/tokens/{token_id}/revoke`
+
+Only with the web session cookie (and the CSRF token for the two `POST`s). An API token gets `403`, so a leaked phone token cannot issue new tokens or revoke the member's others. A member sees and revokes only their own tokens in the session's group.
+
+`POST /v1/tokens` with `{"name": "Anna phone"}` (1–80 characters) returns `201`:
+
+```json
+{"token": "fs_...", "record": {"id": 4, "name": "Anna phone", "prefix": "fs_m2PNP", "created_at": "...", "last_used_at": null, "revoked_at": null}}
+```
+
+`token` appears only in this answer; only its SHA-256 hash is stored ([ADR 0009](../architecture/decisions/0009-api-tokens.md)). `GET /v1/tokens` returns `{"tokens": [<record>, ...]}`, newest first. Revoking returns the record with `revoked_at` set (revoking again returns it unchanged); another member's token, or one in another group, returns `404`.
+
+### `GET`, `POST /v1/merchant-rules`, `PUT`, `DELETE /v1/merchant-rules/{rule_id}`
+
+The group's merchant → category rules, the first layer of the hybrid categorizer ([categorization design](../design/categorization.md#order-of-precedence)). Every member of the group may change them.
+
+`POST` and `PUT` take `{"merchant": "SPAR", "category": "groceries"}`. The category must be one of the nine allowed categories; `GET` lists them next to the rules: `{"rules": [{"id": 1, "merchant": "SPAR", "merchant_key": "spar", "category": "groceries", "created_by": "anna", "created_at": "...", "updated_at": "..."}], "categories": ["groceries", "eating_out", ...]}`.
+
+`merchant_key` is what is matched: the merchant's words, lowercase and without accents, store numbers and company suffixes ("Spar 0123 Kft." → `spar`). A rule applies to a new record when every word of its key is a word of the record's merchant (or, without one, of its description); with several, the one with more words wins. A second rule with the same key returns `409`. A rule changes only records stored after it, not existing events.

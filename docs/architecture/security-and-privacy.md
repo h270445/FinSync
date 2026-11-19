@@ -20,7 +20,7 @@ Privacy requirements will be considered during design, with GDPR principles such
 | Group membership check on every use case | Implemented |
 | Parameterised SQL | Implemented |
 | Server-side validation of manual input | Implemented (amount, currency, description, timestamp) |
-| Authentication | Implemented: per-member API tokens stored as SHA-256 hashes ([ADR 0009](decisions/0009-api-tokens.md)); web sign-in with e-mail or member id and a scrypt-hashed password, an HttpOnly `Secure` `SameSite=Strict` session cookie and a CSRF token on every change ([ADR 0010](decisions/0010-web-sign-in.md)). Client identity headers are ignored. No limit on failed sign-in attempts yet. |
+| Authentication | Implemented: per-member API tokens stored as SHA-256 hashes ([ADR 0009](decisions/0009-api-tokens.md)); web sign-in with e-mail or member id and a scrypt-hashed password, an HttpOnly `Secure` `SameSite=Strict` session cookie and a CSRF token on every change ([ADR 0010](decisions/0010-web-sign-in.md)). Client identity headers are ignored. Tokens are issued and revoked on the W8 screen only from a web session: an API token cannot manage tokens, so a leaked phone token cannot issue new ones or revoke the member's others; a member sees only their own tokens. No limit on failed sign-in attempts yet. |
 | Personal data | Member ids, group ids and, for sign-in, an e-mail address per member; passwords only as salted hashes, tokens and sessions only as SHA-256 hashes |
 | Request size limits | Implemented: 64 KiB per request, 1 MiB for bulk import, 413 above it; the bytes that arrive are counted, so chunked bodies cannot bypass it |
 | Audit trail | Planned through `match_decisions` |
