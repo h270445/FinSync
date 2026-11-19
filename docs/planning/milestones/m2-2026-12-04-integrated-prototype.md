@@ -23,7 +23,7 @@ The core flows committed for the semester work together, with proper data handli
 - [x] The test suite runs on SQLite and on PostgreSQL behind `FinSyncStorage`; the SQLite run stays fast (2026-11-12: 149 tests in about 9 s on SQLite; `tests/run_on_postgres.py` runs them on PostgreSQL 16).
 - [x] The web app is a whole: W2 overview with group totals by month, category and member, built on deduplicated events, transfers within the group excluded and items waiting for review flagged ([supervisor, 2026-11-16](../supervisor-feedback.md#2026-11-16--reply-to-the-weekly-report-of-nov-915)); W4 decision history from the API; W6 manual entry; W7 bulk import preview; W8 settings with members, API tokens (create, revoke) and merchant–category rule overrides. (W4 decision history done 2026-11-12, W7 2026-11-12, W6 manual entry 2026-11-14, W2 and W8 2026-11-19; W8 also has admin/member roles and the own-accounts list.)
 - [ ] The Android OTP forwarding test, passed on the emulator, repeated on the real phone (supervisor, 2026-11-16).
-- [ ] One versioned agent skill in the repository, 1 (at most 2) chosen for the methods chapter, and the six design views in `docs/` (skills done 2026-11-12: five in [`.claude/skills/`](../../../.claude/skills/README.md); design views 3–6 drafted 2026-11-14 in [design-views.md](../../architecture/design-views.md), final at the end of November).
+- [ ] One versioned agent skill in the repository, 1 (at most 2) chosen for the methods chapter, and the six design views in `docs/` (skills done 2026-11-12: five in [`.claude/skills/`](../../../.claude/skills/README.md); design views 3–6 drafted 2026-11-14 and views 1–2 on 2026-11-19 in [design-views.md](../../architecture/design-views.md), final at the end of November).
 
 ## Checklist
 
