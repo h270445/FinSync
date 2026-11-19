@@ -34,6 +34,7 @@ Time spent on the project, for the weekly-effort figure the supervisor asked for
 | 2026-11-19 | 17:05–17:45 | 40 | Open questions of W2 and W8 answered by the author; W2 overview endpoint and screen; W8 settings: members with admin/member roles, own API tokens, merchant → category rules, own accounts for transfers; one nine-category list; Alembic revisions 0002–0005; tests, docs, PR | Project messages and commits (end time estimated at the pull request; to be corrected by the author) |
 | 2026-11-19 | 18:03–18:25 | 22 | Work of Nov 23–27 brought forward: deterministic layer of the hybrid categorizer with a built-in Hungarian merchant and keyword dictionary, design views 1–2 (use cases, page flow), tests, docs, PR | Project messages and commits |
 | 2026-11-19 | 18:45–18:53, 19:14–19:24, 19:29–19:38 | 27 | LLM layer of the hybrid categorizer brought forward: decision questions to the author, provider-neutral layer with five-sample confidence and abstention, OpenAI-compatible client for a self-hosted model, measurement runner with preflight and cost estimate, runbook for the paid run, ADR 0011, LLM scheduling proposal in the design, PR | Project messages and commits (end time estimated at the pull request; to be corrected by the author) |
+| 2026-11-19 | 20:37–20:55 | 18 | ADR 0012: no multi-factor authentication in the thesis scope, step-up re-authentication proposed as the next step; authentication facts checked in the code; security page and thesis map linked; future-work options in the roadmap; PR | Project messages and commits (end time estimated at the pull request; to be corrected by the author) |
 
 ## Weekly totals
 
@@ -46,5 +47,5 @@ Time spent on the project, for the weekly-effort figure the supervisor asked for
 | 2026-10-26 – 11-01 | 264 | 4.4 |
 | 2026-11-02 – 11-08 | 149 | 2.5 |
 | 2026-11-09 – 11-15 | 380 | 6.3 |
-| 2026-11-16 – 11-22 | 98 | 1.6 |
-| **Total** | **1332** | **22.2** |
+| 2026-11-16 – 11-22 | 116 | 1.9 |
+| **Total** | **1350** | **22.5** |

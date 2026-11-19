@@ -135,6 +135,28 @@ Goal: every committed component exists and works together with proper data handl
 
 The detailed plan is written in M3.
 
+## Future work (options beyond the committed scope)
+
+Candidates for Szakdolgozat II. or for the thesis's "Limitations and future work" section. None of them is committed; each is chosen, or left as a mention, when the M3 plan is written. Collected on 2026-11-19 from the author's ideas (e-mail confirmation, forgotten password, a group chat with an LLM adviser) and the discussion that followed.
+
+**Near, small (could still fit before the thesis):**
+
+- **E-mail confirmation and forgotten password.** Both need the same mechanism: a single-use, expiring token sent by e-mail. Once it exists, inviting a member to a group by e-mail can build on it (today members are added on the command line). Listed as future work in [ADR 0010](../architecture/decisions/0010-web-sign-in.md).
+- **Step-up re-authentication and a sign-in attempt limit.** Re-authentication before issuing an API token or changing a role is the next step proposed in [ADR 0012](../architecture/decisions/0012-no-multi-factor-authentication.md); the attempt limit belongs to the December security evaluation ([ADR 0010](../architecture/decisions/0010-web-sign-in.md)).
+- *Already scheduled, not future work:* the scheduled LLM run and members setting uncertain categories themselves come with the category correction (see the change log, 2026-11-19).
+
+**Medium term:**
+
+- **Budgets and alerts** per category and month. Closely tied to the thesis's goal of accurate spending tracking.
+- **Self-hosted LLM** (for example LM Studio), compared with the cloud model on the same frozen dataset; the layer already supports an OpenAI-compatible server ([ADR 0011](../architecture/decisions/0011-llm-categorization-layer.md)).
+- **Multi-factor authentication** (TOTP or passkeys) for the web sign-in, required before FinSync holds real households' data outside a test setting ([ADR 0012](../architecture/decisions/0012-no-multi-factor-authentication.md)).
+- **Export** of the group's data (CSV or Google Sheets).
+
+**Further out, a mention only:**
+
+- **Group chat with an LLM adviser.** A chat between members is a separate product and does not serve the main goal. The adviser part is interesting in a narrower form: "ask about your data" (for example "why did we spend more in November?"), built on the existing overview endpoint, sending the LLM only aggregated figures, never individual records.
+- **Direct bank connection (PSD2 / open banking).** Would replace notification reading and file import, but needs a licence or a licensed provider and is a large piece of work.
+
 ## Change log
 
 | Date | Change |
@@ -156,3 +178,4 @@ The detailed plan is written in M3.
 | 2026-11-19 | Author's decisions on the open questions of W2 and W8: basic role-based permissions now, with `admin` and `member` roles (only an admin changes group settings; existing members became admins); one category list, the dataset's nine categories (`housing` renamed to `housing_utilities`); the members list only shows members, inviting and removing stay on the command line; tokens are managed only from a web session and each member sees only their own; merchant rules apply to new records only; the `transfer` direction with the own-accounts list brought forward from Nov 23–27. Chosen from the options offered, except the roles, which the author asked for. |
 | 2026-11-19 | The week of Nov 16–22 finished on Nov 19, so by the author's choice work of Nov 23–27 was brought forward: the deterministic layer of the hybrid categorizer (group rules, then a built-in Hungarian merchant and keyword dictionary; the LLM layer and the measurement stay on Nov 23–27) and drafts of design views 1–2. |
 | 2026-11-19 | Author's decisions on the LLM layer: Anthropic `claude-haiku-5-5`, five samples per record as the confidence, the threshold rule (highest dev coverage with at most 5 % wrong settled answers), USD 2 for the measurement (ADR 0011 accepted); the API key follows in the week of Nov 23, so the LLM layer and the measurement runner were built early on Nov 19 and the paid run stays on Nov 23–27. The author proposed that members can set uncertain categories before the LLM runs and that admins choose when it runs (never, X hours after the purchase, daily or weekly); scheduled with the category correction. A self-hosted model (LM Studio) may be tried later; the layer already supports it. |
+| 2026-11-19 | Future-work options added (not committed): e-mail confirmation and forgotten password, step-up re-authentication and a sign-in attempt limit, budgets and alerts, a self-hosted LLM, MFA, export, an "ask about your data" adviser, open banking. The author's ideas, grouped and refined by Claude; the author asked to record them. |
