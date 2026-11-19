@@ -4,6 +4,29 @@ Summary of each letter from the thesis supervisor (Dr. Bilicki Vilmos) and what 
 
 Each entry lists the points as actions; ticked actions link to where they were done.
 
+## 2026-11-16 — Reply to the weekly report of Nov 9–15
+
+**Assessment**
+
+- The supervisor pulled `main` at `5a6208c`, ran the Python suite (178 tests) and the Vitest suite (33 tests), all passing, and tried the new screens live. The backbone of the requested M2 items is done, and the matching engine was left untouched as agreed.
+- B1 (ADR 0008 in code, `device_zone` kept in the raw record but outside the fingerprint, dataset v3 reproducing the 2026-10-29 results), B2 (one storage layer for the fast SQLite profile and the PostgreSQL 16 profile, the concurrent-matching race guarded by a transactional lock and checked with a mutation test), W1 and C1/C2 (W4 decision timeline, W6, W7 with remembered column mapping, Hungarian row-level preview, whole-file rejection and identical rows sent to review) are judged sound.
+- **ADR 0010 approved:** scrypt with a constant answer time, the `HttpOnly`, `SameSite=Strict` session cookie and the separate `X-CSRF-Token` header are a defensible choice over adding Argon2. Status set to Accepted.
+- Why volume, UI and complexity are judged together: the reviewer and the final-exam committee look at the balance of the whole work, so algorithmic depth, functional completeness on screen and code/test/data volume must be in proportion.
+  - Volume: outstanding, well above the first-semester expectation.
+  - Algorithmic complexity: stable L3–L4, **no further increase; the matching engine stays frozen.**
+  - UI: strong G3, 6 of the 8 main screens live. The one visible imbalance in the live test: the rule-based categorizer still puts most Hungarian merchants (SPAR, DM, MOL, MÁV-START) in "Egyéb". W2, W8 and the hybrid categorizer close this gap together.
+- The proposed order and schedule to 2026-12-04 is fully supported; development and documentation/thesis writing continue in parallel.
+
+**Actions (M2, 2026-12-04)**
+
+- [ ] **W2 overview:** monthly, per-category and per-member totals built on **deduplicated events**, with **transfers within the group excluded** and **items waiting for review clearly flagged**, so the total spending is not distorted. (Refines C3 of 2026-11-11.)
+- [ ] **W8 settings:** group members and Android API tokens (create, revoke), plus **group-level merchant → category rules** that also serve as the **first, deterministic layer of the hybrid categorizer**. (Refines C4 of 2026-11-11.)
+- [ ] **Hybrid categorizer measurement, Nov 23–27:** on the existing 200-item dataset and evaluation runner, measure the Hungarian merchant/keyword layer + model/LLM layer + explicit abstention threshold ("Bizonytalan" category) together: coverage–accuracy curve, latency and cost. (Action A of 2026-11-11.)
+- [ ] **Real-device Android test before M2:** repeat the OTP forwarding test, so far verified on the emulator, on the physical phone.
+- [ ] **D1, skills in the methods chapter:** do not list all seven skills equally; present 1 (at most 2) in depth, where real use led to a 1.0 → 1.1 refinement. Suggested: `endpoint-and-screen-checklist` (the Pydantic/OpenAPI mismatch and the sign-in endpoint lesson) and `dev-test-evaluation` (with next week's categorization measurement).
+- [ ] **D2, design views:** views 3–6 are judged accurate and consistent with the code; finalising views 1–2 (use case, W1–W8 and A1–A2 page flow) at the end of November, after W2 and W8, is agreed. The thesis map's defence question–evidence table was singled out as the right way to prepare the argument from the codebase.
+- [ ] **Hungarian manuscript:** the English `docs/` are a good supporting package for the electronic appendix, but start shaping the skeleton of chapters 1–3 of the Hungarian thesis manuscript (SZTE format) towards the end of the semester instead of leaving it entirely to Szakdolgozat II.
+
 ## 2026-11-11 — Reply to the M1 e-mail
 
 **Assessment**
@@ -21,10 +44,10 @@ Each entry lists the points as actions; ticked actions link to where they were d
 - [x] **B2. PostgreSQL behind `FinSyncStorage`:** SQLite stays runnable for fast local/CI tests (the unit suite keeps running in seconds), PostgreSQL is the production/integration profile. (Done 2026-11-12: SQLAlchemy Core and Alembic, `tests/run_on_postgres.py`, Docker Compose; the SQLite suite runs in about 9 s.)
 - [x] **C1. Decision history in W4:** the API returns the event's `match_decisions` (when and with what score `auto_linked`, who confirmed, rejected or split). Done in PR #25: `GET /v1/events/{event_id}/decisions` and the timeline on the event detail page ([API](../guides/api.md)).
 - [x] **C2. W6 manual entry and W7 bulk import preview** wired to `POST /v1/transactions` and `POST /v1/transactions/bulk`. (Done: W7 on 2026-11-12 on `POST /v1/imports`, the file import route; W6 on 2026-11-14 on `POST /v1/transactions`.)
-- [ ] **C3. W2 overview:** monthly and per-category group totals with the split by member.
-- [ ] **C4. W8 settings / backoffice:** group and members, create and revoke API tokens without the CLI (for the Android client), override merchant–category rules.
-- [ ] **D1. One versioned agent skill** in the repository (for example the leak-free dev/test evaluation protocol, or a group-isolation and OpenAPI-sync check for new endpoints), presented in the methods chapter. (2026-11-12: five versioned skills in [`.claude/skills/`](../../.claude/skills/README.md), with a usage log in [ai-usage.md](../ai-usage.md#skill-usage); the one presented in the thesis is chosen after it has been used.)
-- [ ] **D2. Six design views in `docs/`:** use-case, page flow (W1–W8 and Android), ingest → normalise → match → store/review flowchart, event and decision state diagram (`auto_linked` / `needs_review` / `confirmed` / `rejected` / `split`), architecture, security (SHA-256 Bearer tokens and `group_id` isolation). (2026-11-14: views 3–6 drafted in [design-views.md](../architecture/design-views.md); all six finalised at the end of November.)
+- [ ] **C3. W2 overview:** monthly and per-category group totals with the split by member. (2026-11-16: refined, see the [Nov 16 entry](#2026-11-16--reply-to-the-weekly-report-of-nov-915).)
+- [ ] **C4. W8 settings / backoffice:** group and members, create and revoke API tokens without the CLI (for the Android client), override merchant–category rules. (2026-11-16: the rules are also the hybrid categorizer's first layer, see the [Nov 16 entry](#2026-11-16--reply-to-the-weekly-report-of-nov-915).)
+- [ ] **D1. One versioned agent skill** in the repository (for example the leak-free dev/test evaluation protocol, or a group-isolation and OpenAPI-sync check for new endpoints), presented in the methods chapter. (2026-11-12: five versioned skills in [`.claude/skills/`](../../.claude/skills/README.md), with a usage log in [ai-usage.md](../ai-usage.md#skill-usage); the one presented in the thesis is chosen after it has been used; 2026-11-16: 1, at most 2, presented in depth, see the [Nov 16 entry](#2026-11-16--reply-to-the-weekly-report-of-nov-915).)
+- [ ] **D2. Six design views in `docs/`:** use-case, page flow (W1–W8 and Android), ingest → normalise → match → store/review flowchart, event and decision state diagram (`auto_linked` / `needs_review` / `confirmed` / `rejected` / `split`), architecture, security (SHA-256 Bearer tokens and `group_id` isolation). (2026-11-14: views 3–6 drafted in [design-views.md](../architecture/design-views.md); all six finalised at the end of November; 2026-11-16: views 3–6 judged accurate, views 1–2 after W2 and W8.)
 
 Open design questions on the PostgreSQL switch or the hybrid categorizer measurement can be sent to the supervisor at any time.
 

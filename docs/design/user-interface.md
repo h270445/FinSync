@@ -33,7 +33,7 @@ UI text is Hungarian, amounts in HUF (`12 990 Ft`), dates `2026. 10. 09.`. All e
 | # | Screen | Purpose | API (current or planned) | Needed by |
 | --- | --- | --- | --- | --- |
 | W1 | Sign in | E-mail address or member id and password (session cookie); the group is asked only if the member belongs to several | `POST`, `GET` and `DELETE /v1/session` ([ADR 0010](../architecture/decisions/0010-web-sign-in.md)) | M2 |
-| W2 | Overview | Month totals per category and per member; count of events waiting for review | `GET /v1/events` | M2 |
+| W2 | Overview | Month totals per category and per member, counted on deduplicated events, without transfers within the group; events waiting for review are flagged in the totals and counted | `GET /v1/events` | M2 |
 | W3 | Events | Deduplicated list: date, merchant, amount, category, source badges (notification, sheet, manual, file), review flag; filter by month, member, category, source | `GET /v1/events` | M1 side track (read-only) |
 | W4 | Event detail | The records behind one event, raw payload, source reference, import batch, decision history; **Split** action; category correction | `GET /v1/events`, `GET /v1/events/{id}/decisions`, `POST /v1/events/{id}/split` | M2 |
 | W5 | Review queue | Two records side by side, score and feature breakdown (amount, time, merchant), **Same purchase** / **Different purchases** | `GET /v1/matches/review`, `POST /v1/matches/{id}/confirm`, `.../reject` | M2 |
@@ -62,7 +62,7 @@ Two levels. A member changes their own settings; group settings are changed only
 | --- | --- | --- |
 | Members: invite, remove | – | ⭐ |
 | Category list: rename, add, merge | Starting list from the [categorization design](categorization.md#open-questions) | ⭐ |
-| Merchant memory: the learned "merchant → category" entries, edit or delete; mark a merchant as mixed-assortment | Filled from corrections | ⭐ |
+| Merchant memory: the learned "merchant → category" entries, edit or delete; mark a merchant as mixed-assortment. These group rules are the first, deterministic layer of the hybrid categorizer (supervisor, 2026-11-16) | Filled from corrections | ⭐ |
 | Import mappings: bank export columns, sheet category values (for example "kaja" → groceries) | Asked on first use | |
 | Currency and time zone | HUF, Europe/Budapest | |
 

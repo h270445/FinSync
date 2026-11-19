@@ -37,7 +37,7 @@ The first step that gives an answer wins:
 
 1. **Member's choice** on any record of the event (manual entry, sheet column, correction in the web app). Never overwritten by automation.
 2. **Category supplied by the source**, when the source has one (a bank export's category or MCC column, a sheet's category column), mapped to the allowed list. An unmappable value is not guessed; the mapping is asked once and remembered.
-3. **Merchant memory** of the group: the category the group confirmed for this merchant. `high` once confirmed twice without a later correction.
+3. **Merchant memory** of the group: the category the group confirmed for this merchant, editable as group merchant → category rules on the W8 settings screen; the first, deterministic layer of the hybrid categorizer. `high` once confirmed twice without a later correction.
 4. **Keyword rules** (the current baseline). `high` for clear merchants, `low` for merchants on the mixed-assortment list.
 5. **LLM**, only when the steps above give nothing or only `low`. It must answer with one allowed category or `unknown`; anything else is rejected. Its answer is always `low` unless it agrees with a rule.
 6. Otherwise `uncategorized`.
