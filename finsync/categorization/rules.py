@@ -1,5 +1,7 @@
 """Rule-based categorization: the first matching keyword pattern in the description decides the category.
 
+It names five of the nine allowed categories (finsync/categorization/merchant_rules.py) and "other".
+
 The baseline the hybrid and LLM categorizers are measured against ([design](../../docs/design/categorization.md)).
 """
 
@@ -11,7 +13,7 @@ _CATEGORY_KEYWORDS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("groceries", ("tesco", "aldi", "lidl", "grocery", "market")),
     ("transport", ("uber", "bolt", "taxi", "bus", "train", "fuel")),
     ("entertainment", ("netflix", "spotify", "cinema", "subscription")),
-    ("housing", ("rent", "mortgage", "housing", "utility", "electricity", "water")),
+    ("housing_utilities", ("rent", "mortgage", "housing", "utility", "electricity", "water")),
 )
 
 # Match keywords as whole words only, so "bus" does not match "business"

@@ -78,7 +78,6 @@ const CATEGORIES: Record<string, string> = {
   groceries: 'Élelmiszer',
   eating_out: 'Étterem, kávézó',
   transport: 'Közlekedés',
-  housing: 'Lakhatás',
   housing_utilities: 'Lakhatás, rezsi',
   health: 'Egészség',
   clothing: 'Ruházat',

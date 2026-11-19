@@ -177,7 +177,7 @@ Query: `month=YYYY-MM` (optional; without it, the current month in Budapest time
   "months": ["2026-11", "2026-10"],
   "totals": [{"key": "all", "currency": "HUF", "expense": "241370", "income": "420000",
               "event_count": 9, "review_count": 1, "review_amount": "8200"}],
-  "categories": [{"key": "housing", "currency": "HUF", "expense": "185000", "income": "0",
+  "categories": [{"key": "housing_utilities", "currency": "HUF", "expense": "185000", "income": "0",
                   "event_count": 1, "review_count": 0, "review_amount": "0"}],
   "members": [{"key": "anna", "currency": "HUF", "expense": "31680", "income": "420000",
                "event_count": 5, "review_count": 0, "review_amount": "0"}],

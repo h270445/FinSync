@@ -104,6 +104,26 @@ class SchemaTest(unittest.TestCase):
         upgraded.add_group_membership("cecil", "lakas")
         self.assertEqual(upgraded.member_role("cecil", "lakas"), "member")
 
+    def test_revision_0004_renames_housing_to_housing_utilities(self) -> None:
+        from finsync.core import FinSyncService
+
+        path = self._path("categories.db")
+        storage = FinSyncStorage(path)
+        storage.add_group_membership("anna", "lakas")
+        FinSyncService(storage).create_manual_transaction(
+            "anna", "lakas", {"amount": "-185000", "currency": "HUF", "description": "rent", "happened_at": "2026-11-01"}
+        )
+        # Turn the file back into revision 0003, when the keyword rules still wrote "housing".
+        connection = sqlite3.connect(path)
+        with connection:
+            connection.execute("UPDATE transactions SET category = 'housing'")
+            connection.execute("UPDATE events SET category = 'housing'")
+            connection.execute("UPDATE alembic_version SET version_num = '0003'")
+        connection.close()
+        upgraded = FinSyncStorage(path)
+        self.assertEqual({tx.category for tx in upgraded.list_transactions("lakas")}, {"housing_utilities"})
+        self.assertEqual({e.category for e in upgraded.list_events("lakas")}, {"housing_utilities"})
+
     def test_a_new_database_has_no_legacy_version_table(self) -> None:
         FinSyncStorage(self._path("new.db"))
         connection = sqlite3.connect(self._path("new.db"))
