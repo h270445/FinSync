@@ -19,13 +19,13 @@ from finsync.evaluation.generate_categories import CATEGORIES, SCENARIOS, Item, 
 
 DATASET = Path("tests/data/categorization_eval.csv")
 
-# The rule-based categorizer still uses the old four-plus-other list; this maps it onto the dataset's
-# nine categories. Its labels are kept as they are, so the baseline is measured without new rules.
+# The rule-based categorizer names five of the dataset's nine categories (since 2026-11-19 with the same
+# labels, "housing" became "housing_utilities"); the keywords are unchanged, so the baseline is the same.
 RULES_TO_DATASET = {
     "groceries": "groceries",
     "transport": "transport",
     "entertainment": "entertainment",
-    "housing": "housing_utilities",
+    "housing_utilities": "housing_utilities",
     "other": "other",
 }
 

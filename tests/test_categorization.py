@@ -9,12 +9,12 @@ class CategorizationTest(unittest.TestCase):
     def test_matches_whole_keywords(self) -> None:
         self.assertEqual(categorize_transaction("Bus ticket"), "transport")
         self.assertEqual(categorize_transaction("Train to Vienna"), "transport")
-        self.assertEqual(categorize_transaction("Monthly rent"), "housing")
+        self.assertEqual(categorize_transaction("Monthly rent"), "housing_utilities")
         self.assertEqual(categorize_transaction("CARD PURCHASE at Tesco"), "groceries")
 
     def test_matches_keywords_next_to_punctuation(self) -> None:
         self.assertEqual(categorize_transaction("Uber*Trip"), "transport")
-        self.assertEqual(categorize_transaction("rent-october"), "housing")
+        self.assertEqual(categorize_transaction("rent-october"), "housing_utilities")
 
     def test_does_not_match_keywords_inside_other_words(self) -> None:
         self.assertEqual(categorize_transaction("Business lunch"), "other")

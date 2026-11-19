@@ -29,10 +29,26 @@ ENDPOINTS = (
     ("GET", "/v1/transactions"),
     ("GET", "/v1/events"),
     ("GET", "/v1/events/{event}/decisions"),
+    ("GET", "/v1/overview"),
+    ("GET", "/v1/members"),
+    ("GET", "/v1/merchant-rules"),
+    ("POST", "/v1/merchant-rules"),
+    ("PUT", "/v1/merchant-rules/{rule}"),
+    ("DELETE", "/v1/merchant-rules/{rule}"),
+    ("PUT", "/v1/members/{member}/role"),
+    ("GET", "/v1/own-accounts"),
+    ("POST", "/v1/own-accounts"),
+    ("DELETE", "/v1/own-accounts/{account}"),
     ("GET", "/v1/matches/review"),
     ("POST", "/v1/matches/{decision}/confirm"),
     ("POST", "/v1/matches/{decision}/reject"),
     ("POST", "/v1/events/{event}/split"),
+)
+# Token management works only with the web session cookie (an API token gets 403); tests/test_tokens_api.py.
+WEB_SESSION_ENDPOINTS = (
+    ("GET", "/v1/tokens"),
+    ("POST", "/v1/tokens"),
+    ("POST", "/v1/tokens/{token}/revoke"),
 )
 # The web sign-in routes work with the session cookie, not a token; tests/test_sessions.py covers them.
 SESSION_ENDPOINTS = (
@@ -104,6 +120,9 @@ class TokenServiceTest(unittest.TestCase):
         with connection:
             # Turn the new database into a file from before Alembic, at schema version 4.
             connection.execute("DROP TABLE alembic_version")
+            connection.execute("DROP TABLE merchant_categories")  # added after the baseline (revision 0002)
+            connection.execute("ALTER TABLE group_memberships DROP COLUMN role")  # revision 0003
+            connection.execute("DROP TABLE own_accounts")  # revision 0005
             connection.execute("CREATE TABLE schema_version (version INTEGER NOT NULL)")
             connection.executemany("INSERT INTO schema_version (version) VALUES (?)", [(2,), (3,), (4,)])
             connection.execute("DROP TABLE api_tokens")
@@ -174,6 +193,8 @@ class AuthApiTest(unittest.TestCase):
         self.decision_id = review["decision_id"]
         self.event_id = review["candidate_event"]["id"]
         self.group_1_record = review["candidate_event"]["transactions"][0]["id"]
+        self.account_id = self._call("POST", "/v1/own-accounts", self.token_a, {"label": "12345678-87654321"})[1]["id"]
+        self.rule_id = self._call("POST", "/v1/merchant-rules", self.token_a, {"merchant": "Lidl", "category": "groceries"})[1]["id"]
 
     def tearDown(self) -> None:
         self.client.close()
@@ -188,18 +209,34 @@ class AuthApiTest(unittest.TestCase):
 
     def test_every_route_is_listed(self) -> None:
         routes = {
-            (method, route.path.replace("{decision_id}", "{decision}").replace("{event_id}", "{event}"))
+            (
+                method,
+                route.path.replace("{decision_id}", "{decision}")
+                .replace("{event_id}", "{event}")
+                .replace("{token_id}", "{token}")
+                .replace("{rule_id}", "{rule}")
+                .replace("{member_id}", "{member}")
+                .replace("{account_id}", "{account}"),
+            )
             for route in self.app.routes
             if isinstance(route, APIRoute)
             for method in route.methods
         }
-        self.assertEqual(routes, set(ENDPOINTS) | set(SESSION_ENDPOINTS))
+        self.assertEqual(routes, set(ENDPOINTS) | set(WEB_SESSION_ENDPOINTS) | set(SESSION_ENDPOINTS))
 
     def _endpoints(self):
         for method, path in ENDPOINTS:
-            yield method, path.format(decision=self.decision_id, event=self.event_id)
+            yield method, path.format(decision=self.decision_id, event=self.event_id, rule=self.rule_id, member="user-b", account=self.account_id)
 
-    def _body(self, path: str) -> dict:
+    def _body(self, path: str, method: str = "POST") -> dict:
+        if path.startswith("/v1/own-accounts"):
+            return {"label": "KISS ANNA"}
+        if path.endswith("/role"):
+            return {"role": "member"}
+        if path.startswith("/v1/merchant-rules"):
+            # Different keys for create and update, so neither collides with the other or the setUp rule.
+            merchant = "Aldi" if method == "POST" else "Lidl Budapest"
+            return {"merchant": merchant, "category": "groceries"}
         if path.endswith("/ingest"):
             return {"message": NOTIFICATION}
         if path.endswith("/bulk"):
@@ -215,6 +252,9 @@ class AuthApiTest(unittest.TestCase):
             self.storage.list_transactions("group-1"),
             self.storage.list_events("group-1"),
             self.storage.list_decisions("group-1"),
+            self.storage.list_merchant_categories("group-1"),
+            self.storage.list_group_members("group-1"),
+            self.storage.list_own_accounts("group-1"),
         )
 
     def test_every_endpoint_requires_a_valid_token(self) -> None:
@@ -228,7 +268,7 @@ class AuthApiTest(unittest.TestCase):
                 (unknown, {}),
             ):
                 with self.subTest(method=method, path=path, headers=headers, token=token):
-                    status, body, challenge = self._call(method, path, token, self._body(path), headers)
+                    status, body, challenge = self._call(method, path, token, self._body(path, method), headers)
                     self.assertEqual(status, 401)
                     self.assertEqual(challenge, 'Bearer realm="finsync"')
                     self.assertIn("token", body["error"])
@@ -238,7 +278,7 @@ class AuthApiTest(unittest.TestCase):
         self.tokens.revoke(self.record_a.id)
         for method, path in self._endpoints():
             with self.subTest(method=method, path=path):
-                self.assertEqual(self._call(method, path, self.token_a, self._body(path))[0], 401)
+                self.assertEqual(self._call(method, path, self.token_a, self._body(path, method))[0], 401)
         self.assertEqual(self._call("GET", "/v1/events", self.token_b)[0], 200)
 
     def test_a_token_stops_working_when_its_member_leaves_the_group(self) -> None:
@@ -246,7 +286,7 @@ class AuthApiTest(unittest.TestCase):
         before = self._group_1_state()
         for method, path in self._endpoints():
             with self.subTest(method=method, path=path):
-                self.assertEqual(self._call(method, path, self.token_a, self._body(path))[0], 403)
+                self.assertEqual(self._call(method, path, self.token_a, self._body(path, method))[0], 403)
         self.assertEqual(self._group_1_state(), before)
 
     def test_another_groups_member_cannot_read_or_change_group_1(self) -> None:
@@ -255,10 +295,19 @@ class AuthApiTest(unittest.TestCase):
         spoofed = {"X-User-Id": "user-a", "X-Group-Id": "group-1"}
         for method, path in self._endpoints():
             with self.subTest(method=method, path=path):
-                status, body, _ = self._call(method, path, self.token_c, self._body(path), spoofed)
-                if (method == "POST" and path.startswith("/v1/matches/")) or path.startswith("/v1/events/"):
-                    # Group 1's decision and event ids do not exist in group 2.
+                status, body, _ = self._call(method, path, self.token_c, self._body(path, method), spoofed)
+                if (
+                    (method == "POST" and path.startswith("/v1/matches/"))
+                    or path.startswith("/v1/events/")
+                    or path.startswith("/v1/merchant-rules/")
+                    or path.startswith("/v1/members/")
+                    or path.startswith("/v1/own-accounts/")
+                ):
+                    # Group 1's decisions, events, rules and members do not exist in group 2.
                     self.assertEqual(status, 404)
+                elif path in ("/v1/merchant-rules", "/v1/own-accounts") and method == "POST":
+                    # A rule goes into the token's group.
+                    self.assertEqual(status, 201)
                 elif method == "GET":
                     self.assertEqual(status, 200)
                     listed = json.dumps(body)
@@ -274,6 +323,7 @@ class AuthApiTest(unittest.TestCase):
         self.assertEqual(self._group_1_state(), before)
         self.assertEqual({tx.group_id for tx in self.storage.list_transactions("group-2")}, {"group-2"})
         self.assertEqual({tx.user_id for tx in self.storage.list_transactions("group-2")}, {"user-c"})
+        self.assertEqual([r.merchant_key for r in self.storage.list_merchant_categories("group-2")], ["aldi"])
 
     def test_a_member_acts_as_the_tokens_user_whatever_the_headers_say(self) -> None:
         status, body, _ = self._call(
@@ -288,7 +338,7 @@ class AuthApiTest(unittest.TestCase):
             if path.endswith("/reject"):
                 continue  # Confirm answers the same decision first; reject is covered by the review tests.
             with self.subTest(method=method, path=path):
-                status = self._call(method, path, self.token_a, self._body(path))[0]
+                status = self._call(method, path, self.token_a, self._body(path, method))[0]
                 self.assertIn(status, (200, 201))
 
 

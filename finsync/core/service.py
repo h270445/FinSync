@@ -16,7 +16,17 @@ import re
 from typing import Any
 import uuid
 
-from finsync.categorization import categorize_transaction
+from finsync.categorization import (
+    TRANSFER,
+    MerchantRule,
+    OwnAccount,
+    categorize_transaction,
+    find_rule,
+    is_transfer,
+    own_account_key,
+    validate_rule,
+)
+from finsync.core.overview import Overview, build_overview, parse_month
 from finsync.ingestion import ColumnMapping, ImportRow, RowError, parse_export, parse_notification, parse_xlsx
 from finsync.ingestion.csv_import import normalize_content
 from finsync.ingestion.local_time import local_to_utc
@@ -30,10 +40,15 @@ from finsync.matching import (
     score,
 )
 from finsync.matching import decision as decision_rules
+from finsync.matching.normalize import local_date
 from finsync.matching.scoring import DAY_WINDOW_DAYS
 from finsync.storage import (
+    ADMIN,
+    ROLES,
     EventRecord,
     FinSyncStorage,
+    MerchantCategoryRecord,
+    OwnAccountRecord,
     StorageSession,
     TransactionRecord,
     candidate_time_range,
@@ -104,6 +119,14 @@ class FinSyncService:
     def ensure_authorized(self, user_id: str, group_id: str) -> None:
         if not self._storage.is_user_in_group(user_id, group_id):
             raise AuthorizationError("User is not authorized for this group")
+
+    def ensure_admin(self, user_id: str, group_id: str) -> None:
+        """Group settings are changed only by an admin of the group (author's decision, 2026-11-19)."""
+        role = self._storage.member_role(user_id, group_id)
+        if role is None:
+            raise AuthorizationError("User is not authorized for this group")
+        if role != ADMIN:
+            raise AuthorizationError("Only an admin of the group can change this setting")
 
     def ingest_notification(
         self,
@@ -327,6 +350,7 @@ class FinSyncService:
     def _store_and_match(session: StorageSession, record: dict[str, Any]) -> StoreResult:
         """Store one record and link it to an event, writing the decision that explains the link."""
         group_id = record["group_id"]
+        _classify(session, record)
         channel = _channel(record["source"], record["user_id"])
         # The identity is the raw payload unless the caller set a narrower one (the notification
         # without its diagnostic device zone).
@@ -409,6 +433,93 @@ class FinSyncService:
     def list_group_events(self, user_id: str, group_id: str) -> list[EventRecord]:
         self.ensure_authorized(user_id, group_id)
         return self._storage.list_events(group_id)
+
+    # W8 merchant → category rules. Every member reads them; only an admin of the group changes them
+    # (author's decision, 2026-11-19). A rule applies to records stored after it, not to existing
+    # events; changing those is the category correction's job (logged).
+
+    def list_merchant_rules(self, user_id: str, group_id: str) -> list[MerchantCategoryRecord]:
+        self.ensure_authorized(user_id, group_id)
+        return self._storage.list_merchant_categories(group_id)
+
+    def create_merchant_rule(self, user_id: str, group_id: str, merchant: str, category: str) -> MerchantCategoryRecord:
+        self.ensure_admin(user_id, group_id)
+        label, key, category = validate_rule(merchant, category)
+        try:
+            rule_id = self._storage.insert_merchant_category(group_id, key, label, category, user_id)
+        except ValueError as error:
+            raise ConflictError(f"The group already has a rule for this merchant ({key})") from error
+        return self._merchant_rule(group_id, rule_id)
+
+    def update_merchant_rule(
+        self, user_id: str, group_id: str, rule_id: int, merchant: str, category: str
+    ) -> MerchantCategoryRecord:
+        self.ensure_admin(user_id, group_id)
+        label, key, category = validate_rule(merchant, category)
+        try:
+            updated = self._storage.update_merchant_category(group_id, rule_id, key, label, category)
+        except ValueError as error:
+            raise ConflictError(f"The group already has a rule for this merchant ({key})") from error
+        if not updated:
+            raise NotFoundError("Rule not found")
+        return self._merchant_rule(group_id, rule_id)
+
+    def delete_merchant_rule(self, user_id: str, group_id: str, rule_id: int) -> MerchantCategoryRecord:
+        self.ensure_admin(user_id, group_id)
+        rule = self._merchant_rule(group_id, rule_id)
+        self._storage.delete_merchant_category(group_id, rule_id)
+        return rule
+
+    def _merchant_rule(self, group_id: str, rule_id: int) -> MerchantCategoryRecord:
+        rule = self._storage.get_merchant_category(group_id, rule_id)
+        if rule is None:
+            raise NotFoundError("Rule not found")
+        return rule
+
+    # W8 own accounts and counterparties: records naming one are transfers within the group. Every
+    # member reads the list; only an admin changes it. Like rules, it applies to records stored after it.
+
+    def list_own_accounts(self, user_id: str, group_id: str) -> list[OwnAccountRecord]:
+        self.ensure_authorized(user_id, group_id)
+        return self._storage.list_own_accounts(group_id)
+
+    def create_own_account(self, user_id: str, group_id: str, label: str) -> OwnAccountRecord:
+        self.ensure_admin(user_id, group_id)
+        label, kind, key = own_account_key(label)
+        try:
+            return self._storage.insert_own_account(group_id, label, kind, key, user_id)
+        except ValueError as error:
+            raise ConflictError("The group already lists this account or name") from error
+
+    def delete_own_account(self, user_id: str, group_id: str, account_id: int) -> OwnAccountRecord:
+        self.ensure_admin(user_id, group_id)
+        deleted = self._storage.delete_own_account(group_id, account_id)
+        if deleted is None:
+            raise NotFoundError("Own account not found")
+        return deleted
+
+    def list_members(self, user_id: str, group_id: str) -> list[tuple[str, str | None, str]]:
+        """W8: the group's members (id, sign-in e-mail address, role)."""
+        self.ensure_authorized(user_id, group_id)
+        return self._storage.list_group_members(group_id)
+
+    def set_member_role(self, user_id: str, group_id: str, member_id: str, role: str) -> None:
+        """W8: an admin makes another member admin or member. The group always keeps one admin."""
+        self.ensure_admin(user_id, group_id)
+        if role not in ROLES:
+            raise ValueError(f"role must be one of: {', '.join(ROLES)}")
+        try:
+            changed = self._storage.set_member_role(member_id, group_id, role)
+        except ValueError as error:
+            raise ConflictError(str(error)) from error
+        if not changed:
+            raise NotFoundError("Member not found")
+
+    def overview(self, user_id: str, group_id: str, month: str | None = None) -> Overview:
+        """W2: the month's totals over deduplicated events (see finsync/core/overview.py for the rules)."""
+        self.ensure_authorized(user_id, group_id)
+        today = local_date(datetime.now(timezone.utc), "minute")
+        return build_overview(self._storage.list_events(group_id), parse_month(month, today))
 
     def list_open_reviews(self, user_id: str, group_id: str) -> list[ReviewItem]:
         """Undecided needs_review decisions, each with the record and the event it may belong to."""
@@ -610,6 +721,25 @@ class FinSyncService:
             direction=direction,
             source_ref=source_ref,
         )
+
+
+def _classify(session: StorageSession, record: dict[str, Any]) -> None:
+    """Set the record's direction and category from the group's settings, before it is matched.
+
+    1. A record naming one of the group's own accounts is a transfer: direction and category `transfer`,
+       so matching never links it to a purchase and the overview leaves it out.
+    2. Otherwise the group's merchant rule wins over the keyword category the record was built with
+       (hybrid layer 1). It is looked up by the merchant, or by the description when there is none.
+    """
+    accounts = [OwnAccount(a.id, a.kind, a.match_key) for a in session.own_accounts(record["group_id"])]
+    if is_transfer(accounts, record.get("merchant"), record.get("description")):
+        record["direction"] = TRANSFER
+        record["category"] = TRANSFER
+        return
+    rules = [MerchantRule(r.id, r.merchant_key, r.category) for r in session.merchant_categories(record["group_id"])]
+    rule = find_rule(rules, record.get("merchant") or record.get("description"))
+    if rule is not None:
+        record["category"] = rule.category
 
 
 def _instant(value: str) -> datetime:

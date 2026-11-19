@@ -30,10 +30,21 @@ from finsync.core import (
     SessionService,
     StoreResult,
     TokenService,
+    WebSessionRequired,
 )
+from finsync.categorization import CATEGORIES
+from finsync.core.overview import Bucket
 from finsync.core.sessions import SESSION_LIFETIME, csrf_token
 from finsync.ingestion import ColumnMapping
-from finsync.storage import EventRecord, FinSyncStorage, TransactionRecord, WebSessionRecord
+from finsync.storage import (
+    ApiTokenRecord,
+    EventRecord,
+    FinSyncStorage,
+    MerchantCategoryRecord,
+    OwnAccountRecord,
+    TransactionRecord,
+    WebSessionRecord,
+)
 
 # Request body limits. A bulk import or an export file carries many rows; every other request is one small object.
 MAX_BODY_BYTES = 64 * 1024
@@ -47,6 +58,8 @@ _LARGE_BODY_PATHS = {_BULK_PATH, _IMPORT_PATH}
 SESSION_COOKIE = "finsync_session"
 CSRF_HEADER = "X-CSRF-Token"
 _SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
+# Methods whose body BodySizeLimit counts.
+_BODY_METHODS = {"POST", "PUT", "PATCH"}
 
 
 # Request bodies. The service validates the values again, so the HTTP layer and the tests on the
@@ -107,6 +120,23 @@ class ImportIn(BaseModel):
 
 class SplitIn(BaseModel):
     transaction_id: StrictInt
+
+
+class MerchantRuleIn(BaseModel):
+    # The merchant as the member types it ("SPAR"); matched on its normalised words.
+    merchant: str
+    # One of the allowed categories (GET /v1/merchant-rules lists them).
+    category: str
+
+
+class OwnAccountIn(BaseModel):
+    # An account number or IBAN (at least 8 digits), or a name as the bank prints it ("KISS ANNA").
+    label: str
+
+
+class TokenIn(BaseModel):
+    # What the token is for, shown in the list, for example "Anna phone".
+    name: str
 
 
 class SignInIn(BaseModel):
@@ -229,6 +259,100 @@ class DecisionsOut(BaseModel):
     decisions: list[DecisionOut]
 
 
+class OverviewBucketOut(BaseModel):
+    # "all" for the month total, the category for a category row, the member id for a member row.
+    key: str
+    currency: str
+    # Positive sums; expense and income are never netted.
+    expense: str
+    income: str
+    event_count: int
+    # Events in this bucket still waiting for review: already in the sums above, counted here too.
+    review_count: int
+    review_amount: str
+
+
+class OverviewOut(BaseModel):
+    month: str
+    # Months that have events, newest first, for the month picker.
+    months: list[str]
+    totals: list[OverviewBucketOut]
+    categories: list[OverviewBucketOut]
+    members: list[OverviewBucketOut]
+    # Transfers between the group's own accounts are left out of every sum; only their number is given.
+    transfer_count: int
+
+
+class MerchantRuleOut(BaseModel):
+    id: int
+    merchant: str
+    # The normalised words the rule matches: "SPAR 0123 Kft." -> "spar".
+    merchant_key: str
+    category: str
+    created_by: str
+    created_at: str
+    updated_at: str
+
+
+class MerchantRulesOut(BaseModel):
+    rules: list[MerchantRuleOut]
+    # The categories a rule may name.
+    categories: list[str]
+
+
+class OwnAccountOut(BaseModel):
+    id: int
+    label: str
+    # "account" (matched on its digits) or "name" (matched on its words).
+    kind: str
+    match_key: str
+    created_by: str
+    created_at: str
+
+
+class OwnAccountsOut(BaseModel):
+    own_accounts: list[OwnAccountOut]
+
+
+class MemberRoleIn(BaseModel):
+    # "admin" (changes the group's settings) or "member".
+    role: str
+
+
+class MemberOut(BaseModel):
+    user_id: str
+    # The member's sign-in address, if they have a web password.
+    email: str | None
+    # "admin" or "member". Only an admin changes group settings (merchant rules, roles).
+    role: str
+    # True for the signed-in caller.
+    is_me: bool
+
+
+class MembersOut(BaseModel):
+    members: list[MemberOut]
+
+
+class TokenOut(BaseModel):
+    id: int
+    name: str
+    # The first 8 characters, to recognise the token; the token itself is never stored.
+    prefix: str
+    created_at: str
+    last_used_at: str | None
+    revoked_at: str | None
+
+
+class TokensOut(BaseModel):
+    tokens: list[TokenOut]
+
+
+class CreatedTokenOut(BaseModel):
+    # Shown once: only its hash is stored, so it cannot be retrieved again.
+    token: str
+    record: TokenOut
+
+
 class SessionOut(BaseModel):
     user_id: str
     group_id: str
@@ -244,7 +368,7 @@ _ERRORS: dict[int | str, dict[str, Any]] = {
 
 
 class BodySizeLimit:
-    """Rejects a POST body over the path's limit with 413, before the app parses it.
+    """Rejects a POST or PUT body over the path's limit with 413, before the app parses it.
 
     A declared ``Content-Length`` over the limit is refused at once. Every body is also counted
     as it arrives and buffered up to the limit, so chunked bodies, or a ``Content-Length`` that
@@ -255,7 +379,7 @@ class BodySizeLimit:
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if scope["type"] != "http" or scope["method"] != "POST":
+        if scope["type"] != "http" or scope["method"] not in _BODY_METHODS:
             await self.app(scope, receive, send)
             return
         limit = MAX_BULK_BODY_BYTES if scope["path"] in _LARGE_BODY_PATHS else MAX_BODY_BYTES
@@ -342,6 +466,10 @@ def create_app(storage: FinSyncStorage) -> FastAPI:
 
     @app.exception_handler(AuthorizationError)
     async def forbidden(_: Request, error: AuthorizationError) -> JSONResponse:
+        return JSONResponse({"error": str(error)}, status_code=403)
+
+    @app.exception_handler(WebSessionRequired)
+    async def web_session_required(_: Request, error: WebSessionRequired) -> JSONResponse:
         return JSONResponse({"error": str(error)}, status_code=403)
 
     @app.exception_handler(NotFoundError)
@@ -459,6 +587,94 @@ def create_app(storage: FinSyncStorage) -> FastAPI:
         events = service.list_group_events(caller.user_id, caller.group_id)
         return EventsOut(events=[_event(event) for event in events])
 
+    # W8 group merchant → category rules, the first layer of the hybrid categorizer. Every member
+    # reads them; only an admin of the group creates, changes or deletes them (403 otherwise).
+    @app.get("/v1/merchant-rules")
+    def list_merchant_rules(caller: Caller) -> MerchantRulesOut:
+        rules = service.list_merchant_rules(caller.user_id, caller.group_id)
+        return MerchantRulesOut(rules=[_rule(r) for r in rules], categories=list(CATEGORIES))
+
+    @app.post("/v1/merchant-rules", status_code=201)
+    def create_merchant_rule(body: MerchantRuleIn, caller: Caller) -> MerchantRuleOut:
+        return _rule(service.create_merchant_rule(caller.user_id, caller.group_id, body.merchant, body.category))
+
+    @app.put("/v1/merchant-rules/{rule_id}")
+    def update_merchant_rule(rule_id: int, body: MerchantRuleIn, caller: Caller) -> MerchantRuleOut:
+        return _rule(
+            service.update_merchant_rule(caller.user_id, caller.group_id, rule_id, body.merchant, body.category)
+        )
+
+    @app.delete("/v1/merchant-rules/{rule_id}")
+    def delete_merchant_rule(rule_id: int, caller: Caller) -> MerchantRuleOut:
+        """Deletes the rule and answers it as it was, so the screen can offer to add it back."""
+        return _rule(service.delete_merchant_rule(caller.user_id, caller.group_id, rule_id))
+
+    # W8 own accounts and counterparties: a new record naming one is a transfer within the group,
+    # left out of the overview's totals. Every member reads the list; only an admin changes it.
+    @app.get("/v1/own-accounts")
+    def list_own_accounts(caller: Caller) -> OwnAccountsOut:
+        accounts = service.list_own_accounts(caller.user_id, caller.group_id)
+        return OwnAccountsOut(own_accounts=[_own_account(a) for a in accounts])
+
+    @app.post("/v1/own-accounts", status_code=201)
+    def create_own_account(body: OwnAccountIn, caller: Caller) -> OwnAccountOut:
+        return _own_account(service.create_own_account(caller.user_id, caller.group_id, body.label))
+
+    @app.delete("/v1/own-accounts/{account_id}")
+    def delete_own_account(account_id: int, caller: Caller) -> OwnAccountOut:
+        return _own_account(service.delete_own_account(caller.user_id, caller.group_id, account_id))
+
+    @app.get("/v1/members")
+    def list_members(caller: Caller) -> MembersOut:
+        members = service.list_members(caller.user_id, caller.group_id)
+        return MembersOut(members=[
+            MemberOut(user_id=user_id, email=email, role=role, is_me=user_id == caller.user_id)
+            for user_id, email, role in members
+        ])
+
+    @app.put("/v1/members/{member_id}/role")
+    def set_member_role(member_id: str, body: MemberRoleIn, caller: Caller) -> MembersOut:
+        """An admin changes a member's role; the group must keep at least one admin (else 409)."""
+        service.set_member_role(caller.user_id, caller.group_id, member_id, body.role)
+        return list_members(caller)
+
+    # Token management (W8) works only with the web session cookie; an API token gets 403, so a leaked
+    # phone token cannot issue new tokens. A member sees and revokes only their own tokens in this group.
+    @app.get("/v1/tokens")
+    def list_tokens(caller: Caller) -> TokensOut:
+        """The signed-in member's API tokens in this group. Web session cookie only; an API token gets 403."""
+        service.ensure_authorized(caller.user_id, caller.group_id)
+        return TokensOut(tokens=[_token(t) for t in tokens.list_own(caller)])
+
+    @app.post("/v1/tokens", status_code=201)
+    def create_token(body: TokenIn, caller: Caller) -> CreatedTokenOut:
+        """Issue an API token for the Android app or the Sheets script; it is shown only in this answer.
+        Web session cookie only; an API token gets 403."""
+        service.ensure_authorized(caller.user_id, caller.group_id)
+        secret, record = tokens.create_own(caller, body.name)
+        return CreatedTokenOut(token=secret, record=_token(record))
+
+    @app.post("/v1/tokens/{token_id}/revoke")
+    def revoke_token(token_id: int, caller: Caller) -> TokenOut:
+        """Revoke one of the signed-in member's tokens. Web session cookie only; an API token gets 403."""
+        service.ensure_authorized(caller.user_id, caller.group_id)
+        record = tokens.revoke_own(caller, token_id)
+        if record is None:
+            raise NotFoundError("Token not found")
+        return _token(record)
+
+    @app.get("/v1/overview")
+    def overview(caller: Caller, month: str | None = None) -> OverviewOut:
+        result = service.overview(caller.user_id, caller.group_id, month)
+        return OverviewOut(
+            month=result.month,
+            months=result.months,
+            totals=[_bucket(b) for b in result.totals],
+            categories=[_bucket(b) for b in result.categories],
+            members=[_bucket(b) for b in result.members],
+            transfer_count=result.transfer_count,
+        )
+
     @app.get("/v1/events/{event_id}/decisions")
     def list_event_decisions(event_id: int, caller: Caller) -> DecisionsOut:
         decisions = service.list_event_decisions(caller.user_id, caller.group_id, event_id)
@@ -522,6 +738,52 @@ def _import(result: ImportResult) -> ImportOut:
         errors=[RowErrorOut(line=error.line, error=error.error) for error in result.errors],
         results=[_result(item) for item in result.results],
         summary=summary,
+    )
+
+
+def _own_account(record: OwnAccountRecord) -> OwnAccountOut:
+    return OwnAccountOut(
+        id=record.id,
+        label=record.label,
+        kind=record.kind,
+        match_key=record.match_key,
+        created_by=record.created_by,
+        created_at=record.created_at.isoformat(),
+    )
+
+
+def _rule(record: MerchantCategoryRecord) -> MerchantRuleOut:
+    return MerchantRuleOut(
+        id=record.id,
+        merchant=record.merchant_label,
+        merchant_key=record.merchant_key,
+        category=record.category,
+        created_by=record.created_by,
+        created_at=record.created_at.isoformat(),
+        updated_at=record.updated_at.isoformat(),
+    )
+
+
+def _token(record: ApiTokenRecord) -> TokenOut:
+    return TokenOut(
+        id=record.id,
+        name=record.name,
+        prefix=record.prefix,
+        created_at=record.created_at.isoformat(),
+        last_used_at=record.last_used_at.isoformat() if record.last_used_at else None,
+        revoked_at=record.revoked_at.isoformat() if record.revoked_at else None,
+    )
+
+
+def _bucket(bucket: Bucket) -> OverviewBucketOut:
+    return OverviewBucketOut(
+        key=bucket.key,
+        currency=bucket.currency,
+        expense=str(bucket.expense),
+        income=str(bucket.income),
+        event_count=bucket.event_count,
+        review_count=bucket.review_count,
+        review_amount=str(bucket.review_amount),
     )
 
 

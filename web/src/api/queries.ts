@@ -1,12 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { api, type ManualTransaction, unwrap } from './client'
+import { api, type ManualTransaction, type MerchantRuleInput, unwrap } from './client'
 import type { components } from './schema'
 
 export function useEvents() {
   return useQuery({
     queryKey: ['events'],
     queryFn: async () => unwrap(await api.GET('/v1/events')).events,
+  })
+}
+
+/** W2: month totals; without a month, the server's current month (Budapest time). */
+export function useOverview(month: string | null) {
+  return useQuery({
+    queryKey: ['overview', month],
+    queryFn: async () => unwrap(await api.GET('/v1/overview', { params: { query: month ? { month } : {} } })),
   })
 }
 
@@ -80,5 +88,110 @@ export function useImportFile() {
   return useMutation({
     mutationFn: async (body: ImportRequest) => unwrap(await api.POST('/v1/imports', { body })),
     onSuccess: (_, body) => (body.dry_run ? undefined : invalidateAll()),
+  })
+}
+
+// W8 settings.
+
+export function useMembers() {
+  return useQuery({
+    queryKey: ['members'],
+    queryFn: async () => unwrap(await api.GET('/v1/members')).members,
+  })
+}
+
+/** An admin changes a member's role; the answer is the new member list. */
+export function useSetMemberRole() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ memberId, role }: { memberId: string; role: string }) =>
+      unwrap(
+        await api.PUT('/v1/members/{member_id}/role', { params: { path: { member_id: memberId } }, body: { role } }),
+      ).members,
+    onSuccess: (members) => queryClient.setQueryData(['members'], members),
+  })
+}
+
+/** The signed-in member's own API tokens (works only with the web session). */
+export function useTokens() {
+  return useQuery({
+    queryKey: ['tokens'],
+    queryFn: async () => unwrap(await api.GET('/v1/tokens')).tokens,
+  })
+}
+
+export function useCreateToken() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (name: string) => unwrap(await api.POST('/v1/tokens', { body: { name } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tokens'] }),
+  })
+}
+
+export function useRevokeToken() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (tokenId: number) =>
+      unwrap(await api.POST('/v1/tokens/{token_id}/revoke', { params: { path: { token_id: tokenId } } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tokens'] }),
+  })
+}
+
+/** The group's merchant rules and the categories a rule may name. Rules change only new records. */
+export function useMerchantRules() {
+  return useQuery({
+    queryKey: ['merchant-rules'],
+    queryFn: async () => unwrap(await api.GET('/v1/merchant-rules')),
+  })
+}
+
+export function useCreateMerchantRule() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (body: MerchantRuleInput) => unwrap(await api.POST('/v1/merchant-rules', { body })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['merchant-rules'] }),
+  })
+}
+
+export function useUpdateMerchantRule() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...body }: MerchantRuleInput & { id: number }) =>
+      unwrap(await api.PUT('/v1/merchant-rules/{rule_id}', { params: { path: { rule_id: id } }, body })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['merchant-rules'] }),
+  })
+}
+
+export function useDeleteMerchantRule() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: number) =>
+      unwrap(await api.DELETE('/v1/merchant-rules/{rule_id}', { params: { path: { rule_id: id } } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['merchant-rules'] }),
+  })
+}
+
+/** The group's own accounts and counterparties: new records naming one are transfers. */
+export function useOwnAccounts() {
+  return useQuery({
+    queryKey: ['own-accounts'],
+    queryFn: async () => unwrap(await api.GET('/v1/own-accounts')).own_accounts,
+  })
+}
+
+export function useCreateOwnAccount() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (label: string) => unwrap(await api.POST('/v1/own-accounts', { body: { label } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['own-accounts'] }),
+  })
+}
+
+export function useDeleteOwnAccount() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: number) =>
+      unwrap(await api.DELETE('/v1/own-accounts/{account_id}', { params: { path: { account_id: id } } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['own-accounts'] }),
   })
 }

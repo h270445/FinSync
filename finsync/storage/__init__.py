@@ -1,9 +1,14 @@
 """Persistence layer: SQLite or PostgreSQL through SQLAlchemy Core, schema managed by Alembic."""
 
 from finsync.storage.database import (
+    ADMIN,
+    MEMBER,
+    ROLES,
     ApiTokenRecord,
     EventRecord,
     FinSyncStorage,
+    MerchantCategoryRecord,
+    OwnAccountRecord,
     StorageSession,
     TransactionRecord,
     WebSessionRecord,
@@ -11,9 +16,14 @@ from finsync.storage.database import (
 )
 
 __all__ = [
+    "ADMIN",
+    "MEMBER",
+    "ROLES",
     "ApiTokenRecord",
     "EventRecord",
     "FinSyncStorage",
+    "MerchantCategoryRecord",
+    "OwnAccountRecord",
     "StorageSession",
     "TransactionRecord",
     "WebSessionRecord",

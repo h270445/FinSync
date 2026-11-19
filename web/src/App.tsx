@@ -6,9 +6,11 @@ import { LoadingRows } from '@/components/states'
 import { EventDetailPage } from '@/pages/EventDetailPage'
 import { EventsPage } from '@/pages/EventsPage'
 import { NewTransactionPage } from '@/pages/NewTransactionPage'
+import { OverviewPage } from '@/pages/OverviewPage'
 import { ImportPage } from '@/pages/ImportPage'
 import { PlaceholderPage } from '@/pages/PlaceholderPage'
 import { ReviewPage } from '@/pages/ReviewPage'
+import { SettingsPage } from '@/pages/SettingsPage'
 import { SignInPage } from '@/pages/SignInPage'
 
 // Screen ids (W1–W8) follow docs/design/user-interface.md#web-app.
@@ -25,13 +27,13 @@ export function App() {
   return (
     <Routes>
       <Route element={<AppShell />}>
-        <Route index element={<PlaceholderPage title="Áttekintés" screen="W2" />} />
+        <Route index element={<OverviewPage />} />
         <Route path="esemenyek" element={<EventsPage />} />
         <Route path="esemenyek/:eventId" element={<EventDetailPage />} />
         <Route path="ellenorzes" element={<ReviewPage />} />
         <Route path="uj-tetel" element={<NewTransactionPage />} />
         <Route path="importalas" element={<ImportPage />} />
-        <Route path="beallitasok" element={<PlaceholderPage title="Beállítások" screen="W8" />} />
+        <Route path="beallitasok" element={<SettingsPage />} />
         <Route path="*" element={<PlaceholderPage title="Nincs ilyen oldal" screen="404" />} />
       </Route>
     </Routes>

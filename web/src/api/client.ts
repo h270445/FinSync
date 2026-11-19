@@ -11,6 +11,14 @@ export type Decision = components['schemas']['DecisionOut']
 export type Session = components['schemas']['SessionOut']
 export type ImportResult = components['schemas']['ImportOut']
 export type ColumnMapping = components['schemas']['ColumnMappingIn']
+export type Member = components['schemas']['MemberOut']
+export type ApiToken = components['schemas']['TokenOut']
+export type CreatedToken = components['schemas']['CreatedTokenOut']
+export type MerchantRule = components['schemas']['MerchantRuleOut']
+export type MerchantRuleInput = components['schemas']['MerchantRuleIn']
+export type OwnAccount = components['schemas']['OwnAccountOut']
+export type Overview = components['schemas']['OverviewOut']
+export type OverviewBucket = components['schemas']['OverviewBucketOut']
 
 /** A refused request, with the backend's `{"error": "..."}` message. */
 export class ApiError extends Error {

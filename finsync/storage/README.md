@@ -5,7 +5,7 @@ Group memberships, API tokens, web sessions, transactions, events and match deci
 | File | Contents |
 | --- | --- |
 | `database.py` | `FinSyncStorage` (opens the database, brings the schema up to date, one transaction per call, `transaction()` for a write unit), `StorageSession` (reads and writes inside one transaction), the record types |
-| `migrations/` | Alembic: `env.py` (runs on the connection `FinSyncStorage` hands over) and `versions/` (hand-written revisions; `0001_baseline.py` is the schema of SQLite version 4) |
+| `migrations/` | Alembic: `env.py` (runs on the connection `FinSyncStorage` hands over) and `versions/` (hand-written revisions; `0001_baseline.py` is the schema of SQLite version 4, `0002_merchant_categories.py` adds the group merchant rules, `0003_member_roles.py` the admin/member role, `0004_nine_categories.py` renames `housing` to `housing_utilities`, `0005_own_accounts.py` adds the own-accounts list) |
 | `__init__.py` | Public names |
 
 ## How it works
@@ -18,16 +18,18 @@ The queries are plain SQL with `?` placeholders that both databases accept, so t
 
 **Types.** Amounts are stored as decimal text (exact) and instants as UTC ISO 8601 text, on both databases, so ordering and range queries behave the same and no value changes on the way. Native `numeric` and `timestamptz` columns would be a later migration.
 
-## Schema (current, Alembic revision `0001`)
+## Schema (current, Alembic revision `0005`)
 
 | Table | Columns |
 | --- | --- |
-| `group_memberships` | `user_id`, `group_id` (primary key on both) |
+| `group_memberships` | `user_id`, `group_id` (primary key on both), `role` (`admin` or `member`, revision `0003`) |
 | `api_tokens` | `id`, `user_id`, `group_id`, `name`, `token_hash` (SHA-256, unique), `prefix` (first 8 characters, for display), `created_at`, `last_used_at`, `revoked_at`; the token itself is never stored |
 | `member_accounts` | `user_id` (primary key), `email` (unique, lower case), `password_hash` (scrypt with its parameters), `updated_at` |
 | `web_sessions` | `id`, `user_id`, `group_id`, `session_hash` (SHA-256, unique), `created_at`, `expires_at`, `revoked_at` |
 | `transactions` | `id`, `user_id`, `group_id`, `amount` (decimal as text), `currency`, `description`, `merchant`, `category`, `source`, `happened_at` (UTC), `created_at` (arrival time), `event_id`, `direction`, `happened_at_precision`, `fingerprint`, `duplicate_of_id`, `raw_payload`, `source_ref`, `import_batch_id` |
 | `events` | `id`, `group_id`, display values copied from the primary record, `primary_transaction_id`, `review_state`, `created_at`, `updated_at` |
+| `merchant_categories` | Group merchant → category rules (W8, revision `0002`): `id`, `group_id`, `merchant_key` (normalised words, unique per group), `merchant_label` (as typed), `category`, `times_confirmed`, `created_by`, `created_at`, `updated_at` |
+| `own_accounts` | The group's own accounts and counterparties (revision `0005`): `id`, `group_id`, `label` (as typed), `kind` (`account` or `name`), `match_key` (digits or normalised words; unique per group and kind), `created_by`, `created_at` |
 | `match_decisions` | Append-only: `transaction_id`, `candidate_event_id`, `outcome`, `score`, `features` (JSON), `matcher_version`, `decided_by`, `supersedes_id`, `created_at` |
 
 ## Migrations

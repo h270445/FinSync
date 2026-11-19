@@ -34,6 +34,10 @@ from sqlalchemy.pool import NullPool
 SCHEMA_VERSION = 4
 BASELINE_REVISION = "0001"
 _MIGRATIONS = Path(__file__).with_name("migrations")
+# Member roles (Alembic revision 0003): an admin changes the group's settings, a member does not.
+ADMIN = "admin"
+MEMBER = "member"
+ROLES = (ADMIN, MEMBER)
 # Any constant works: the lock only has to be the same for every write unit (see FinSyncStorage.transaction).
 _WRITE_LOCK_KEY = 0x46494E53  # "FINS"
 
@@ -71,6 +75,34 @@ class ApiTokenRecord:
     created_at: datetime
     last_used_at: datetime | None
     revoked_at: datetime | None
+
+
+@dataclass(frozen=True)
+class MerchantCategoryRecord:
+    """A group's merchant → category rule (W8), the first layer of the hybrid categorizer."""
+
+    id: int
+    group_id: str
+    merchant_key: str
+    merchant_label: str
+    category: str
+    times_confirmed: int
+    created_by: str
+    created_at: datetime
+    updated_at: datetime
+
+
+@dataclass(frozen=True)
+class OwnAccountRecord:
+    """One of the group's own accounts or counterparties (W8): records naming it are transfers."""
+
+    id: int
+    group_id: str
+    label: str
+    kind: str
+    match_key: str
+    created_by: str
+    created_at: datetime
 
 
 @dataclass(frozen=True)
@@ -410,12 +442,46 @@ class FinSyncStorage:
                 connection.execute("SELECT pg_advisory_xact_lock(?)", (_WRITE_LOCK_KEY,))
             yield StorageSession(connection)
 
-    def add_group_membership(self, user_id: str, group_id: str) -> None:
+    def add_group_membership(self, user_id: str, group_id: str, role: str | None = None) -> None:
+        """Add a member; an existing membership keeps its role. Without a role, the first member of a
+        new group becomes its admin and everyone after is a member."""
         with self._session() as connection:
+            if role is None:
+                first = connection.execute(
+                    "SELECT 1 FROM group_memberships WHERE group_id = ?", (group_id,)
+                ).fetchone() is None
+                role = ADMIN if first else MEMBER
             connection.execute(
-                "INSERT INTO group_memberships (user_id, group_id) VALUES (?, ?) ON CONFLICT DO NOTHING",
-                (user_id, group_id),
+                "INSERT INTO group_memberships (user_id, group_id, role) VALUES (?, ?, ?) ON CONFLICT DO NOTHING",
+                (user_id, group_id, role),
             )
+
+    def member_role(self, user_id: str, group_id: str) -> str | None:
+        """`admin` or `member`; None when the user is not in the group."""
+        with self._session() as connection:
+            row = connection.execute(
+                "SELECT role FROM group_memberships WHERE user_id = ? AND group_id = ?", (user_id, group_id)
+            ).fetchone()
+        return str(row["role"]) if row else None
+
+    def set_member_role(self, user_id: str, group_id: str, role: str) -> bool:
+        """Change a member's role. Refuses (ValueError) to leave the group without an admin."""
+        with self._session() as connection:
+            current = connection.execute(
+                "SELECT role FROM group_memberships WHERE user_id = ? AND group_id = ?", (user_id, group_id)
+            ).fetchone()
+            if current is None:
+                return False
+            if current["role"] == ADMIN and role != ADMIN:
+                admins = connection.execute(
+                    "SELECT COUNT(*) AS n FROM group_memberships WHERE group_id = ? AND role = ?", (group_id, ADMIN)
+                ).fetchone()
+                if int(admins["n"]) <= 1:
+                    raise ValueError("the group must keep at least one admin")
+            connection.execute(
+                "UPDATE group_memberships SET role = ? WHERE user_id = ? AND group_id = ?", (role, user_id, group_id)
+            )
+        return True
 
     def is_user_in_group(self, user_id: str, group_id: str) -> bool:
         with self._session() as connection:
@@ -457,6 +523,119 @@ class FinSyncStorage:
                 "UPDATE api_tokens SET revoked_at = ? WHERE id = ? AND revoked_at IS NULL", (_now(), token_id)
             )
         return cursor.rowcount == 1
+
+    def revoke_member_api_token(self, token_id: int, user_id: str, group_id: str) -> ApiTokenRecord | None:
+        """Revoke one of a member's own tokens in a group (already revoked is fine); None if it is not theirs."""
+        with self._session() as connection:
+            connection.execute(
+                """
+                UPDATE api_tokens SET revoked_at = ?
+                WHERE id = ? AND user_id = ? AND group_id = ? AND revoked_at IS NULL
+                """,
+                (_now(), token_id, user_id, group_id),
+            )
+            row = connection.execute(
+                "SELECT * FROM api_tokens WHERE id = ? AND user_id = ? AND group_id = ?", (token_id, user_id, group_id)
+            ).fetchone()
+        return _row_to_api_token(row) if row else None
+
+    def list_group_members(self, group_id: str) -> list[tuple[str, str | None, str]]:
+        """The group's members with their sign-in e-mail address (if they have one) and role."""
+        with self._session() as connection:
+            rows = connection.execute(
+                """
+                SELECT m.user_id, a.email, m.role FROM group_memberships m
+                LEFT JOIN member_accounts a ON a.user_id = m.user_id
+                WHERE m.group_id = ? ORDER BY m.user_id
+                """,
+                (group_id,),
+            ).fetchall()
+        return [(str(row["user_id"]), row["email"], str(row["role"])) for row in rows]
+
+    def list_merchant_categories(self, group_id: str) -> list[MerchantCategoryRecord]:
+        with self._session() as connection:
+            rows = connection.execute(
+                "SELECT * FROM merchant_categories WHERE group_id = ? ORDER BY merchant_key, id", (group_id,)
+            ).fetchall()
+        return [_row_to_merchant_category(row) for row in rows]
+
+    def get_merchant_category(self, group_id: str, rule_id: int) -> MerchantCategoryRecord | None:
+        with self._session() as connection:
+            row = connection.execute(
+                "SELECT * FROM merchant_categories WHERE id = ? AND group_id = ?", (rule_id, group_id)
+            ).fetchone()
+        return _row_to_merchant_category(row) if row else None
+
+    def insert_merchant_category(self, group_id: str, key: str, label: str, category: str, created_by: str) -> int:
+        """Raises ValueError when the group already has a rule for this merchant key."""
+        now = _now()
+        try:
+            with self._session() as connection:
+                return connection.insert(
+                    """
+                    INSERT INTO merchant_categories
+                        (group_id, merchant_key, merchant_label, category, created_by, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (group_id, key, label, category, created_by, now, now),
+                )
+        except IntegrityError as error:
+            raise ValueError("duplicate merchant key") from error
+
+    def update_merchant_category(self, group_id: str, rule_id: int, key: str, label: str, category: str) -> bool:
+        """False when the rule is not in the group; ValueError when another rule has the key."""
+        try:
+            with self._session() as connection:
+                cursor = connection.execute(
+                    """
+                    UPDATE merchant_categories SET merchant_key = ?, merchant_label = ?, category = ?, updated_at = ?
+                    WHERE id = ? AND group_id = ?
+                    """,
+                    (key, label, category, _now(), rule_id, group_id),
+                )
+        except IntegrityError as error:
+            raise ValueError("duplicate merchant key") from error
+        return cursor.rowcount == 1
+
+    def delete_merchant_category(self, group_id: str, rule_id: int) -> bool:
+        with self._session() as connection:
+            cursor = connection.execute(
+                "DELETE FROM merchant_categories WHERE id = ? AND group_id = ?", (rule_id, group_id)
+            )
+        return cursor.rowcount == 1
+
+    def list_own_accounts(self, group_id: str) -> list[OwnAccountRecord]:
+        with self._session() as connection:
+            rows = connection.execute(
+                "SELECT * FROM own_accounts WHERE group_id = ? ORDER BY label, id", (group_id,)
+            ).fetchall()
+        return [_row_to_own_account(row) for row in rows]
+
+    def insert_own_account(self, group_id: str, label: str, kind: str, key: str, created_by: str) -> OwnAccountRecord:
+        """Raises ValueError when the group already lists this account or name."""
+        try:
+            with self._session() as connection:
+                new_id = connection.insert(
+                    """
+                    INSERT INTO own_accounts (group_id, label, kind, match_key, created_by, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (group_id, label, kind, key, created_by, _now()),
+                )
+                row = connection.execute("SELECT * FROM own_accounts WHERE id = ?", (new_id,)).fetchone()
+        except IntegrityError as error:
+            raise ValueError("duplicate own account") from error
+        return _row_to_own_account(row)
+
+    def delete_own_account(self, group_id: str, account_id: int) -> OwnAccountRecord | None:
+        with self._session() as connection:
+            row = connection.execute(
+                "SELECT * FROM own_accounts WHERE id = ? AND group_id = ?", (account_id, group_id)
+            ).fetchone()
+            if row is None:
+                return None
+            connection.execute("DELETE FROM own_accounts WHERE id = ? AND group_id = ?", (account_id, group_id))
+        return _row_to_own_account(row)
 
     def list_api_tokens(self, user_id: str | None = None) -> list[ApiTokenRecord]:
         with self._session() as connection:
@@ -651,6 +830,18 @@ class StorageSession:
 
     def __init__(self, connection: _Connection) -> None:
         self._connection = connection
+
+    def own_accounts(self, group_id: str) -> list[OwnAccountRecord]:
+        """The group's own accounts, read in the write transaction that classifies a new record."""
+        rows = self._connection.execute("SELECT * FROM own_accounts WHERE group_id = ? ORDER BY id", (group_id,)).fetchall()
+        return [_row_to_own_account(row) for row in rows]
+
+    def merchant_categories(self, group_id: str) -> list[MerchantCategoryRecord]:
+        """The group's merchant rules, read in the write transaction that categorizes a new record."""
+        rows = self._connection.execute(
+            "SELECT * FROM merchant_categories WHERE group_id = ? ORDER BY id", (group_id,)
+        ).fetchall()
+        return [_row_to_merchant_category(row) for row in rows]
 
     def find_original_by_fingerprint(self, group_id: str, fingerprint: str) -> TransactionRecord | None:
         row = self._connection.execute(
@@ -949,6 +1140,32 @@ def candidate_time_range(happened_at: datetime, days: int) -> tuple[datetime, da
 
 def _optional_time(value: Any) -> datetime | None:
     return datetime.fromisoformat(str(value)) if value is not None else None
+
+
+def _row_to_own_account(row: Mapping[str, Any]) -> OwnAccountRecord:
+    return OwnAccountRecord(
+        id=int(row["id"]),
+        group_id=str(row["group_id"]),
+        label=str(row["label"]),
+        kind=str(row["kind"]),
+        match_key=str(row["match_key"]),
+        created_by=str(row["created_by"]),
+        created_at=datetime.fromisoformat(str(row["created_at"])),
+    )
+
+
+def _row_to_merchant_category(row: Mapping[str, Any]) -> MerchantCategoryRecord:
+    return MerchantCategoryRecord(
+        id=int(row["id"]),
+        group_id=str(row["group_id"]),
+        merchant_key=str(row["merchant_key"]),
+        merchant_label=str(row["merchant_label"]),
+        category=str(row["category"]),
+        times_confirmed=int(row["times_confirmed"]),
+        created_by=str(row["created_by"]),
+        created_at=datetime.fromisoformat(str(row["created_at"])),
+        updated_at=datetime.fromisoformat(str(row["updated_at"])),
+    )
 
 
 def _row_to_api_token(row: Mapping[str, Any]) -> ApiTokenRecord:

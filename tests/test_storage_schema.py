@@ -11,7 +11,7 @@ from sqlalchemy import create_engine, inspect
 from sqlalchemy.pool import NullPool
 
 from finsync.storage import FinSyncStorage
-from finsync.storage.database import BASELINE_REVISION
+from finsync.storage.database import BASELINE_REVISION, _head_revision
 
 
 def _describe(path: str) -> dict[str, object]:
@@ -39,6 +39,20 @@ def _describe(path: str) -> dict[str, object]:
                 "unique": sorted(tuple(u["column_names"]) for u in inspector.get_unique_constraints(table)),
             }
         return described
+    finally:
+        engine.dispose()
+
+
+def _downgrade(path: str, revision: str) -> None:
+    """Take a SQLite file back to an earlier Alembic revision, as an older FinSync left it."""
+    from alembic import command
+
+    from finsync.storage.database import _alembic_config
+
+    engine = create_engine(f"sqlite:///{path}", poolclass=NullPool)
+    try:
+        with engine.begin() as connection:
+            command.downgrade(_alembic_config(connection), revision)
     finally:
         engine.dispose()
 
@@ -79,10 +93,42 @@ class SchemaTest(unittest.TestCase):
         FinSyncStorage(legacy)  # reopening must not run the old migrations again
         connection = sqlite3.connect(legacy)
         try:
-            self.assertEqual(connection.execute("SELECT version_num FROM alembic_version").fetchall(), [(BASELINE_REVISION,)])
+            # Stamped with the baseline, then upgraded by the later revisions (0002: merchant_categories).
+            self.assertNotEqual(BASELINE_REVISION, _head_revision())
+            self.assertEqual(connection.execute("SELECT version_num FROM alembic_version").fetchall(), [(_head_revision(),)])
+            self.assertEqual(connection.execute("SELECT COUNT(*) FROM merchant_categories").fetchone(), (0,))
             self.assertEqual(connection.execute("SELECT MAX(version) FROM schema_version").fetchone(), (4,))
         finally:
             connection.close()
+
+    def test_revision_0003_makes_every_existing_member_an_admin(self) -> None:
+        path = self._path("roles.db")
+        storage = FinSyncStorage(path)
+        storage.add_group_membership("anna", "lakas")
+        storage.add_group_membership("balint", "lakas")
+        self.assertEqual(storage.member_role("balint", "lakas"), "member")
+        _downgrade(path, "0002")  # before roles existed
+        upgraded = FinSyncStorage(path)
+        self.assertEqual([r for _, _, r in upgraded.list_group_members("lakas")], ["admin", "admin"])
+        upgraded.add_group_membership("cecil", "lakas")
+        self.assertEqual(upgraded.member_role("cecil", "lakas"), "member")
+
+    def test_revision_0004_renames_housing_to_housing_utilities(self) -> None:
+        from finsync.core import FinSyncService
+
+        path = self._path("categories.db")
+        storage = FinSyncStorage(path)
+        storage.add_group_membership("anna", "lakas")
+        FinSyncService(storage).create_manual_transaction(
+            "anna", "lakas", {"amount": "-185000", "currency": "HUF", "description": "rent", "happened_at": "2026-11-01"}
+        )
+        _downgrade(path, "0003")  # when the keyword rules still wrote "housing"
+        connection = sqlite3.connect(path)
+        self.assertEqual(connection.execute("SELECT category FROM events").fetchall(), [("housing",)])
+        connection.close()
+        upgraded = FinSyncStorage(path)
+        self.assertEqual({tx.category for tx in upgraded.list_transactions("lakas")}, {"housing_utilities"})
+        self.assertEqual({e.category for e in upgraded.list_events("lakas")}, {"housing_utilities"})
 
     def test_a_new_database_has_no_legacy_version_table(self) -> None:
         FinSyncStorage(self._path("new.db"))

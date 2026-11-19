@@ -27,7 +27,9 @@ New fields on `events` (the category belongs to the purchase, not to one source 
 | `category_source` | `user`, `source`, `merchant_memory`, `rule`, `llm`, `none` | Who decided |
 | `category_confidence` | `high`, `low` | Whether it is shown as settled or as a suggestion |
 
-A new `merchant_categories` table (per group): `merchant_key`, `category`, `times_confirmed`, `updated_at`. It is filled from member corrections and confirmations, never from LLM output alone.
+A `merchant_categories` table (per group): `merchant_key`, `category`, `times_confirmed`, `updated_at`, plus the merchant as typed, who added it and when (Alembic revision 0002, 2026-11-19). Admins of the group add, change and delete rows on the W8 settings screen (every member reads them); later, corrections and confirmations add and confirm them, never LLM output alone.
+
+**How a rule matches (implemented 2026-11-19, [`merchant_rules.py`](../../finsync/categorization/merchant_rules.py)).** The key is the merchant's words, lowercase, accent-free, without store numbers and company suffixes ("Spar 0123 Kft." → `spar`), the same normalisation as matching uses. A rule applies when every word of its key is a word of the record's merchant, or of its description when it has no merchant; the rule with the most words wins ("MOL Bubi" before "MOL"). A group has at most one rule per key. A rule applies to records stored after it; existing events are not recategorized (author's decision, 2026-11-19), that is the logged category correction's job.
 
 Every change of category is logged (who, old, new, when), the same way match decisions are.
 
@@ -95,7 +97,7 @@ Automatic splitting from receipts (photo, e-receipt) is out of scope.
 
 ## Money transfers
 
-Decided by the author on 2026-10-26; scheduled for M2 (Nov 23–27).
+Decided by the author on 2026-10-26; scheduled for M2 (Nov 23–27). The own-accounts list and the `transfer` direction were built on 2026-11-19 ([`own_accounts.py`](../../finsync/categorization/own_accounts.py), W8 screen, `/v1/own-accounts`): an entry with at least 8 digits matches on its digits, any other entry on its words; the list applies to records stored after it, and only an admin changes it. Marking or unmarking a single record as a transfer comes with the category correction.
 
 A transfer between members of the same group (for example within a family, through mobile banking) is neither spending nor income for the group: today it is stored as an expense on the sender's side and as income on the receiver's side, which inflates the group's totals.
 
