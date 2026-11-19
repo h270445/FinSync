@@ -126,6 +126,31 @@ class CategorizerCacheTest(unittest.TestCase):
         self.assertIsNone(cost_usd("fake-model", [reply("health")]))
 
 
+class OpenAICompatibleClientTest(unittest.TestCase):
+    def test_request_carries_the_schema_and_the_reply_is_read(self) -> None:
+        import httpx
+        from finsync.categorization.llm import OpenAICompatibleClient
+
+        seen = {}
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            seen["url"] = str(request.url)
+            seen["body"] = json.loads(request.content)
+            return httpx.Response(200, json={
+                "choices": [{"message": {"content": '{"category": "health"}'}}],
+                "usage": {"prompt_tokens": 650, "completion_tokens": 8},
+            })
+
+        client = OpenAICompatibleClient("http://localhost:1234/v1/", "local-model",
+                                        transport=httpx.MockTransport(handler))
+        result = client.complete("system", "user")
+        self.assertEqual(seen["url"], "http://localhost:1234/v1/chat/completions")
+        self.assertEqual(seen["body"]["model"], "local-model")
+        self.assertEqual(seen["body"]["response_format"]["json_schema"]["schema"]["required"], ["category"])
+        self.assertEqual((parse_answer(result.text), result.input_tokens, result.output_tokens),
+                         ("health", 650, 8))
+
+
 class ChooseThresholdTest(unittest.TestCase):
     def point(self, threshold: float, settled: int, correct: int) -> hybrid.Point:
         return hybrid.Point("", threshold, 100, settled, correct, correct)

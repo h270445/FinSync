@@ -194,8 +194,9 @@ def evaluate(items: Sequence[Item], dataset: Path, llm: LlmCategorizer, command:
         f"- Command: `{command}`",
         f"- Dataset: `{dataset.as_posix()}` (sha256 `{_sha256(dataset)[:12]}`), {len(items)} items, "
         f"dev {len(dev_items)}, test {len(test_items)}",
-        f"- LLM: `{llm.model}`, {llm.samples} samples per record, effort `low`, JSON schema output; "
-        f"no temperature (current models do not take one); answers cached in "
+        f"- LLM: `{llm.model}`, {llm.samples} samples per record, JSON schema output (Anthropic API: effort "
+        f"`low`, no temperature, current models do not take one; an OpenAI-compatible server: its default "
+        f"sampling); answers cached in "
         f"`{llm.cache.path.as_posix() if llm.cache.path else '(memory)'}`; "
         f"{new_calls} new calls in this run; report date {date.today().isoformat()}",
         "- Group merchant rules: none (the dataset has no group), so the deterministic layer is the "
@@ -313,6 +314,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Evaluate the hybrid categorizer on the labelled dataset.")
     parser.add_argument("--dataset", type=Path, default=DATASET)
     parser.add_argument("--model", default=DEFAULT_MODEL)
+    parser.add_argument("--base-url", help="an OpenAI-compatible server (for example LM Studio: "
+                        "http://localhost:1234/v1) instead of the Anthropic API; key from FINSYNC_LLM_API_KEY")
     parser.add_argument("--samples", type=int, default=DEFAULT_SAMPLES)
     parser.add_argument("--cache", type=Path, help="answer cache (default: per model and prompt version)")
     parser.add_argument("--out", type=Path, help="write the report here instead of printing it")
@@ -325,8 +328,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     cache = AnswerCache(args.cache or default_cache(args.model))
     client: LlmClient | None = None
     if args.call_llm:
-        from finsync.categorization.llm import AnthropicClient
-        client = AnthropicClient(args.model)
+        if args.base_url:
+            import os
+            from finsync.categorization.llm import OpenAICompatibleClient
+            client = OpenAICompatibleClient(args.base_url, args.model, os.environ.get("FINSYNC_LLM_API_KEY"))
+        else:
+            from finsync.categorization.llm import AnthropicClient
+            client = AnthropicClient(args.model)
     llm = LlmCategorizer(client, cache, model=args.model, samples=args.samples)
 
     if args.estimate:

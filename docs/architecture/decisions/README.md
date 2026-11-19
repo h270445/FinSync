@@ -16,7 +16,7 @@ Each significant, hard-to-reverse decision gets one short record: the context, t
 | [0008](0008-notification-time-and-calendar-day.md) | Notification time and the calendar day | Accepted |
 | [0009](0009-api-tokens.md) | API tokens: one member, one group, stored as a hash | Proposed |
 | [0010](0010-web-sign-in.md) | Web sign-in: e-mail or member id, scrypt password hash, HttpOnly session cookie | Accepted |
-| [0011](0011-llm-categorization-layer.md) | LLM categorization layer: one provider behind an interface, confidence from five samples | Proposed |
+| [0011](0011-llm-categorization-layer.md) | LLM categorization layer: one provider behind an interface, confidence from five samples | Accepted |
 
 ## Template
 

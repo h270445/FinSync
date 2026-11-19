@@ -13,8 +13,10 @@ frequent real category as its confidence (`LlmVote.share`). Below the abstention
 Every answer is cached by model, prompt version, the record's text and the sample number
 (`AnswerCache`), so the same text is never sent twice and a measurement re-run gives the same numbers.
 
-The provider sits behind `LlmClient`; `AnthropicClient` is the one implementation. The `anthropic`
-package is imported only when that client is built, so the rest of FinSync and the tests run without it.
+The provider sits behind `LlmClient`. `AnthropicClient` is the measured one; `OpenAICompatibleClient`
+talks to any server with the OpenAI chat-completions API, such as a local model in LM Studio
+(`http://localhost:1234/v1`), so a self-hosted model needs no code change. The `anthropic` package is
+imported only when that client is built, so the rest of FinSync and the tests run without it.
 """
 
 from __future__ import annotations
@@ -118,6 +120,40 @@ class AnthropicClient:
             (block.text for block in response.content if block.type == "text"), ""
         )
         return LlmReply(text, response.usage.input_tokens, response.usage.output_tokens, seconds)
+
+
+class OpenAICompatibleClient:
+    """`LlmClient` for a server with the OpenAI chat-completions API (LM Studio, llama.cpp, vLLM, Ollama).
+
+    The answer is constrained by the same JSON schema where the server supports `response_format`;
+    `parse_answer()` checks it either way. A local server keeps the default sampling temperature, so the
+    five samples still vary and the share stays a usable confidence."""
+
+    def __init__(self, base_url: str, model: str, api_key: str | None = None, timeout: float = 60.0,
+                 transport=None) -> None:
+        import httpx
+
+        headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
+        self.model = model
+        self._http = httpx.Client(base_url=base_url.rstrip("/"), headers=headers, timeout=timeout,
+                                  transport=transport)
+
+    def complete(self, system: str, user: str) -> LlmReply:
+        started = time.perf_counter()
+        response = self._http.post("/chat/completions", json={
+            "model": self.model,
+            "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
+            "response_format": {"type": "json_schema",
+                                "json_schema": {"name": "category", "strict": True, "schema": ANSWER_SCHEMA}},
+            "max_tokens": 256,
+        })
+        response.raise_for_status()
+        seconds = time.perf_counter() - started
+        data = response.json()
+        choices = data.get("choices") or [{}]
+        text = (choices[0].get("message") or {}).get("content") or ""
+        usage = data.get("usage") or {}
+        return LlmReply(text, int(usage.get("prompt_tokens", 0)), int(usage.get("completion_tokens", 0)), seconds)
 
 
 def user_prompt(merchant: str | None, description: str | None, amount: str | None, currency: str | None) -> str:
