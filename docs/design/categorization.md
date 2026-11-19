@@ -59,6 +59,16 @@ When events are linked by matching, the event takes the highest-precedence categ
 - **Self-reported confidence is not trusted**; confidence comes from agreement with rules or memory.
 - Results are cached by merchant key and description, so the same text is not sent twice.
 
+## When the LLM is called (proposed by the author, 2026-11-19)
+
+Before the LLM is asked, the members get the chance to set an uncertain category themselves; when the LLM runs is a setting. Details proposed on 2026-11-19, awaiting the author's confirmation, scheduled for Nov 23–27 with the category correction:
+
+- **Group setting, admins only (W8):** *never* (default, because data leaves the system), *X hours after the purchase* (24 by default), *daily at a set time*, *weekly on a set day and time*. A member only chooses whether to be notified about uncertain items.
+- **"Ask for a suggestion now"** on selected uncertain items works in every mode.
+- **Manual first:** the "uncertain categories" filter shows the dictionary's suggestion and two or three quick choices; a member's choice is `user`, never overwritten, and teaches merchant memory; a scheduled run skips items decided in the meantime.
+- **Cost guard:** a monthly budget per group (the run stops and says so when it is used up); daily and weekly runs can use the provider's batch interface at half price; identical texts are sent once (cache); an optional small-amount limit below which the LLM is not asked.
+- **Implementation:** each uncertain event gets a due time (`llm_due_at`) from the group setting; an in-process task processes due events every few minutes, so no external scheduler is needed. The measurement is unaffected: it measures the answers, not their timing.
+
 ## Per input platform
 
 | Platform | What it knows | Handling |
