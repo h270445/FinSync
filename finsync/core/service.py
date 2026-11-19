@@ -20,8 +20,7 @@ from finsync.categorization import (
     TRANSFER,
     MerchantRule,
     OwnAccount,
-    categorize_transaction,
-    find_rule,
+    categorize_record,
     is_transfer,
     own_account_key,
     validate_rule,
@@ -178,7 +177,6 @@ class FinSyncService:
             "currency": parsed.currency,
             "description": parsed.description,
             "merchant": parsed.merchant_or_counterparty,
-            "category": categorize_transaction(parsed.description + " " + parsed.merchant_or_counterparty),
             "source": "android_notification",
             "happened_at": happened_at.astimezone(timezone.utc),
             "direction": direction_of(parsed.amount),
@@ -306,7 +304,6 @@ class FinSyncService:
             "currency": row.currency,
             "description": row.description,
             "merchant": row.merchant,
-            "category": categorize_transaction(f"{row.description} {row.merchant or ''}"),
             "source": "file_import",
             "happened_at": happened_at,
             "direction": direction_of(row.amount),
@@ -336,7 +333,6 @@ class FinSyncService:
             "currency": tx.currency,
             "description": tx.description,
             "merchant": tx.merchant,
-            "category": categorize_transaction(f"{tx.description} {tx.merchant or ''}"),
             "source": "manual",
             "happened_at": tx.happened_at,
             "direction": tx.direction,
@@ -728,8 +724,8 @@ def _classify(session: StorageSession, record: dict[str, Any]) -> None:
 
     1. A record naming one of the group's own accounts is a transfer: direction and category `transfer`,
        so matching never links it to a purchase and the overview leaves it out.
-    2. Otherwise the group's merchant rule wins over the keyword category the record was built with
-       (hybrid layer 1). It is looked up by the merchant, or by the description when there is none.
+    2. Otherwise the hybrid categorizer's deterministic layer decides (finsync/categorization/hybrid.py):
+       the group's merchant rule, then the built-in Hungarian merchant and keyword dictionary.
     """
     accounts = [OwnAccount(a.id, a.kind, a.match_key) for a in session.own_accounts(record["group_id"])]
     if is_transfer(accounts, record.get("merchant"), record.get("description")):
@@ -737,9 +733,7 @@ def _classify(session: StorageSession, record: dict[str, Any]) -> None:
         record["category"] = TRANSFER
         return
     rules = [MerchantRule(r.id, r.merchant_key, r.category) for r in session.merchant_categories(record["group_id"])]
-    rule = find_rule(rules, record.get("merchant") or record.get("description"))
-    if rule is not None:
-        record["category"] = rule.category
+    record["category"] = categorize_record(record.get("merchant"), record.get("description"), rules).category
 
 
 def _instant(value: str) -> datetime:
@@ -843,6 +837,8 @@ def _store_identical_row(session: StorageSession, record: dict[str, Any], first:
     original = next(
         item for item in session.event_originals(first.event_id) if _channel(item.source, item.user_id) == channel
     )
+    # Classified like every other record, so a repeated transfer row is a transfer here too.
+    _classify(session, record)
     return _store_new_event(session, record, "needs_review", first.event_id, {"identical_row_of_id": original.id})
 
 

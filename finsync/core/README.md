@@ -28,6 +28,6 @@ The use cases of the system. Each public method of `FinSyncService` is one opera
 
 Every use case calls `ensure_authorized(user_id, group_id)` first. The API takes `user_id` and `group_id` from the caller's token (`TokenService.authenticate`), never from client headers.
 
-Every ingest use case goes through `_store_and_match`, which marks transfers to the group's own accounts and applies the group's merchant rules to the category, stores the record, runs matching ([design](../../docs/design/transaction-matching.md)) and writes the decision in the same database transaction.
+Every ingest use case goes through `_store_and_match`, which marks transfers to the group's own accounts and sets the category with the hybrid categorizer's deterministic layer (group merchant rules, then the built-in Hungarian dictionary), stores the record, runs matching ([design](../../docs/design/transaction-matching.md)) and writes the decision in the same database transaction.
 
 Errors: `AuthenticationError` (no valid token, 401), `AuthorizationError` (not a member, 403), `NotFoundError` (id not in this group, 404), `ConflictError` (decision already answered or the action no longer fits, 409), `ValueError` (invalid input, 400).

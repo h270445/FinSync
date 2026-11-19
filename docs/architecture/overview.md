@@ -16,7 +16,7 @@ finsync.api          FastAPI app: routes, request models, body size limit, token
 finsync.core         TokenService: token → member and group; FinSyncService: membership check, validation, use cases
     │
     ├──► finsync.ingestion       notification text parser
-    ├──► finsync.categorization  keyword rules
+    ├──► finsync.categorization  group rules, Hungarian dictionary, keyword baseline
     ├──► finsync.matching        normalise, fingerprint, score, decide (pure rules)
     └──► finsync.storage         SQLite or PostgreSQL (Alembic): memberships, tokens, sessions, transactions, events, decisions
 ```
@@ -73,7 +73,7 @@ finsync/
   core/            FinSyncService, use cases, errors             (exists)
   ingestion/       one parser per source: notifications, csv     (exists: notifications)
   matching/        normalize, fingerprint, scoring, decision     (planned)
-  categorization/  rules (baseline), llm (comparison)            (exists: rules)
+  categorization/  rules (baseline), dictionary + hybrid, llm    (exists: rules, dictionary, hybrid)
   storage/         database (SQLite or PostgreSQL), migrations   (exists)
   evaluation/      dataset replay and metrics runner             (planned)
 tests/

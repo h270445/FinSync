@@ -1,6 +1,6 @@
 # Categorization of ambiguous purchases
 
-- Status: **Proposed** (not implemented)
+- Status: **Partly implemented**: group merchant rules, transfers and the deterministic layer with the built-in Hungarian dictionary (2026-11-19); the LLM layer, category correction, review and measurement are planned for Nov 23–27
 - Date: 2026-10-17
 
 ## Summary
@@ -41,6 +41,8 @@ The first step that gives an answer wins:
 2. **Category supplied by the source**, when the source has one (a bank export's category or MCC column, a sheet's category column), mapped to the allowed list. An unmappable value is not guessed; the mapping is asked once and remembered.
 3. **Merchant memory** of the group: the category the group confirmed for this merchant, editable as group merchant → category rules on the W8 settings screen; the first, deterministic layer of the hybrid categorizer. `high` once confirmed twice without a later correction.
 4. **Keyword rules** (the current baseline). `high` for clear merchants, `low` for merchants on the mixed-assortment list.
+
+   **Built 2026-11-19 ([`dictionary.py`](../../finsync/categorization/dictionary.py), [`hybrid.py`](../../finsync/categorization/hybrid.py)):** steps 3–4 as the hybrid categorizer's deterministic layer, `categorize_record()`. Below the group's rules it uses a built-in Hungarian dictionary (version `hu-1`): 96 merchant keys and 179 keywords (SPAR, Tesco, dm, MOL, MÁV-START, BKK, Wolt, MVM, Telekom, Benu, H&M, IKEA, …), where the mixed-assortment ones are marked, with the keywords in Hungarian and English, matched accent-free, with `*` as a word prefix for Hungarian suffixes ("étterem*" covers "étteremben"). Within the layer: a clear merchant (`high`) beats keywords; keywords naming one category are `high`, several are `low`; a mixed merchant's usual category comes last and is `low`, so "Tesco" with "zokni" is clothing. With no answer the result is `other` with source `none`, the case the LLM layer will take. The dictionary was written from general knowledge, not from the labelled dataset; because both name the common Hungarian chains, the measurement (Nov 23–27) reports this overlap next to the dictionary's numbers. The keyword baseline in `rules.py` is unchanged.
 5. **LLM**, only when the steps above give nothing or only `low`. It must answer with one allowed category or `unknown`; anything else is rejected. Its answer is always `low` unless it agrees with a rule.
 6. Otherwise `uncategorized`.
 
