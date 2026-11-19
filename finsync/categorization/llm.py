@@ -100,11 +100,11 @@ class AnthropicClient:
 
     Credentials come from the environment (`ANTHROPIC_API_KEY` or an `ant auth login` profile)."""
 
-    def __init__(self, model: str = DEFAULT_MODEL) -> None:
+    def __init__(self, model: str = DEFAULT_MODEL, client=None) -> None:
         import anthropic  # imported here so FinSync runs without the package when the LLM layer is off
 
         self.model = model
-        self._client = anthropic.Anthropic()
+        self._client = client if client is not None else anthropic.Anthropic()
 
     def complete(self, system: str, user: str) -> LlmReply:
         started = time.perf_counter()

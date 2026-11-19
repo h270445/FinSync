@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+import importlib.util
 import json
 from pathlib import Path
 import tempfile
@@ -149,6 +150,40 @@ class OpenAICompatibleClientTest(unittest.TestCase):
         self.assertEqual(seen["body"]["response_format"]["json_schema"]["schema"]["required"], ["category"])
         self.assertEqual((parse_answer(result.text), result.input_tokens, result.output_tokens),
                          ("health", 650, 8))
+
+
+@unittest.skipUnless(importlib.util.find_spec("anthropic"), "anthropic package not installed")
+class AnthropicClientTest(unittest.TestCase):
+    """The real SDK against a mocked HTTP transport: the request the paid run will send, and its reading."""
+
+    def test_request_shape_and_reply(self) -> None:
+        import anthropic
+        from finsync.categorization.llm import ANSWER_SCHEMA, AnthropicClient
+        try:
+            import httpx2 as http
+        except ImportError:
+            import httpx as http
+        seen = {}
+
+        def handler(request):
+            seen["url"] = str(request.url)
+            seen["body"] = json.loads(request.content)
+            return http.Response(200, json={
+                "id": "msg_test", "type": "message", "role": "assistant", "model": "claude-haiku-5-5",
+                "content": [{"type": "text", "text": '{"category": "transport"}'}],
+                "stop_reason": "end_turn", "stop_sequence": None,
+                "usage": {"input_tokens": 640, "output_tokens": 9},
+            })
+
+        sdk = anthropic.Anthropic(api_key="test-key",
+                                  http_client=anthropic.DefaultHttpxClient(transport=http.MockTransport(handler)))
+        result = AnthropicClient("claude-haiku-5-5", client=sdk).complete(SYSTEM_PROMPT, "Merchant: BKK")
+        self.assertTrue(seen["url"].endswith("/v1/messages"))
+        self.assertEqual(seen["body"]["output_config"]["format"]["schema"], ANSWER_SCHEMA)
+        self.assertEqual(seen["body"]["output_config"]["effort"], "low")
+        self.assertNotIn("temperature", seen["body"])
+        self.assertEqual((parse_answer(result.text), result.input_tokens, result.output_tokens),
+                         ("transport", 640, 9))
 
 
 class ChooseThresholdTest(unittest.TestCase):

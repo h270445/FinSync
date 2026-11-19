@@ -306,6 +306,32 @@ def _usd(value: float | None) -> str:
     return "n/a" if value is None else f"${value:.4f}"
 
 
+def preflight(args: argparse.Namespace, items: Sequence[Item], llm: LlmCategorizer) -> int:
+    """Everything a paid run needs, checked without a call; returns 0 when the run can start."""
+    import importlib.util
+    import os
+
+    problems = []
+    if args.base_url:
+        print(f"provider: OpenAI-compatible server at {args.base_url}, model {args.model}")
+    else:
+        print(f"provider: Anthropic API, model {args.model}")
+        if importlib.util.find_spec("anthropic") is None:
+            problems.append("the anthropic package is missing: pip install -r requirements.txt")
+        if not (os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN")):
+            problems.append("no ANTHROPIC_API_KEY in the environment")
+    dev = sum(1 for i in items if i.split == "dev")
+    print(f"dataset: {args.dataset.as_posix()} ({len(items)} items, dev {dev}, test {len(items) - dev})")
+    print(f"cache: {llm.cache.path.as_posix()} ({len(llm.cache.entries)} answers cached)")
+    calls = missing_calls(items, llm)
+    print(f"missing calls: {calls}, estimated cost {_usd(estimate_cost(args.model, calls))}")
+    for problem in problems:
+        print(f"NOT READY: {problem}")
+    if not problems:
+        print("READY: run again with --call-llm --out docs/evaluation/results/<date>-categorization-hybrid.md")
+    return 1 if problems else 0
+
+
 def default_cache(model: str) -> Path:
     return CACHE_DIR / f"categorization-{model}-{PROMPT_VERSION}.json"
 
@@ -321,6 +347,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--out", type=Path, help="write the report here instead of printing it")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--estimate", action="store_true", help="print missing calls and their cost, call nothing")
+    mode.add_argument("--preflight", action="store_true",
+                      help="check the SDK, the credential and the cache before a paid run, call nothing")
     mode.add_argument("--call-llm", action="store_true", help="call the provider for missing answers (costs money)")
     args = parser.parse_args(argv)
 
@@ -336,6 +364,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             from finsync.categorization.llm import AnthropicClient
             client = AnthropicClient(args.model)
     llm = LlmCategorizer(client, cache, model=args.model, samples=args.samples)
+
+    if args.preflight:
+        return preflight(args, items, llm)
 
     if args.estimate:
         calls = missing_calls(items, llm)

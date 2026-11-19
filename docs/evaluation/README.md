@@ -6,6 +6,7 @@ How FinSync's critical behaviour is measured, and the measured results.
 | --- | --- |
 | [evaluation-plan.md](evaluation-plan.md) | Methods and metrics for matching, categorization, and security and privacy |
 | [datasets.md](datasets.md) | The labelled synthetic datasets: how they are generated, columns, scenarios, limits |
+| [hybrid-measurement-runbook.md](hybrid-measurement-runbook.md) | The steps of the paid hybrid categorizer measurement once the API key exists: preflight, one-command run, reproducibility check |
 | [results/](results/) | One report per measurement (`YYYY-MM-DD-<topic>.md`) with the commit id, the command that produced it and the numbers |
 
 Results are never edited after the fact; a re-run gets a new file.
