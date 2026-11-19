@@ -16,7 +16,7 @@ Where the material for the thesis, the report and the defence already lives in t
 | Evaluation method | [Evaluation plan](evaluation/evaluation-plan.md), [datasets](evaluation/datasets.md), [dev-test-evaluation skill](../.claude/skills/dev-test-evaluation/SKILL.md) |
 | Results | [All result reports](evaluation/README.md), key ones: [matching rules-3 (Oct 29)](evaluation/results/2026-10-29-matching-rules-3.md), [regression check on dataset v3 (Nov 12)](evaluation/results/2026-11-12-matching-rules-3-v3.md) |
 | Development method and AI use | [AI usage log, author decisions, skill usage](ai-usage.md), [agent skills](../.claude/skills/README.md), [time log](planning/time-log.md); 1 (at most 2) skills presented in depth, candidates [endpoint-and-screen-checklist](../.claude/skills/endpoint-and-screen-checklist/SKILL.md) and [dev-test-evaluation](../.claude/skills/dev-test-evaluation/SKILL.md) ([supervisor, 2026-11-16](planning/supervisor-feedback.md#2026-11-16--reply-to-the-weekly-report-of-nov-915)) |
-| Limitations and future work | "Known limits" in [datasets](evaluation/datasets.md), "Consequences" of each ADR, [roadmap risks and Szakdolgozat II.](planning/roadmap.md) |
+| Limitations and future work | "Known limits" in [datasets](evaluation/datasets.md), "Consequences" of each ADR, [roadmap risks and Szakdolgozat II.](planning/roadmap.md), [future-work options](planning/roadmap.md#future-work-options-beyond-the-committed-scope) |
 
 ## Defence questions
 
