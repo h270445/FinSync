@@ -41,6 +41,7 @@ from finsync.storage import (
     EventRecord,
     FinSyncStorage,
     MerchantCategoryRecord,
+    OwnAccountRecord,
     TransactionRecord,
     WebSessionRecord,
 )
@@ -126,6 +127,11 @@ class MerchantRuleIn(BaseModel):
     merchant: str
     # One of the allowed categories (GET /v1/merchant-rules lists them).
     category: str
+
+
+class OwnAccountIn(BaseModel):
+    # An account number or IBAN (at least 8 digits), or a name as the bank prints it ("KISS ANNA").
+    label: str
 
 
 class TokenIn(BaseModel):
@@ -292,6 +298,20 @@ class MerchantRulesOut(BaseModel):
     rules: list[MerchantRuleOut]
     # The categories a rule may name.
     categories: list[str]
+
+
+class OwnAccountOut(BaseModel):
+    id: int
+    label: str
+    # "account" (matched on its digits) or "name" (matched on its words).
+    kind: str
+    match_key: str
+    created_by: str
+    created_at: str
+
+
+class OwnAccountsOut(BaseModel):
+    own_accounts: list[OwnAccountOut]
 
 
 class MemberRoleIn(BaseModel):
@@ -589,6 +609,21 @@ def create_app(storage: FinSyncStorage) -> FastAPI:
         """Deletes the rule and answers it as it was, so the screen can offer to add it back."""
         return _rule(service.delete_merchant_rule(caller.user_id, caller.group_id, rule_id))
 
+    # W8 own accounts and counterparties: a new record naming one is a transfer within the group,
+    # left out of the overview's totals. Every member reads the list; only an admin changes it.
+    @app.get("/v1/own-accounts")
+    def list_own_accounts(caller: Caller) -> OwnAccountsOut:
+        accounts = service.list_own_accounts(caller.user_id, caller.group_id)
+        return OwnAccountsOut(own_accounts=[_own_account(a) for a in accounts])
+
+    @app.post("/v1/own-accounts", status_code=201)
+    def create_own_account(body: OwnAccountIn, caller: Caller) -> OwnAccountOut:
+        return _own_account(service.create_own_account(caller.user_id, caller.group_id, body.label))
+
+    @app.delete("/v1/own-accounts/{account_id}")
+    def delete_own_account(account_id: int, caller: Caller) -> OwnAccountOut:
+        return _own_account(service.delete_own_account(caller.user_id, caller.group_id, account_id))
+
     @app.get("/v1/members")
     def list_members(caller: Caller) -> MembersOut:
         members = service.list_members(caller.user_id, caller.group_id)
@@ -703,6 +738,17 @@ def _import(result: ImportResult) -> ImportOut:
         errors=[RowErrorOut(line=error.line, error=error.error) for error in result.errors],
         results=[_result(item) for item in result.results],
         summary=summary,
+    )
+
+
+def _own_account(record: OwnAccountRecord) -> OwnAccountOut:
+    return OwnAccountOut(
+        id=record.id,
+        label=record.label,
+        kind=record.kind,
+        match_key=record.match_key,
+        created_by=record.created_by,
+        created_at=record.created_at.isoformat(),
     )
 
 

@@ -43,6 +43,20 @@ def _describe(path: str) -> dict[str, object]:
         engine.dispose()
 
 
+def _downgrade(path: str, revision: str) -> None:
+    """Take a SQLite file back to an earlier Alembic revision, as an older FinSync left it."""
+    from alembic import command
+
+    from finsync.storage.database import _alembic_config
+
+    engine = create_engine(f"sqlite:///{path}", poolclass=NullPool)
+    try:
+        with engine.begin() as connection:
+            command.downgrade(_alembic_config(connection), revision)
+    finally:
+        engine.dispose()
+
+
 @unittest.skipIf(os.environ.get("FINSYNC_TEST_DATABASE_URL"), "compares SQLite files")
 class SchemaTest(unittest.TestCase):
     def setUp(self) -> None:
@@ -93,12 +107,7 @@ class SchemaTest(unittest.TestCase):
         storage.add_group_membership("anna", "lakas")
         storage.add_group_membership("balint", "lakas")
         self.assertEqual(storage.member_role("balint", "lakas"), "member")
-        # Turn the file back into revision 0002, before roles existed.
-        connection = sqlite3.connect(path)
-        with connection:
-            connection.execute("ALTER TABLE group_memberships DROP COLUMN role")
-            connection.execute("UPDATE alembic_version SET version_num = '0002'")
-        connection.close()
+        _downgrade(path, "0002")  # before roles existed
         upgraded = FinSyncStorage(path)
         self.assertEqual([r for _, _, r in upgraded.list_group_members("lakas")], ["admin", "admin"])
         upgraded.add_group_membership("cecil", "lakas")
@@ -113,12 +122,9 @@ class SchemaTest(unittest.TestCase):
         FinSyncService(storage).create_manual_transaction(
             "anna", "lakas", {"amount": "-185000", "currency": "HUF", "description": "rent", "happened_at": "2026-11-01"}
         )
-        # Turn the file back into revision 0003, when the keyword rules still wrote "housing".
+        _downgrade(path, "0003")  # when the keyword rules still wrote "housing"
         connection = sqlite3.connect(path)
-        with connection:
-            connection.execute("UPDATE transactions SET category = 'housing'")
-            connection.execute("UPDATE events SET category = 'housing'")
-            connection.execute("UPDATE alembic_version SET version_num = '0003'")
+        self.assertEqual(connection.execute("SELECT category FROM events").fetchall(), [("housing",)])
         connection.close()
         upgraded = FinSyncStorage(path)
         self.assertEqual({tx.category for tx in upgraded.list_transactions("lakas")}, {"housing_utilities"})

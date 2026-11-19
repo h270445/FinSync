@@ -36,6 +36,9 @@ ENDPOINTS = (
     ("PUT", "/v1/merchant-rules/{rule}"),
     ("DELETE", "/v1/merchant-rules/{rule}"),
     ("PUT", "/v1/members/{member}/role"),
+    ("GET", "/v1/own-accounts"),
+    ("POST", "/v1/own-accounts"),
+    ("DELETE", "/v1/own-accounts/{account}"),
     ("GET", "/v1/matches/review"),
     ("POST", "/v1/matches/{decision}/confirm"),
     ("POST", "/v1/matches/{decision}/reject"),
@@ -119,6 +122,7 @@ class TokenServiceTest(unittest.TestCase):
             connection.execute("DROP TABLE alembic_version")
             connection.execute("DROP TABLE merchant_categories")  # added after the baseline (revision 0002)
             connection.execute("ALTER TABLE group_memberships DROP COLUMN role")  # revision 0003
+            connection.execute("DROP TABLE own_accounts")  # revision 0005
             connection.execute("CREATE TABLE schema_version (version INTEGER NOT NULL)")
             connection.executemany("INSERT INTO schema_version (version) VALUES (?)", [(2,), (3,), (4,)])
             connection.execute("DROP TABLE api_tokens")
@@ -189,6 +193,7 @@ class AuthApiTest(unittest.TestCase):
         self.decision_id = review["decision_id"]
         self.event_id = review["candidate_event"]["id"]
         self.group_1_record = review["candidate_event"]["transactions"][0]["id"]
+        self.account_id = self._call("POST", "/v1/own-accounts", self.token_a, {"label": "11773016-01234567"})[1]["id"]
         self.rule_id = self._call("POST", "/v1/merchant-rules", self.token_a, {"merchant": "Lidl", "category": "groceries"})[1]["id"]
 
     def tearDown(self) -> None:
@@ -210,7 +215,8 @@ class AuthApiTest(unittest.TestCase):
                 .replace("{event_id}", "{event}")
                 .replace("{token_id}", "{token}")
                 .replace("{rule_id}", "{rule}")
-                .replace("{member_id}", "{member}"),
+                .replace("{member_id}", "{member}")
+                .replace("{account_id}", "{account}"),
             )
             for route in self.app.routes
             if isinstance(route, APIRoute)
@@ -220,9 +226,11 @@ class AuthApiTest(unittest.TestCase):
 
     def _endpoints(self):
         for method, path in ENDPOINTS:
-            yield method, path.format(decision=self.decision_id, event=self.event_id, rule=self.rule_id, member="user-b")
+            yield method, path.format(decision=self.decision_id, event=self.event_id, rule=self.rule_id, member="user-b", account=self.account_id)
 
     def _body(self, path: str, method: str = "POST") -> dict:
+        if path.startswith("/v1/own-accounts"):
+            return {"label": "KISS ANNA"}
         if path.endswith("/role"):
             return {"role": "member"}
         if path.startswith("/v1/merchant-rules"):
@@ -246,6 +254,7 @@ class AuthApiTest(unittest.TestCase):
             self.storage.list_decisions("group-1"),
             self.storage.list_merchant_categories("group-1"),
             self.storage.list_group_members("group-1"),
+            self.storage.list_own_accounts("group-1"),
         )
 
     def test_every_endpoint_requires_a_valid_token(self) -> None:
@@ -292,10 +301,11 @@ class AuthApiTest(unittest.TestCase):
                     or path.startswith("/v1/events/")
                     or path.startswith("/v1/merchant-rules/")
                     or path.startswith("/v1/members/")
+                    or path.startswith("/v1/own-accounts/")
                 ):
                     # Group 1's decisions, events, rules and members do not exist in group 2.
                     self.assertEqual(status, 404)
-                elif path == "/v1/merchant-rules" and method == "POST":
+                elif path in ("/v1/merchant-rules", "/v1/own-accounts") and method == "POST":
                     # A rule goes into the token's group.
                     self.assertEqual(status, 201)
                 elif method == "GET":

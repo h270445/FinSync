@@ -50,6 +50,22 @@ function serve({
       })
     if (call === 'PUT /v1/members/balint/role')
       return Response.json({ error: 'the group must keep at least one admin' }, { status: 409 })
+    if (call === 'GET /v1/own-accounts')
+      return Response.json({
+        own_accounts: [
+          {
+            id: 3,
+            label: 'MINTA ANNA',
+            kind: 'name',
+            match_key: 'minta anna',
+            created_by: 'anna',
+            created_at: '2026-11-19T10:00:00+00:00',
+          },
+        ],
+      })
+    if (call === 'POST /v1/own-accounts')
+      return Response.json({ error: 'The group already lists this account or name' }, { status: 409 })
+    if (call === 'DELETE /v1/own-accounts/3') return Response.json({})
     if (call === 'GET /v1/tokens') return Response.json({ tokens })
     if (call === 'POST /v1/tokens')
       return Response.json(
@@ -123,11 +139,13 @@ describe('SettingsPage', () => {
   it('shows a member the rules and roles read-only', async () => {
     serve({ myRole: 'member' })
     renderPage()
-    expect(await screen.findByText('Csak a csoport adminja módosíthatja.', { exact: false })).toBeInTheDocument()
+    expect(await screen.findAllByText('Csak a csoport adminja módosíthatja.', { exact: false })).toHaveLength(2)
     expect(await screen.findByText('Élelmiszer')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Szabály hozzáadása' })).not.toBeInTheDocument()
     expect(screen.queryByLabelText('SPAR kategóriája')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('balint szerepköre')).not.toBeInTheDocument()
+    expect(await screen.findByText('MINTA ANNA')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'MINTA ANNA törlése' })).not.toBeInTheDocument()
   })
 
   it('lets an admin change a role and explains a refusal', async () => {
@@ -136,6 +154,17 @@ describe('SettingsPage', () => {
     await userEvent.selectOptions(await screen.findByLabelText('balint szerepköre'), 'admin')
     expect(calls(fetchMock)).toContain('PUT /v1/members/balint/role')
     expect(await screen.findByText('A csoportnak legalább egy adminja kell, hogy maradjon.')).toBeInTheDocument()
+  })
+
+  it('lists own accounts, deletes one and explains a duplicate', async () => {
+    const fetchMock = serve()
+    renderPage()
+    expect(await screen.findByText('MINTA ANNA')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'MINTA ANNA törlése' }))
+    expect(calls(fetchMock)).toContain('DELETE /v1/own-accounts/3')
+    await userEvent.type(screen.getByLabelText('Számlaszám vagy név'), 'Minta Anna')
+    await userEvent.click(screen.getByRole('button', { name: 'Hozzáadás' }))
+    expect(await screen.findByText('Ez a számla vagy név már szerepel a listán.')).toBeInTheDocument()
   })
 
   it('changes and deletes a rule, and explains a duplicate', async () => {

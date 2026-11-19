@@ -16,6 +16,7 @@ export type ApiToken = components['schemas']['TokenOut']
 export type CreatedToken = components['schemas']['CreatedTokenOut']
 export type MerchantRule = components['schemas']['MerchantRuleOut']
 export type MerchantRuleInput = components['schemas']['MerchantRuleIn']
+export type OwnAccount = components['schemas']['OwnAccountOut']
 export type Overview = components['schemas']['OverviewOut']
 export type OverviewBucket = components['schemas']['OverviewBucketOut']
 

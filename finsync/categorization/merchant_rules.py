@@ -46,13 +46,13 @@ def merchant_key(merchant: str) -> str:
     """The normalised words of a merchant name in their typed order: "Spar 0123 Kft." -> "spar"."""
     kept = merchant_tokens(merchant)  # drops store numbers and legal suffixes
     words: list[str] = []
-    for word in _NON_ALPHANUMERIC.sub(" ", _ascii_lower(merchant)).split():
+    for word in _NON_ALPHANUMERIC.sub(" ", ascii_lower(merchant)).split():
         if word in kept and word not in words:
             words.append(word)
     return " ".join(words)
 
 
-def _ascii_lower(text: str) -> str:
+def ascii_lower(text: str) -> str:
     decomposed = unicodedata.normalize("NFKD", text.lower())
     return "".join(char for char in decomposed if not unicodedata.combining(char))
 

@@ -170,3 +170,28 @@ export function useDeleteMerchantRule() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['merchant-rules'] }),
   })
 }
+
+/** The group's own accounts and counterparties: new records naming one are transfers. */
+export function useOwnAccounts() {
+  return useQuery({
+    queryKey: ['own-accounts'],
+    queryFn: async () => unwrap(await api.GET('/v1/own-accounts')).own_accounts,
+  })
+}
+
+export function useCreateOwnAccount() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (label: string) => unwrap(await api.POST('/v1/own-accounts', { body: { label } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['own-accounts'] }),
+  })
+}
+
+export function useDeleteOwnAccount() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: number) =>
+      unwrap(await api.DELETE('/v1/own-accounts/{account_id}', { params: { path: { account_id: id } } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['own-accounts'] }),
+  })
+}

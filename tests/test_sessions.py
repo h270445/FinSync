@@ -157,6 +157,7 @@ class SessionServiceTest(unittest.TestCase):
             connection.execute("DROP TABLE alembic_version")
             connection.execute("DROP TABLE merchant_categories")  # added after the baseline (revision 0002)
             connection.execute("ALTER TABLE group_memberships DROP COLUMN role")  # revision 0003
+            connection.execute("DROP TABLE own_accounts")  # revision 0005
             connection.execute("CREATE TABLE schema_version (version INTEGER NOT NULL)")
             connection.executemany("INSERT INTO schema_version (version) VALUES (?)", [(2,), (3,), (4,)])
             connection.execute("DROP TABLE member_accounts")

@@ -16,7 +16,16 @@ import re
 from typing import Any
 import uuid
 
-from finsync.categorization import MerchantRule, categorize_transaction, find_rule, validate_rule
+from finsync.categorization import (
+    TRANSFER,
+    MerchantRule,
+    OwnAccount,
+    categorize_transaction,
+    find_rule,
+    is_transfer,
+    own_account_key,
+    validate_rule,
+)
 from finsync.core.overview import Overview, build_overview, parse_month
 from finsync.ingestion import ColumnMapping, ImportRow, RowError, parse_export, parse_notification, parse_xlsx
 from finsync.ingestion.csv_import import normalize_content
@@ -39,6 +48,7 @@ from finsync.storage import (
     EventRecord,
     FinSyncStorage,
     MerchantCategoryRecord,
+    OwnAccountRecord,
     StorageSession,
     TransactionRecord,
     candidate_time_range,
@@ -340,7 +350,7 @@ class FinSyncService:
     def _store_and_match(session: StorageSession, record: dict[str, Any]) -> StoreResult:
         """Store one record and link it to an event, writing the decision that explains the link."""
         group_id = record["group_id"]
-        _apply_merchant_rules(session, record)
+        _classify(session, record)
         channel = _channel(record["source"], record["user_id"])
         # The identity is the raw payload unless the caller set a narrower one (the notification
         # without its diagnostic device zone).
@@ -465,6 +475,28 @@ class FinSyncService:
         if rule is None:
             raise NotFoundError("Rule not found")
         return rule
+
+    # W8 own accounts and counterparties: records naming one are transfers within the group. Every
+    # member reads the list; only an admin changes it. Like rules, it applies to records stored after it.
+
+    def list_own_accounts(self, user_id: str, group_id: str) -> list[OwnAccountRecord]:
+        self.ensure_authorized(user_id, group_id)
+        return self._storage.list_own_accounts(group_id)
+
+    def create_own_account(self, user_id: str, group_id: str, label: str) -> OwnAccountRecord:
+        self.ensure_admin(user_id, group_id)
+        label, kind, key = own_account_key(label)
+        try:
+            return self._storage.insert_own_account(group_id, label, kind, key, user_id)
+        except ValueError as error:
+            raise ConflictError("The group already lists this account or name") from error
+
+    def delete_own_account(self, user_id: str, group_id: str, account_id: int) -> OwnAccountRecord:
+        self.ensure_admin(user_id, group_id)
+        deleted = self._storage.delete_own_account(group_id, account_id)
+        if deleted is None:
+            raise NotFoundError("Own account not found")
+        return deleted
 
     def list_members(self, user_id: str, group_id: str) -> list[tuple[str, str | None, str]]:
         """W8: the group's members (id, sign-in e-mail address, role)."""
@@ -691,11 +723,19 @@ class FinSyncService:
         )
 
 
-def _apply_merchant_rules(session: StorageSession, record: dict[str, Any]) -> None:
-    """The group's merchant rule wins over the keyword category the record was built with (hybrid layer 1).
+def _classify(session: StorageSession, record: dict[str, Any]) -> None:
+    """Set the record's direction and category from the group's settings, before it is matched.
 
-    The rule is looked up by the merchant; a manual entry without a merchant is looked up by its description.
+    1. A record naming one of the group's own accounts is a transfer: direction and category `transfer`,
+       so matching never links it to a purchase and the overview leaves it out.
+    2. Otherwise the group's merchant rule wins over the keyword category the record was built with
+       (hybrid layer 1). It is looked up by the merchant, or by the description when there is none.
     """
+    accounts = [OwnAccount(a.id, a.kind, a.match_key) for a in session.own_accounts(record["group_id"])]
+    if is_transfer(accounts, record.get("merchant"), record.get("description")):
+        record["direction"] = TRANSFER
+        record["category"] = TRANSFER
+        return
     rules = [MerchantRule(r.id, r.merchant_key, r.category) for r in session.merchant_categories(record["group_id"])]
     rule = find_rule(rules, record.get("merchant") or record.get("description"))
     if rule is not None:

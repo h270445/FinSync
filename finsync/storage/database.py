@@ -93,6 +93,19 @@ class MerchantCategoryRecord:
 
 
 @dataclass(frozen=True)
+class OwnAccountRecord:
+    """One of the group's own accounts or counterparties (W8): records naming it are transfers."""
+
+    id: int
+    group_id: str
+    label: str
+    kind: str
+    match_key: str
+    created_by: str
+    created_at: datetime
+
+
+@dataclass(frozen=True)
 class WebSessionRecord:
     """A web app session as stored: the SHA-256 hash of its id, never the id itself."""
 
@@ -591,6 +604,39 @@ class FinSyncStorage:
             )
         return cursor.rowcount == 1
 
+    def list_own_accounts(self, group_id: str) -> list[OwnAccountRecord]:
+        with self._session() as connection:
+            rows = connection.execute(
+                "SELECT * FROM own_accounts WHERE group_id = ? ORDER BY label, id", (group_id,)
+            ).fetchall()
+        return [_row_to_own_account(row) for row in rows]
+
+    def insert_own_account(self, group_id: str, label: str, kind: str, key: str, created_by: str) -> OwnAccountRecord:
+        """Raises ValueError when the group already lists this account or name."""
+        try:
+            with self._session() as connection:
+                new_id = connection.insert(
+                    """
+                    INSERT INTO own_accounts (group_id, label, kind, match_key, created_by, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (group_id, label, kind, key, created_by, _now()),
+                )
+                row = connection.execute("SELECT * FROM own_accounts WHERE id = ?", (new_id,)).fetchone()
+        except IntegrityError as error:
+            raise ValueError("duplicate own account") from error
+        return _row_to_own_account(row)
+
+    def delete_own_account(self, group_id: str, account_id: int) -> OwnAccountRecord | None:
+        with self._session() as connection:
+            row = connection.execute(
+                "SELECT * FROM own_accounts WHERE id = ? AND group_id = ?", (account_id, group_id)
+            ).fetchone()
+            if row is None:
+                return None
+            connection.execute("DELETE FROM own_accounts WHERE id = ? AND group_id = ?", (account_id, group_id))
+        return _row_to_own_account(row)
+
     def list_api_tokens(self, user_id: str | None = None) -> list[ApiTokenRecord]:
         with self._session() as connection:
             if user_id is None:
@@ -784,6 +830,11 @@ class StorageSession:
 
     def __init__(self, connection: _Connection) -> None:
         self._connection = connection
+
+    def own_accounts(self, group_id: str) -> list[OwnAccountRecord]:
+        """The group's own accounts, read in the write transaction that classifies a new record."""
+        rows = self._connection.execute("SELECT * FROM own_accounts WHERE group_id = ? ORDER BY id", (group_id,)).fetchall()
+        return [_row_to_own_account(row) for row in rows]
 
     def merchant_categories(self, group_id: str) -> list[MerchantCategoryRecord]:
         """The group's merchant rules, read in the write transaction that categorizes a new record."""
@@ -1089,6 +1140,18 @@ def candidate_time_range(happened_at: datetime, days: int) -> tuple[datetime, da
 
 def _optional_time(value: Any) -> datetime | None:
     return datetime.fromisoformat(str(value)) if value is not None else None
+
+
+def _row_to_own_account(row: Mapping[str, Any]) -> OwnAccountRecord:
+    return OwnAccountRecord(
+        id=int(row["id"]),
+        group_id=str(row["group_id"]),
+        label=str(row["label"]),
+        kind=str(row["kind"]),
+        match_key=str(row["match_key"]),
+        created_by=str(row["created_by"]),
+        created_at=datetime.fromisoformat(str(row["created_at"])),
+    )
 
 
 def _row_to_merchant_category(row: Mapping[str, Any]) -> MerchantCategoryRecord:

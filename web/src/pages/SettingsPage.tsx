@@ -5,6 +5,9 @@ import { toast } from 'sonner'
 import { ApiError, type CreatedToken, type MerchantRule } from '@/api/client'
 import {
   useCreateMerchantRule,
+  useCreateOwnAccount,
+  useDeleteOwnAccount,
+  useOwnAccounts,
   useCreateToken,
   useDeleteMerchantRule,
   useMembers,
@@ -40,6 +43,7 @@ export function SettingsPage() {
       <MembersCard isAdmin={isAdmin} />
       <TokensCard />
       <MerchantRulesCard isAdmin={isAdmin} />
+      <OwnAccountsCard isAdmin={isAdmin} />
     </section>
   )
 }
@@ -374,5 +378,94 @@ function RuleRow({ rule, categories, editable }: { rule: MerchantRule; categorie
         </div>
       )}
     </li>
+  )
+}
+
+function OwnAccountsCard({ isAdmin }: { isAdmin: boolean }) {
+  const accounts = useOwnAccounts()
+  const create = useCreateOwnAccount()
+  const remove = useDeleteOwnAccount()
+  const [label, setLabel] = useState('')
+
+  function submit(event: React.FormEvent) {
+    event.preventDefault()
+    if (!label.trim()) return
+    create.mutate(label.trim(), { onSuccess: () => setLabel('') })
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Saját számlák és partnerek</CardTitle>
+        <CardDescription>
+          A csoporton belüli átutalás nem kiadás és nem bevétel. Ha egy új tétel ezek közül valamelyiket nevezi meg
+          (számlaszám vagy a név, ahogy a bank írja), átvezetésként kerül be, és kimarad az Áttekintés összegeiből. A
+          lista csak az ezután érkező tételekre hat.{' '}
+          {isAdmin ? 'Adminként te módosíthatod.' : 'Csak a csoport adminja módosíthatja.'}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {isAdmin && (
+          <form onSubmit={submit} className="flex flex-wrap items-end gap-2">
+            <div className="space-y-1">
+              <Label htmlFor="a-label">Számlaszám vagy név</Label>
+              <Input
+                id="a-label"
+                value={label}
+                onChange={(event) => setLabel(event.target.value)}
+                placeholder="pl. 11773016-01234567 vagy MINTA ANNA"
+                maxLength={80}
+                className="w-72"
+              />
+            </div>
+            <Button type="submit" disabled={!label.trim() || create.isPending}>
+              Hozzáadás
+            </Button>
+          </form>
+        )}
+        {create.isError && (
+          <p className="text-sm text-destructive">
+            {create.error instanceof ApiError && create.error.status === 409
+              ? 'Ez a számla vagy név már szerepel a listán.'
+              : refusal(create.error, 'A mentés nem sikerült.')}
+          </p>
+        )}
+
+        {accounts.isPending ? (
+          <LoadingRows rows={2} />
+        ) : accounts.isError ? (
+          <ErrorState error={accounts.error} />
+        ) : accounts.data.length === 0 ? (
+          <EmptyState>Még nincs megadva saját számla vagy partner.</EmptyState>
+        ) : (
+          <ul className="divide-y">
+            {accounts.data.map((account) => (
+              <li key={account.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                  <span className="font-medium break-all">{account.label}</span>
+                  <Badge variant="outline">{account.kind === 'account' ? 'Számlaszám' : 'Név'}</Badge>
+                </div>
+                {isAdmin && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    aria-label={`${account.label} törlése`}
+                    disabled={remove.isPending}
+                    onClick={() =>
+                      remove.mutate(account.id, {
+                        onSuccess: () => toast.success(`Törölve: ${account.label}`),
+                        onError: (error) => toast.error(refusal(error, 'A törlés nem sikerült.')),
+                      })
+                    }
+                  >
+                    <Trash2 />
+                  </Button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
   )
 }
