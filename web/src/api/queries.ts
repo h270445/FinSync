@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { api, type ManualTransaction, unwrap } from './client'
+import { api, type ManualTransaction, type MerchantRuleInput, unwrap } from './client'
 import type { components } from './schema'
 
 export function useEvents() {
@@ -88,5 +88,73 @@ export function useImportFile() {
   return useMutation({
     mutationFn: async (body: ImportRequest) => unwrap(await api.POST('/v1/imports', { body })),
     onSuccess: (_, body) => (body.dry_run ? undefined : invalidateAll()),
+  })
+}
+
+// W8 settings.
+
+export function useMembers() {
+  return useQuery({
+    queryKey: ['members'],
+    queryFn: async () => unwrap(await api.GET('/v1/members')).members,
+  })
+}
+
+/** The signed-in member's own API tokens (works only with the web session). */
+export function useTokens() {
+  return useQuery({
+    queryKey: ['tokens'],
+    queryFn: async () => unwrap(await api.GET('/v1/tokens')).tokens,
+  })
+}
+
+export function useCreateToken() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (name: string) => unwrap(await api.POST('/v1/tokens', { body: { name } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tokens'] }),
+  })
+}
+
+export function useRevokeToken() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (tokenId: number) =>
+      unwrap(await api.POST('/v1/tokens/{token_id}/revoke', { params: { path: { token_id: tokenId } } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tokens'] }),
+  })
+}
+
+/** The group's merchant rules and the categories a rule may name. Rules change only new records. */
+export function useMerchantRules() {
+  return useQuery({
+    queryKey: ['merchant-rules'],
+    queryFn: async () => unwrap(await api.GET('/v1/merchant-rules')),
+  })
+}
+
+export function useCreateMerchantRule() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (body: MerchantRuleInput) => unwrap(await api.POST('/v1/merchant-rules', { body })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['merchant-rules'] }),
+  })
+}
+
+export function useUpdateMerchantRule() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...body }: MerchantRuleInput & { id: number }) =>
+      unwrap(await api.PUT('/v1/merchant-rules/{rule_id}', { params: { path: { rule_id: id } }, body })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['merchant-rules'] }),
+  })
+}
+
+export function useDeleteMerchantRule() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: number) =>
+      unwrap(await api.DELETE('/v1/merchant-rules/{rule_id}', { params: { path: { rule_id: id } } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['merchant-rules'] }),
   })
 }
