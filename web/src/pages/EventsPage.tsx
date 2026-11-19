@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { monthOf, originalRecords, primaryRecord } from '@/lib/events'
-import { categoryLabel, formatAmount, formatDate, formatTime, sourceLabel } from '@/lib/format'
+import { categoryLabel, formatAmount, formatDate, formatTime, monthName, sourceLabel } from '@/lib/format'
 
 const ALL = ''
 
@@ -36,9 +36,6 @@ function matches(event: FinSyncEvent, filters: Filters): boolean {
     (event.merchant ?? '').toLocaleLowerCase('hu').includes(search)
   )
 }
-
-const monthFormat = new Intl.DateTimeFormat('hu-HU', { year: 'numeric', month: 'long', timeZone: 'UTC' })
-const monthName = (month: string) => monthFormat.format(new Date(`${month}-01T00:00:00Z`))
 
 /** W3: the group's deduplicated events, newest first. */
 export function EventsPage() {

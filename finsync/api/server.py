@@ -31,6 +31,7 @@ from finsync.core import (
     StoreResult,
     TokenService,
 )
+from finsync.core.overview import Bucket
 from finsync.core.sessions import SESSION_LIFETIME, csrf_token
 from finsync.ingestion import ColumnMapping
 from finsync.storage import EventRecord, FinSyncStorage, TransactionRecord, WebSessionRecord
@@ -227,6 +228,30 @@ class DecisionOut(BaseModel):
 
 class DecisionsOut(BaseModel):
     decisions: list[DecisionOut]
+
+
+class OverviewBucketOut(BaseModel):
+    # "all" for the month total, the category for a category row, the member id for a member row.
+    key: str
+    currency: str
+    # Positive sums; expense and income are never netted.
+    expense: str
+    income: str
+    event_count: int
+    # Events in this bucket still waiting for review: already in the sums above, counted here too.
+    review_count: int
+    review_amount: str
+
+
+class OverviewOut(BaseModel):
+    month: str
+    # Months that have events, newest first, for the month picker.
+    months: list[str]
+    totals: list[OverviewBucketOut]
+    categories: list[OverviewBucketOut]
+    members: list[OverviewBucketOut]
+    # Transfers between the group's own accounts are left out of every sum; only their number is given.
+    transfer_count: int
 
 
 class SessionOut(BaseModel):
@@ -459,6 +484,18 @@ def create_app(storage: FinSyncStorage) -> FastAPI:
         events = service.list_group_events(caller.user_id, caller.group_id)
         return EventsOut(events=[_event(event) for event in events])
 
+    @app.get("/v1/overview")
+    def overview(caller: Caller, month: str | None = None) -> OverviewOut:
+        result = service.overview(caller.user_id, caller.group_id, month)
+        return OverviewOut(
+            month=result.month,
+            months=result.months,
+            totals=[_bucket(b) for b in result.totals],
+            categories=[_bucket(b) for b in result.categories],
+            members=[_bucket(b) for b in result.members],
+            transfer_count=result.transfer_count,
+        )
+
     @app.get("/v1/events/{event_id}/decisions")
     def list_event_decisions(event_id: int, caller: Caller) -> DecisionsOut:
         decisions = service.list_event_decisions(caller.user_id, caller.group_id, event_id)
@@ -522,6 +559,18 @@ def _import(result: ImportResult) -> ImportOut:
         errors=[RowErrorOut(line=error.line, error=error.error) for error in result.errors],
         results=[_result(item) for item in result.results],
         summary=summary,
+    )
+
+
+def _bucket(bucket: Bucket) -> OverviewBucketOut:
+    return OverviewBucketOut(
+        key=bucket.key,
+        currency=bucket.currency,
+        expense=str(bucket.expense),
+        income=str(bucket.income),
+        event_count=bucket.event_count,
+        review_count=bucket.review_count,
+        review_amount=str(bucket.review_amount),
     )
 
 

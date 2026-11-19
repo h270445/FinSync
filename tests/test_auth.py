@@ -29,6 +29,7 @@ ENDPOINTS = (
     ("GET", "/v1/transactions"),
     ("GET", "/v1/events"),
     ("GET", "/v1/events/{event}/decisions"),
+    ("GET", "/v1/overview"),
     ("GET", "/v1/matches/review"),
     ("POST", "/v1/matches/{decision}/confirm"),
     ("POST", "/v1/matches/{decision}/reject"),

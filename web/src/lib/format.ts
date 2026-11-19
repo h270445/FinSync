@@ -43,6 +43,13 @@ export function localMonth(iso: string, precision = 'minute'): string {
   return `${part('year')}-${part('month')}`
 }
 
+const monthNameFormat = new Intl.DateTimeFormat('hu-HU', { year: 'numeric', month: 'long', timeZone: 'UTC' })
+
+/** "2026-10" as "2026. október". */
+export function monthName(month: string): string {
+  return monthNameFormat.format(new Date(`${month}-01T00:00:00Z`))
+}
+
 /** Scores and feature values as "0,97". */
 export function formatScore(value: number): string {
   return decimal.format(value)
@@ -69,10 +76,16 @@ const SOURCES: Record<string, string> = {
 
 const CATEGORIES: Record<string, string> = {
   groceries: 'Élelmiszer',
+  eating_out: 'Étterem, kávézó',
   transport: 'Közlekedés',
-  entertainment: 'Szórakozás',
   housing: 'Lakhatás',
+  housing_utilities: 'Lakhatás, rezsi',
+  health: 'Egészség',
+  clothing: 'Ruházat',
+  entertainment: 'Szórakozás',
+  household: 'Háztartás',
   other: 'Egyéb',
+  transfer: 'Átvezetés',
 }
 
 const OUTCOMES: Record<string, string> = {

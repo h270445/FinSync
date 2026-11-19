@@ -1304,6 +1304,117 @@
         ]
       }
     },
+    "/v1/overview": {
+      "get": {
+        "summary": "Overview",
+        "operationId": "overview_v1_overview_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Month"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OverviewOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Client Error"
+          }
+        }
+      }
+    },
     "/v1/events/{event_id}/decisions": {
       "get": {
         "summary": "List Event Decisions",
@@ -2005,6 +2116,99 @@
           "message"
         ],
         "title": "NotificationIn"
+      },
+      "OverviewBucketOut": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "expense": {
+            "type": "string",
+            "title": "Expense"
+          },
+          "income": {
+            "type": "string",
+            "title": "Income"
+          },
+          "event_count": {
+            "type": "integer",
+            "title": "Event Count"
+          },
+          "review_count": {
+            "type": "integer",
+            "title": "Review Count"
+          },
+          "review_amount": {
+            "type": "string",
+            "title": "Review Amount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "currency",
+          "expense",
+          "income",
+          "event_count",
+          "review_count",
+          "review_amount"
+        ],
+        "title": "OverviewBucketOut"
+      },
+      "OverviewOut": {
+        "properties": {
+          "month": {
+            "type": "string",
+            "title": "Month"
+          },
+          "months": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Months"
+          },
+          "totals": {
+            "items": {
+              "$ref": "#/components/schemas/OverviewBucketOut"
+            },
+            "type": "array",
+            "title": "Totals"
+          },
+          "categories": {
+            "items": {
+              "$ref": "#/components/schemas/OverviewBucketOut"
+            },
+            "type": "array",
+            "title": "Categories"
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/OverviewBucketOut"
+            },
+            "type": "array",
+            "title": "Members"
+          },
+          "transfer_count": {
+            "type": "integer",
+            "title": "Transfer Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "month",
+          "months",
+          "totals",
+          "categories",
+          "members",
+          "transfer_count"
+        ],
+        "title": "OverviewOut"
       },
       "ReviewOut": {
         "properties": {

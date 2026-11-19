@@ -17,6 +17,7 @@ from typing import Any
 import uuid
 
 from finsync.categorization import categorize_transaction
+from finsync.core.overview import Overview, build_overview, parse_month
 from finsync.ingestion import ColumnMapping, ImportRow, RowError, parse_export, parse_notification, parse_xlsx
 from finsync.ingestion.csv_import import normalize_content
 from finsync.ingestion.local_time import local_to_utc
@@ -30,6 +31,7 @@ from finsync.matching import (
     score,
 )
 from finsync.matching import decision as decision_rules
+from finsync.matching.normalize import local_date
 from finsync.matching.scoring import DAY_WINDOW_DAYS
 from finsync.storage import (
     EventRecord,
@@ -409,6 +411,12 @@ class FinSyncService:
     def list_group_events(self, user_id: str, group_id: str) -> list[EventRecord]:
         self.ensure_authorized(user_id, group_id)
         return self._storage.list_events(group_id)
+
+    def overview(self, user_id: str, group_id: str, month: str | None = None) -> Overview:
+        """W2: the month's totals over deduplicated events (see finsync/core/overview.py for the rules)."""
+        self.ensure_authorized(user_id, group_id)
+        today = local_date(datetime.now(timezone.utc), "minute")
+        return build_overview(self._storage.list_events(group_id), parse_month(month, today))
 
     def list_open_reviews(self, user_id: str, group_id: str) -> list[ReviewItem]:
         """Undecided needs_review decisions, each with the record and the event it may belong to."""

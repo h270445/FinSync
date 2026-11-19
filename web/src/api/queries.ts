@@ -10,6 +10,14 @@ export function useEvents() {
   })
 }
 
+/** W2: month totals; without a month, the server's current month (Budapest time). */
+export function useOverview(month: string | null) {
+  return useQuery({
+    queryKey: ['overview', month],
+    queryFn: async () => unwrap(await api.GET('/v1/overview', { params: { query: month ? { month } : {} } })),
+  })
+}
+
 export function useEventDecisions(eventId: number) {
   return useQuery({
     queryKey: ['events', eventId, 'decisions'],

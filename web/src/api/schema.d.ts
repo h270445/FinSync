@@ -189,6 +189,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Overview */
+        get: operations["overview_v1_overview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/events/{event_id}/decisions": {
         parameters: {
             query?: never;
@@ -412,6 +429,38 @@ export interface components {
             source_ref?: string | null;
             /** Device Zone */
             device_zone?: string | null;
+        };
+        /** OverviewBucketOut */
+        OverviewBucketOut: {
+            /** Key */
+            key: string;
+            /** Currency */
+            currency: string;
+            /** Expense */
+            expense: string;
+            /** Income */
+            income: string;
+            /** Event Count */
+            event_count: number;
+            /** Review Count */
+            review_count: number;
+            /** Review Amount */
+            review_amount: string;
+        };
+        /** OverviewOut */
+        OverviewOut: {
+            /** Month */
+            month: string;
+            /** Months */
+            months: string[];
+            /** Totals */
+            totals: components["schemas"]["OverviewBucketOut"][];
+            /** Categories */
+            categories: components["schemas"]["OverviewBucketOut"][];
+            /** Members */
+            members: components["schemas"]["OverviewBucketOut"][];
+            /** Transfer Count */
+            transfer_count: number;
         };
         /** ReviewOut */
         ReviewOut: {
@@ -1566,6 +1615,91 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EventsOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Client Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    overview_v1_overview_get: {
+        parameters: {
+            query?: {
+                month?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OverviewOut"];
                 };
             };
             /** @description Bad Request */
