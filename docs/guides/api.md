@@ -17,9 +17,9 @@ Status: describes the endpoints **implemented** in `finsync/api/server.py`.
 | `200` | Read succeeded |
 | `400` | Invalid JSON, validation error (`{"error": "..."}`) |
 | `401` | No token, or a malformed, unknown or revoked one (`WWW-Authenticate: Bearer`); no valid session; a failed sign-in |
-| `403` | The member is no longer in the group, the member is not in the named group at sign-in, a cookie request without a valid CSRF token, or an API token used on `/v1/tokens` (web session only) |
+| `403` | The member is no longer in the group, a member who is not an admin changes a group setting (merchant rules, own accounts, roles), the member is not in the named group at sign-in, a cookie request without a valid CSRF token, or an API token used on `/v1/tokens` (web session only) |
 | `404` | Unknown path, or an id that does not exist in the requested group |
-| `409` | A review action that no longer fits, such as answering a decision twice; a file that was already imported; a second merchant rule for the same merchant |
+| `409` | A review action that no longer fits, such as answering a decision twice; a file that was already imported; a second merchant rule for the same merchant or a second entry for the same own account; demoting the group's last admin |
 | `413` | A body over the size limit |
 
 ## Endpoints
@@ -41,14 +41,18 @@ Status: describes the endpoints **implemented** in `finsync/api/server.py`.
 | `POST` | `/v1/matches/{decision_id}/reject` | Reject: the record stays separate and the pair is not proposed again |
 | `POST` | `/v1/events/{event_id}/split` | Move one record out of an event (undo a wrong link) |
 | `GET` | `/v1/overview` | W2: a month's totals per currency, category and member over deduplicated events |
-| `GET` | `/v1/members` | W8: the group's members |
+| `GET` | `/v1/members` | W8: the group's members and their roles |
+| `PUT` | `/v1/members/{member_id}/role` | W8: an admin makes a member `admin` or `member` |
+| `GET` | `/v1/own-accounts` | W8: the group's own accounts and counterparties (records naming one are transfers) |
+| `POST` | `/v1/own-accounts` | W8: add an account number or a name (admin) |
+| `DELETE` | `/v1/own-accounts/{account_id}` | W8: delete an entry (admin; answers it as it was) |
 | `GET` | `/v1/tokens` | W8: the signed-in member's API tokens in this group (web session only) |
 | `POST` | `/v1/tokens` | W8: issue an API token, shown once (web session only) |
 | `POST` | `/v1/tokens/{token_id}/revoke` | W8: revoke one of the member's own tokens (web session only) |
 | `GET` | `/v1/merchant-rules` | W8: the group's merchant → category rules and the allowed categories |
-| `POST` | `/v1/merchant-rules` | W8: add a rule |
-| `PUT` | `/v1/merchant-rules/{rule_id}` | W8: change a rule's merchant or category |
-| `DELETE` | `/v1/merchant-rules/{rule_id}` | W8: delete a rule (answers it as it was) |
+| `POST` | `/v1/merchant-rules` | W8: add a rule (admin) |
+| `PUT` | `/v1/merchant-rules/{rule_id}` | W8: change a rule's merchant or category (admin) |
+| `DELETE` | `/v1/merchant-rules/{rule_id}` | W8: delete a rule (admin; answers it as it was) |
 
 These endpoints describe the current prototype. They do not imply that direct Android or Google Sheets integrations are available.
 
@@ -196,7 +200,19 @@ The rules ([`finsync/core/overview.py`](../../finsync/core/overview.py)):
 
 ### `GET /v1/members`
 
-Response `200`: `{"members": [{"user_id": "anna", "email": "anna@example.org", "is_me": true}, {"user_id": "balint", "email": null, "is_me": false}]}`. `email` is the sign-in address, `null` for a member without a web password.
+Response `200`: `{"members": [{"user_id": "anna", "email": "anna@example.org", "role": "admin", "is_me": true}, {"user_id": "balint", "email": null, "role": "member", "is_me": false}]}`. `email` is the sign-in address, `null` for a member without a web password.
+
+**Roles** (author's decision, 2026-11-19; Alembic revision 0003): an `admin` changes the group's settings (merchant rules, own accounts, roles), a `member` reads them and works with the group's data. The first member of a new group is its admin; members added later are `member`; members who existed before revision 0003 became admins. `python -m finsync.api.members add|list|set-role` manages members on the server.
+
+### `PUT /v1/members/{member_id}/role`
+
+`{"role": "admin"}` or `{"role": "member"}`, only by an admin. Returns the member list as `GET /v1/members` does. Demoting the group's last admin returns `409`; a member of another group returns `404`.
+
+### `GET`, `POST /v1/own-accounts`, `DELETE /v1/own-accounts/{account_id}`
+
+The group's own accounts and counterparties for transfers within the group ([categorization design](../design/categorization.md#money-transfers)). Every member reads the list; only an admin adds or deletes entries.
+
+`POST` takes `{"label": "12345678-87654321"}` or `{"label": "MINTA ANNA"}` and returns `201` with `{"id": 1, "label": "...", "kind": "account", "match_key": "1234567887654321", "created_by": "anna", "created_at": "..."}`. A label with at least 8 digits is an `account`, matched when its digits appear in a record's merchant and description digits; anything else is a `name`, matched when all its words are words of the merchant or description. A new record that matches gets `direction` and `category` `transfer`: matching never links it to a purchase, and `GET /v1/overview` leaves it out of the sums. The list applies to records stored after the entry. The same entry twice returns `409`, a label with neither a word nor 8 digits `400`.
 
 ### `GET /v1/tokens`, `POST /v1/tokens`, `POST /v1/tokens/{token_id}/revoke`
 
@@ -212,7 +228,7 @@ Only with the web session cookie (and the CSRF token for the two `POST`s). An AP
 
 ### `GET`, `POST /v1/merchant-rules`, `PUT`, `DELETE /v1/merchant-rules/{rule_id}`
 
-The group's merchant → category rules, the first layer of the hybrid categorizer ([categorization design](../design/categorization.md#order-of-precedence)). Every member of the group may change them.
+The group's merchant → category rules, the first layer of the hybrid categorizer ([categorization design](../design/categorization.md#order-of-precedence)). Every member reads them; only an admin creates, changes or deletes them (`403` otherwise).
 
 `POST` and `PUT` take `{"merchant": "SPAR", "category": "groceries"}`. The category must be one of the nine allowed categories; `GET` lists them next to the rules: `{"rules": [{"id": 1, "merchant": "SPAR", "merchant_key": "spar", "category": "groceries", "created_by": "anna", "created_at": "...", "updated_at": "..."}], "categories": ["groceries", "eating_out", ...]}`.
 

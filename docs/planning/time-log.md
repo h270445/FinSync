@@ -31,6 +31,7 @@ Time spent on the project, for the weekly-effort figure the supervisor asked for
 | 2026-11-14 | 21:19–21:36 | 17 | Status e-mail skill 1.1: new subject format, blank line above headings and none below, the sent weekly report kept as the example; weekly report file matched to the sent text | Project messages and commits |
 | 2026-11-16 | 19:36–19:42 | 6 | Supervisor reply to the weekly report stored and summarised; ADR 0010 accepted; W2, W8, hybrid categorizer measurement, real-phone test, skill choice and Hungarian manuscript skeleton added to the plan, M2 and the thesis map | Project messages and commits |
 | 2026-11-19 | 16:47–16:50 | 3 | Merge conflict of the supervisor-feedback pull request with `main` resolved (time log) | Project messages and commits |
+| 2026-11-19 | 17:05–17:45 | 40 | Open questions of W2 and W8 answered by the author; W2 overview endpoint and screen; W8 settings: members with admin/member roles, own API tokens, merchant → category rules, own accounts for transfers; one nine-category list; Alembic revisions 0002–0005; tests, docs, PR | Project messages and commits (end time estimated at the pull request; to be corrected by the author) |
 
 ## Weekly totals
 
@@ -43,5 +44,5 @@ Time spent on the project, for the weekly-effort figure the supervisor asked for
 | 2026-10-26 – 11-01 | 264 | 4.4 |
 | 2026-11-02 – 11-08 | 149 | 2.5 |
 | 2026-11-09 – 11-15 | 380 | 6.3 |
-| 2026-11-16 – 11-22 | 9 | 0.15 |
-| **Total** | **1243** | **20.7** |
+| 2026-11-16 – 11-22 | 49 | 0.8 |
+| **Total** | **1283** | **21.4** |

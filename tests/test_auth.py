@@ -193,7 +193,7 @@ class AuthApiTest(unittest.TestCase):
         self.decision_id = review["decision_id"]
         self.event_id = review["candidate_event"]["id"]
         self.group_1_record = review["candidate_event"]["transactions"][0]["id"]
-        self.account_id = self._call("POST", "/v1/own-accounts", self.token_a, {"label": "11773016-01234567"})[1]["id"]
+        self.account_id = self._call("POST", "/v1/own-accounts", self.token_a, {"label": "12345678-87654321"})[1]["id"]
         self.rule_id = self._call("POST", "/v1/merchant-rules", self.token_a, {"merchant": "Lidl", "category": "groceries"})[1]["id"]
 
     def tearDown(self) -> None:

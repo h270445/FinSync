@@ -413,7 +413,7 @@ function OwnAccountsCard({ isAdmin }: { isAdmin: boolean }) {
                 id="a-label"
                 value={label}
                 onChange={(event) => setLabel(event.target.value)}
-                placeholder="pl. 11773016-01234567 vagy MINTA ANNA"
+                placeholder="pl. 12345678-87654321 vagy MINTA ANNA"
                 maxLength={80}
                 className="w-72"
               />

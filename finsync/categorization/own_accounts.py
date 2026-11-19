@@ -6,8 +6,8 @@ moved inside the group, so it gets the direction and category `transfer` and is 
 and income totals ([categorization design](../../docs/design/categorization.md#money-transfers)).
 
 - An entry with at least 8 digits is an **account**: it matches when its digits appear, in order and
-  without gaps, among the digits of the record's merchant and description ("11773016-01234567" also
-  matches "HU42 1177 3016 0123 4567 0000 0000").
+  without gaps, among the digits of the record's merchant and description ("12345678-87654321" also
+  matches "HU00 1234 5678 8765 4321 0000 0000").
 - Any other entry is a **name**: it matches when all its words are words of the record's merchant or
   description, after the same normalisation as merchant rules (lowercase, no accents).
 """

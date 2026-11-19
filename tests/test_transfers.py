@@ -22,12 +22,12 @@ INCOMING = "+12 000 Ft, Minta Bela"
 
 class OwnAccountKeyTest(unittest.TestCase):
     def test_account_numbers_match_on_their_digits_and_names_on_their_words(self) -> None:
-        self.assertEqual(own_account_key(" 11773016-01234567 "), ("11773016-01234567", "account", "1177301601234567"))
+        self.assertEqual(own_account_key(" 12345678-87654321 "), ("12345678-87654321", "account", "1234567887654321"))
         self.assertEqual(own_account_key("Minta Anna Beáta"), ("Minta Anna Beáta", "name", "minta anna beata"))
-        account = OwnAccount(1, "account", "1177301601234567")
+        account = OwnAccount(1, "account", "1234567887654321")
         name = OwnAccount(2, "name", "minta anna")
-        self.assertTrue(is_transfer([account], None, "Átutalás HU42 1177 3016 0123 4567 0000 0000"))
-        self.assertFalse(is_transfer([account], None, "Átutalás 1177 3016 9999"))
+        self.assertTrue(is_transfer([account], None, "Átutalás HU00 1234 5678 8765 4321 0000 0000"))
+        self.assertFalse(is_transfer([account], None, "Átutalás 1234 5678 9999"))
         self.assertTrue(is_transfer([name], "Minta Anna Beata", None))
         self.assertFalse(is_transfer([name], "Minta Bela", None))
         self.assertFalse(is_transfer([name], "Mintabolt Anna utca", None))  # whole words only
@@ -76,15 +76,15 @@ class TransferServiceTest(unittest.TestCase):
     def test_only_admins_change_the_list_and_entries_are_unique(self) -> None:
         with self.assertRaisesRegex(AuthorizationError, "admin"):
             self.service.create_own_account("balint", "group-1", "Minta Anna")
-        entry = self.service.create_own_account("anna", "group-1", "11773016-01234567")
+        entry = self.service.create_own_account("anna", "group-1", "12345678-87654321")
         with self.assertRaises(ConflictError):
-            self.service.create_own_account("anna", "group-1", "1177 3016 0123 4567")
+            self.service.create_own_account("anna", "group-1", "1234 5678 8765 4321")
         self.assertEqual([a.id for a in self.service.list_own_accounts("balint", "group-1")], [entry.id])
         with self.assertRaisesRegex(AuthorizationError, "admin"):
             self.service.delete_own_account("balint", "group-1", entry.id)
         with self.assertRaises(NotFoundError):
             self.service.delete_own_account("user-c", "group-2", entry.id)  # another group's entry
-        self.assertEqual(self.service.delete_own_account("anna", "group-1", entry.id).label, "11773016-01234567")
+        self.assertEqual(self.service.delete_own_account("anna", "group-1", entry.id).label, "12345678-87654321")
         self.assertEqual(self.service.list_own_accounts("anna", "group-1"), [])
 
     def test_own_accounts_over_http(self) -> None:
