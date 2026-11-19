@@ -22,13 +22,30 @@ const bucket = (overrides: Partial<OverviewBucket>): OverviewBucket => ({
 const november: Overview = {
   month: '2026-11',
   months: ['2026-11', '2026-10'],
-  totals: [bucket({ expense: '15490', income: '350000', event_count: 3, review_count: 1, review_amount: '4990' })],
+  totals: [
+    bucket({
+      expense: '15490',
+      income: '350000',
+      event_count: 3,
+      review_count: 1,
+      review_amount: '4990',
+    }),
+  ],
   categories: [
-    bucket({ key: 'groceries', expense: '12000', event_count: 1, review_count: 1, review_amount: '4990' }),
+    bucket({
+      key: 'groceries',
+      expense: '12000',
+      event_count: 1,
+      review_count: 1,
+      review_amount: '4990',
+    }),
     bucket({ key: 'transport', expense: '3490' }),
     bucket({ key: 'other', income: '350000' }),
   ],
-  members: [bucket({ key: 'anna', expense: '12000', income: '350000', event_count: 2 }), bucket({ key: 'balint', expense: '3490' })],
+  members: [
+    bucket({ key: 'anna', expense: '12000', income: '350000', event_count: 2 }),
+    bucket({ key: 'balint', expense: '3490' }),
+  ],
   transfer_count: 2,
 }
 
@@ -42,7 +59,9 @@ function serve(byMonth: Record<string, Overview>) {
 }
 
 function renderPage() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  })
   render(
     <QueryClientProvider client={client}>
       <MemoryRouter>
@@ -60,7 +79,7 @@ describe('OverviewPage', () => {
     renderPage()
 
     expect(await screen.findByText('15 490 Ft')).toBeInTheDocument()
-    expect(screen.getByRole('status')).toHaveTextContent('1 esemény (4 990 Ft) ellenőrzésre vár')
+    expect(screen.getByRole('status')).toHaveTextContent('Ellenőrzésre vár: 1 esemény (4 990 Ft)')
     expect(screen.getByText(/2 átvezetés a csoport saját számlái között/)).toBeInTheDocument()
 
     const categories = screen.getByText('Kategóriák szerint').closest('[data-slot="card"]') as HTMLElement
@@ -73,7 +92,14 @@ describe('OverviewPage', () => {
   it('switches to another month', async () => {
     const fetchMock = serve({
       '2026-11': november,
-      '2026-10': { ...november, month: '2026-10', totals: [], categories: [], members: [], transfer_count: 0 },
+      '2026-10': {
+        ...november,
+        month: '2026-10',
+        totals: [],
+        categories: [],
+        members: [],
+        transfer_count: 0,
+      },
     })
     renderPage()
 
@@ -84,7 +110,10 @@ describe('OverviewPage', () => {
   })
 
   it('shows the backend error', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => Response.json({ error: 'month must be YYYY-MM' }, { status: 400 })))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Response.json({ error: 'month must be YYYY-MM' }, { status: 400 })),
+    )
     renderPage()
     expect(await screen.findByText('month must be YYYY-MM')).toBeInTheDocument()
   })

@@ -1,5 +1,5 @@
 import { AlertTriangle } from 'lucide-react'
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { Link } from 'react-router'
 
 import type { OverviewBucket } from '@/api/client'
@@ -9,6 +9,10 @@ import { EmptyState, ErrorState, LoadingRows } from '@/components/states'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { categoryLabel, formatAmount, monthName } from '@/lib/format'
+
+/** The group's currency (HUF) first, then the others alphabetically. */
+const byCurrency = (a: OverviewBucket, b: OverviewBucket) =>
+  Number(b.currency === 'HUF') - Number(a.currency === 'HUF') || a.currency.localeCompare(b.currency)
 
 // The API sends positive sums; formatAmount shows a negative amount without a sign and a positive one with "+".
 const money = (amount: string, currency: string) => formatAmount(`-${amount}`, currency)
@@ -57,7 +61,7 @@ export function OverviewPage() {
       ) : (
         <>
           <div className="grid gap-3 sm:grid-cols-2">
-            {data!.totals.map((total) => (
+            {[...data!.totals].sort(byCurrency).map((total) => (
               <TotalCard key={total.currency} total={total} />
             ))}
           </div>
@@ -109,8 +113,8 @@ function ReviewNotice({ totals }: { totals: OverviewBucket[] }) {
     <div role="status" className="flex items-start gap-2 rounded-lg bg-warning p-3 text-sm text-warning-foreground">
       <AlertTriangle className="mt-0.5 size-4 shrink-0" />
       <p>
-        {count} esemény ({amounts}) ellenőrzésre vár, ezek benne vannak az összegekben, de lehet, hogy egy már meglévő
-        vásárlás másodpéldányai.{' '}
+        Ellenőrzésre vár: {count} esemény ({amounts}). Az összegek tartalmazzák; ha egy már rögzített vásárlás másik
+        példányának bizonyul, a kiadás ennyivel kevesebb.{' '}
         <Link to="/ellenorzes" className="font-medium underline underline-offset-4">
           Ellenőrzés
         </Link>
@@ -132,6 +136,9 @@ function BucketTable({
 }) {
   const largest: Record<string, number> = {}
   for (const row of rows) largest[row.currency] = Math.max(largest[row.currency] ?? 0, Number(row.expense))
+  // Stable sort: within a currency the API's order (largest spending first) stays.
+  const sorted = [...rows].sort(byCurrency)
+  const several = new Set(rows.map((row) => row.currency)).size > 1
   return (
     <Card>
       <CardHeader>
@@ -148,33 +155,48 @@ function BucketTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map((row) => (
-              <TableRow key={`${row.key}-${row.currency}`}>
-                <TableCell>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span>{label(row.key)}</span>
-                    {row.review_count > 0 && (
-                      <span
-                        className="rounded bg-warning px-1.5 text-xs text-warning-foreground"
-                        title="Ellenőrzésre váró események"
-                      >
-                        {row.review_count} ellenőrzésre vár
-                      </span>
-                    )}
-                  </div>
-                  <div className="mt-1 h-1.5 rounded bg-muted" aria-hidden="true">
-                    <div
-                      className="h-1.5 rounded bg-primary"
-                      style={{ width: `${largest[row.currency] ? (100 * Number(row.expense)) / largest[row.currency] : 0}%` }}
-                    />
-                  </div>
-                </TableCell>
-                <TableCell className="text-right align-top tabular-nums">{money(row.expense, row.currency)}</TableCell>
-                <TableCell className="hidden text-right align-top tabular-nums sm:table-cell">
-                  {income(row.income, row.currency)}
-                </TableCell>
-                <TableCell className="hidden text-right align-top tabular-nums sm:table-cell">{row.event_count}</TableCell>
-              </TableRow>
+            {sorted.map((row, index) => (
+              <Fragment key={`${row.key}-${row.currency}`}>
+                {several && row.currency !== sorted[index - 1]?.currency && (
+                  <TableRow>
+                    <TableCell colSpan={4} className="pt-4 text-xs font-medium text-muted-foreground">
+                      {row.currency}
+                    </TableCell>
+                  </TableRow>
+                )}
+                <TableRow>
+                  <TableCell>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span>{label(row.key)}</span>
+                      {row.review_count > 0 && (
+                        <span
+                          className="rounded bg-warning px-1.5 text-xs text-warning-foreground"
+                          title="Ellenőrzésre váró események"
+                        >
+                          {row.review_count} ellenőrzésre vár
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-1 h-1.5 rounded bg-muted" aria-hidden="true">
+                      <div
+                        className="h-1.5 rounded bg-primary"
+                        style={{
+                          width: `${largest[row.currency] ? (100 * Number(row.expense)) / largest[row.currency] : 0}%`,
+                        }}
+                      />
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right align-top tabular-nums">
+                    {money(row.expense, row.currency)}
+                  </TableCell>
+                  <TableCell className="hidden text-right align-top tabular-nums sm:table-cell">
+                    {income(row.income, row.currency)}
+                  </TableCell>
+                  <TableCell className="hidden text-right align-top tabular-nums sm:table-cell">
+                    {row.event_count}
+                  </TableCell>
+                </TableRow>
+              </Fragment>
             ))}
           </TableBody>
         </Table>

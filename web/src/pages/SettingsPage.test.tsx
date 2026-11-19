@@ -45,7 +45,13 @@ function serve({ tokens = [token({})], rules = [rule({})] }: { tokens?: ApiToken
       })
     if (call === 'GET /v1/tokens') return Response.json({ tokens })
     if (call === 'POST /v1/tokens')
-      return Response.json({ token: NEW_TOKEN, record: token({ id: 2, name: 'Bálint laptop', prefix: 'fs_AAAAA' }) }, { status: 201 })
+      return Response.json(
+        {
+          token: NEW_TOKEN,
+          record: token({ id: 2, name: 'Bálint laptop', prefix: 'fs_AAAAA' }),
+        },
+        { status: 201 },
+      )
     if (call === 'POST /v1/tokens/1/revoke') return Response.json(token({ revoked_at: '2026-11-19T12:00:00+00:00' }))
     if (call === 'GET /v1/merchant-rules') return Response.json({ rules, categories: CATEGORIES })
     if (call === 'POST /v1/merchant-rules')
@@ -61,7 +67,9 @@ const calls = (fetchMock: ReturnType<typeof serve>) =>
   fetchMock.mock.calls.map(([request]) => `${request.method} ${new URL(request.url).pathname}`)
 
 function renderPage() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  })
   render(
     <QueryClientProvider client={client}>
       <MemoryRouter>
@@ -80,7 +88,7 @@ describe('SettingsPage', () => {
     const anna = (await screen.findByText('anna')).closest('li') as HTMLElement
     expect(anna).toHaveTextContent('Te')
     expect(anna).toHaveTextContent('anna@example.org')
-    expect((screen.getByText('balint').closest('li') as HTMLElement)).toHaveTextContent('nincs webes belépése')
+    expect(screen.getByText('balint').closest('li') as HTMLElement).toHaveTextContent('nincs webes belépése')
   })
 
   it('creates a token and shows it once', async () => {

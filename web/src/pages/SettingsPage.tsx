@@ -47,7 +47,9 @@ function MembersCard() {
     <Card>
       <CardHeader>
         <CardTitle>Tagok</CardTitle>
-        <CardDescription>A csoport tagjai. Tagot meghívni és eltávolítani egyelőre parancssorból lehet.</CardDescription>
+        <CardDescription>
+          A csoport tagjai. Tagot meghívni és eltávolítani egyelőre parancssorból lehet.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         {members.isPending ? (
@@ -126,7 +128,9 @@ function TokensCard() {
             Új token
           </Button>
         </form>
-        {create.isError && <p className="text-sm text-destructive">{refusal(create.error, 'A token létrehozása nem sikerült.')}</p>}
+        {create.isError && (
+          <p className="text-sm text-destructive">{refusal(create.error, 'A token létrehozása nem sikerült.')}</p>
+        )}
 
         {created && (
           <Alert>
@@ -305,7 +309,11 @@ function RuleRow({ rule, categories }: { rule: MerchantRule; categories: string[
           disabled={update.isPending}
           onChange={(event) =>
             update.mutate(
-              { id: rule.id, merchant: rule.merchant, category: event.target.value },
+              {
+                id: rule.id,
+                merchant: rule.merchant,
+                category: event.target.value,
+              },
               { onError: (error) => toast.error(ruleRefusal(error)) },
             )
           }
