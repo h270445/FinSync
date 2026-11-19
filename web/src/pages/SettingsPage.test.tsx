@@ -32,17 +32,24 @@ const rule = (overrides: Partial<MerchantRule>): MerchantRule => ({
   ...overrides,
 })
 
-function serve({ tokens = [token({})], rules = [rule({})] }: { tokens?: ApiToken[]; rules?: MerchantRule[] } = {}) {
+function serve({
+  tokens = [token({})],
+  rules = [rule({})],
+  myRole = 'admin',
+}: { tokens?: ApiToken[]; rules?: MerchantRule[]; myRole?: string } = {}) {
+  const members = [
+    { user_id: 'anna', email: 'anna@example.org', role: myRole, is_me: true },
+    { user_id: 'balint', email: null, role: 'member', is_me: false },
+  ]
   const fetchMock = vi.fn(async (request: Request) => {
     const path = new URL(request.url).pathname
     const call = `${request.method} ${path}`
     if (call === 'GET /v1/members')
       return Response.json({
-        members: [
-          { user_id: 'anna', email: 'anna@example.org', is_me: true },
-          { user_id: 'balint', email: null, is_me: false },
-        ],
+        members,
       })
+    if (call === 'PUT /v1/members/balint/role')
+      return Response.json({ error: 'the group must keep at least one admin' }, { status: 409 })
     if (call === 'GET /v1/tokens') return Response.json({ tokens })
     if (call === 'POST /v1/tokens')
       return Response.json(
@@ -111,6 +118,24 @@ describe('SettingsPage', () => {
     expect(calls(fetchMock)).not.toContain('POST /v1/tokens/1/revoke')
     await userEvent.click(screen.getByRole('button', { name: 'Igen, visszavonom' }))
     expect(calls(fetchMock)).toContain('POST /v1/tokens/1/revoke')
+  })
+
+  it('shows a member the rules and roles read-only', async () => {
+    serve({ myRole: 'member' })
+    renderPage()
+    expect(await screen.findByText('Csak a csoport adminja módosíthatja.', { exact: false })).toBeInTheDocument()
+    expect(await screen.findByText('Élelmiszer')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Szabály hozzáadása' })).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('SPAR kategóriája')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('balint szerepköre')).not.toBeInTheDocument()
+  })
+
+  it('lets an admin change a role and explains a refusal', async () => {
+    const fetchMock = serve()
+    renderPage()
+    await userEvent.selectOptions(await screen.findByLabelText('balint szerepköre'), 'admin')
+    expect(calls(fetchMock)).toContain('PUT /v1/members/balint/role')
+    expect(await screen.findByText('A csoportnak legalább egy adminja kell, hogy maradjon.')).toBeInTheDocument()
   })
 
   it('changes and deletes a rule, and explains a duplicate', async () => {

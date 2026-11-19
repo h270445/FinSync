@@ -87,6 +87,23 @@ class SchemaTest(unittest.TestCase):
         finally:
             connection.close()
 
+    def test_revision_0003_makes_every_existing_member_an_admin(self) -> None:
+        path = self._path("roles.db")
+        storage = FinSyncStorage(path)
+        storage.add_group_membership("anna", "lakas")
+        storage.add_group_membership("balint", "lakas")
+        self.assertEqual(storage.member_role("balint", "lakas"), "member")
+        # Turn the file back into revision 0002, before roles existed.
+        connection = sqlite3.connect(path)
+        with connection:
+            connection.execute("ALTER TABLE group_memberships DROP COLUMN role")
+            connection.execute("UPDATE alembic_version SET version_num = '0002'")
+        connection.close()
+        upgraded = FinSyncStorage(path)
+        self.assertEqual([r for _, _, r in upgraded.list_group_members("lakas")], ["admin", "admin"])
+        upgraded.add_group_membership("cecil", "lakas")
+        self.assertEqual(upgraded.member_role("cecil", "lakas"), "member")
+
     def test_a_new_database_has_no_legacy_version_table(self) -> None:
         FinSyncStorage(self._path("new.db"))
         connection = sqlite3.connect(self._path("new.db"))

@@ -35,6 +35,7 @@ ENDPOINTS = (
     ("POST", "/v1/merchant-rules"),
     ("PUT", "/v1/merchant-rules/{rule}"),
     ("DELETE", "/v1/merchant-rules/{rule}"),
+    ("PUT", "/v1/members/{member}/role"),
     ("GET", "/v1/matches/review"),
     ("POST", "/v1/matches/{decision}/confirm"),
     ("POST", "/v1/matches/{decision}/reject"),
@@ -117,6 +118,7 @@ class TokenServiceTest(unittest.TestCase):
             # Turn the new database into a file from before Alembic, at schema version 4.
             connection.execute("DROP TABLE alembic_version")
             connection.execute("DROP TABLE merchant_categories")  # added after the baseline (revision 0002)
+            connection.execute("ALTER TABLE group_memberships DROP COLUMN role")  # revision 0003
             connection.execute("CREATE TABLE schema_version (version INTEGER NOT NULL)")
             connection.executemany("INSERT INTO schema_version (version) VALUES (?)", [(2,), (3,), (4,)])
             connection.execute("DROP TABLE api_tokens")
@@ -207,7 +209,8 @@ class AuthApiTest(unittest.TestCase):
                 route.path.replace("{decision_id}", "{decision}")
                 .replace("{event_id}", "{event}")
                 .replace("{token_id}", "{token}")
-                .replace("{rule_id}", "{rule}"),
+                .replace("{rule_id}", "{rule}")
+                .replace("{member_id}", "{member}"),
             )
             for route in self.app.routes
             if isinstance(route, APIRoute)
@@ -217,9 +220,11 @@ class AuthApiTest(unittest.TestCase):
 
     def _endpoints(self):
         for method, path in ENDPOINTS:
-            yield method, path.format(decision=self.decision_id, event=self.event_id, rule=self.rule_id)
+            yield method, path.format(decision=self.decision_id, event=self.event_id, rule=self.rule_id, member="user-b")
 
     def _body(self, path: str, method: str = "POST") -> dict:
+        if path.endswith("/role"):
+            return {"role": "member"}
         if path.startswith("/v1/merchant-rules"):
             # Different keys for create and update, so neither collides with the other or the setUp rule.
             merchant = "Aldi" if method == "POST" else "Lidl Budapest"
@@ -240,6 +245,7 @@ class AuthApiTest(unittest.TestCase):
             self.storage.list_events("group-1"),
             self.storage.list_decisions("group-1"),
             self.storage.list_merchant_categories("group-1"),
+            self.storage.list_group_members("group-1"),
         )
 
     def test_every_endpoint_requires_a_valid_token(self) -> None:
@@ -285,8 +291,9 @@ class AuthApiTest(unittest.TestCase):
                     (method == "POST" and path.startswith("/v1/matches/"))
                     or path.startswith("/v1/events/")
                     or path.startswith("/v1/merchant-rules/")
+                    or path.startswith("/v1/members/")
                 ):
-                    # Group 1's decision, event and rule ids do not exist in group 2.
+                    # Group 1's decisions, events, rules and members do not exist in group 2.
                     self.assertEqual(status, 404)
                 elif path == "/v1/merchant-rules" and method == "POST":
                     # A rule goes into the token's group.

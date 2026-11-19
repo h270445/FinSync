@@ -10,6 +10,7 @@ import {
   useMembers,
   useMerchantRules,
   useRevokeToken,
+  useSetMemberRole,
   useTokens,
   useUpdateMerchantRule,
 } from '@/api/queries'
@@ -31,24 +32,30 @@ const refusal = (error: unknown, fallback: string) => (error instanceof ApiError
  * the first layer of the hybrid categorizer.
  */
 export function SettingsPage() {
+  const members = useMembers()
+  const isAdmin = members.data?.some((member) => member.is_me && member.role === 'admin') ?? false
   return (
     <section className="space-y-4">
       <h1 className="text-2xl font-semibold">Beállítások</h1>
-      <MembersCard />
+      <MembersCard isAdmin={isAdmin} />
       <TokensCard />
-      <MerchantRulesCard />
+      <MerchantRulesCard isAdmin={isAdmin} />
     </section>
   )
 }
 
-function MembersCard() {
+const ROLE_LABELS: Record<string, string> = { admin: 'Admin', member: 'Tag' }
+
+function MembersCard({ isAdmin }: { isAdmin: boolean }) {
   const members = useMembers()
+  const setRole = useSetMemberRole()
   return (
     <Card>
       <CardHeader>
         <CardTitle>Tagok</CardTitle>
         <CardDescription>
-          A csoport tagjai. Tagot meghívni és eltávolítani egyelőre parancssorból lehet.
+          A csoport tagjai. Az admin módosíthatja a csoport beállításait (szabályok, szerepkörök); a csoportnak mindig
+          marad legalább egy adminja. Tagot meghívni és eltávolítani egyelőre parancssorból lehet.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -63,10 +70,26 @@ function MembersCard() {
                 <span className="font-medium">{member.user_id}</span>
                 {member.is_me && <Badge variant="secondary">Te</Badge>}
                 <span className="text-sm text-muted-foreground">{member.email ?? 'nincs webes belépése'}</span>
+                <span className="ml-auto">
+                  {isAdmin ? (
+                    <NativeSelect
+                      aria-label={`${member.user_id} szerepköre`}
+                      value={member.role}
+                      disabled={setRole.isPending}
+                      onChange={(event) => setRole.mutate({ memberId: member.user_id, role: event.target.value })}
+                    >
+                      <option value="admin">Admin</option>
+                      <option value="member">Tag</option>
+                    </NativeSelect>
+                  ) : (
+                    <Badge variant="outline">{ROLE_LABELS[member.role] ?? member.role}</Badge>
+                  )}
+                </span>
               </li>
             ))}
           </ul>
         )}
+        {setRole.isError && <p className="mt-2 text-sm text-destructive">{roleRefusalText(setRole.error)}</p>}
       </CardContent>
     </Card>
   )
@@ -207,7 +230,12 @@ function TokensCard() {
   )
 }
 
-function MerchantRulesCard() {
+function roleRefusalText(error: unknown): string {
+  if (error instanceof ApiError && error.status === 409) return 'A csoportnak legalább egy adminja kell, hogy maradjon.'
+  return refusal(error, 'A szerepkör módosítása nem sikerült.')
+}
+
+function MerchantRulesCard({ isAdmin }: { isAdmin: boolean }) {
   const rules = useMerchantRules()
   const create = useCreateMerchantRule()
   const [merchant, setMerchant] = useState('')
@@ -235,37 +263,39 @@ function MerchantRulesCard() {
         <CardDescription>
           A csoport saját szabályai erősebbek az automatikus kulcsszavas kategorizálásnál. Egy szabály a kereskedőnév
           minden szavára illeszkedik, így a „SPAR” a „SPAR 0123 BUDAPEST”-re is. A szabály csak az ezután érkező
-          tételekre hat. Bármelyik tag módosíthatja.
+          tételekre hat. {isAdmin ? 'Adminként te módosíthatod.' : 'Csak a csoport adminja módosíthatja.'}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <form onSubmit={submit} className="flex flex-wrap items-end gap-2">
-          <div className="space-y-1">
-            <Label htmlFor="r-merchant">Kereskedő</Label>
-            <Input
-              id="r-merchant"
-              value={merchant}
-              onChange={(event) => setMerchant(event.target.value)}
-              placeholder="pl. SPAR"
-              maxLength={80}
-              className="w-56"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="r-category">Kategória</Label>
-            <NativeSelect id="r-category" value={category} onChange={(event) => setCategory(event.target.value)}>
-              <option value="">Válassz…</option>
-              {categories.map((item) => (
-                <option key={item} value={item}>
-                  {categoryLabel(item)}
-                </option>
-              ))}
-            </NativeSelect>
-          </div>
-          <Button type="submit" disabled={!merchant.trim() || !category || create.isPending}>
-            Szabály hozzáadása
-          </Button>
-        </form>
+        {isAdmin && (
+          <form onSubmit={submit} className="flex flex-wrap items-end gap-2">
+            <div className="space-y-1">
+              <Label htmlFor="r-merchant">Kereskedő</Label>
+              <Input
+                id="r-merchant"
+                value={merchant}
+                onChange={(event) => setMerchant(event.target.value)}
+                placeholder="pl. SPAR"
+                maxLength={80}
+                className="w-56"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="r-category">Kategória</Label>
+              <NativeSelect id="r-category" value={category} onChange={(event) => setCategory(event.target.value)}>
+                <option value="">Válassz…</option>
+                {categories.map((item) => (
+                  <option key={item} value={item}>
+                    {categoryLabel(item)}
+                  </option>
+                ))}
+              </NativeSelect>
+            </div>
+            <Button type="submit" disabled={!merchant.trim() || !category || create.isPending}>
+              Szabály hozzáadása
+            </Button>
+          </form>
+        )}
         {create.isError && <p className="text-sm text-destructive">{ruleRefusal(create.error)}</p>}
 
         {rules.isPending ? (
@@ -277,7 +307,7 @@ function MerchantRulesCard() {
         ) : (
           <ul className="divide-y">
             {rules.data.rules.map((rule) => (
-              <RuleRow key={rule.id} rule={rule} categories={categories} />
+              <RuleRow key={rule.id} rule={rule} categories={categories} editable={isAdmin} />
             ))}
           </ul>
         )}
@@ -291,7 +321,7 @@ function ruleRefusal(error: unknown): string {
   return refusal(error, 'A szabály mentése nem sikerült.')
 }
 
-function RuleRow({ rule, categories }: { rule: MerchantRule; categories: string[] }) {
+function RuleRow({ rule, categories, editable }: { rule: MerchantRule; categories: string[]; editable: boolean }) {
   const update = useUpdateMerchantRule()
   const remove = useDeleteMerchantRule()
   return (
@@ -302,43 +332,47 @@ function RuleRow({ rule, categories }: { rule: MerchantRule; categories: string[
           Illeszkedik: „{rule.merchant_key}” · felvette: {rule.created_by}
         </p>
       </div>
-      <div className="flex items-center gap-2">
-        <NativeSelect
-          aria-label={`${rule.merchant} kategóriája`}
-          value={rule.category}
-          disabled={update.isPending}
-          onChange={(event) =>
-            update.mutate(
-              {
-                id: rule.id,
-                merchant: rule.merchant,
-                category: event.target.value,
-              },
-              { onError: (error) => toast.error(ruleRefusal(error)) },
-            )
-          }
-        >
-          {categories.map((item) => (
-            <option key={item} value={item}>
-              {categoryLabel(item)}
-            </option>
-          ))}
-        </NativeSelect>
-        <Button
-          size="icon"
-          variant="ghost"
-          aria-label={`${rule.merchant} szabály törlése`}
-          disabled={remove.isPending}
-          onClick={() =>
-            remove.mutate(rule.id, {
-              onSuccess: () => toast.success(`Törölve: ${rule.merchant}`),
-              onError: (error) => toast.error(refusal(error, 'A törlés nem sikerült.')),
-            })
-          }
-        >
-          <Trash2 />
-        </Button>
-      </div>
+      {!editable ? (
+        <Badge variant="outline">{categoryLabel(rule.category)}</Badge>
+      ) : (
+        <div className="flex items-center gap-2">
+          <NativeSelect
+            aria-label={`${rule.merchant} kategóriája`}
+            value={rule.category}
+            disabled={update.isPending}
+            onChange={(event) =>
+              update.mutate(
+                {
+                  id: rule.id,
+                  merchant: rule.merchant,
+                  category: event.target.value,
+                },
+                { onError: (error) => toast.error(ruleRefusal(error)) },
+              )
+            }
+          >
+            {categories.map((item) => (
+              <option key={item} value={item}>
+                {categoryLabel(item)}
+              </option>
+            ))}
+          </NativeSelect>
+          <Button
+            size="icon"
+            variant="ghost"
+            aria-label={`${rule.merchant} szabály törlése`}
+            disabled={remove.isPending}
+            onClick={() =>
+              remove.mutate(rule.id, {
+                onSuccess: () => toast.success(`Törölve: ${rule.merchant}`),
+                onError: (error) => toast.error(refusal(error, 'A törlés nem sikerült.')),
+              })
+            }
+          >
+            <Trash2 />
+          </Button>
+        </div>
+      )}
     </li>
   )
 }

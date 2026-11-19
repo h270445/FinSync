@@ -100,6 +100,18 @@ export function useMembers() {
   })
 }
 
+/** An admin changes a member's role; the answer is the new member list. */
+export function useSetMemberRole() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ memberId, role }: { memberId: string; role: string }) =>
+      unwrap(
+        await api.PUT('/v1/members/{member_id}/role', { params: { path: { member_id: memberId } }, body: { role } }),
+      ).members,
+    onSuccess: (members) => queryClient.setQueryData(['members'], members),
+  })
+}
+
 /** The signed-in member's own API tokens (works only with the web session). */
 export function useTokens() {
   return useQuery({

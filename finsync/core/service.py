@@ -34,6 +34,8 @@ from finsync.matching import decision as decision_rules
 from finsync.matching.normalize import local_date
 from finsync.matching.scoring import DAY_WINDOW_DAYS
 from finsync.storage import (
+    ADMIN,
+    ROLES,
     EventRecord,
     FinSyncStorage,
     MerchantCategoryRecord,
@@ -107,6 +109,14 @@ class FinSyncService:
     def ensure_authorized(self, user_id: str, group_id: str) -> None:
         if not self._storage.is_user_in_group(user_id, group_id):
             raise AuthorizationError("User is not authorized for this group")
+
+    def ensure_admin(self, user_id: str, group_id: str) -> None:
+        """Group settings are changed only by an admin of the group (author's decision, 2026-11-19)."""
+        role = self._storage.member_role(user_id, group_id)
+        if role is None:
+            raise AuthorizationError("User is not authorized for this group")
+        if role != ADMIN:
+            raise AuthorizationError("Only an admin of the group can change this setting")
 
     def ingest_notification(
         self,
@@ -414,16 +424,16 @@ class FinSyncService:
         self.ensure_authorized(user_id, group_id)
         return self._storage.list_events(group_id)
 
-    # W8 merchant → category rules. Every member of the group may change them (author's decision,
-    # 2026-11-19: no owner role this semester). A rule applies to records stored after it, not to
-    # existing events; changing those is the category correction's job (logged).
+    # W8 merchant → category rules. Every member reads them; only an admin of the group changes them
+    # (author's decision, 2026-11-19). A rule applies to records stored after it, not to existing
+    # events; changing those is the category correction's job (logged).
 
     def list_merchant_rules(self, user_id: str, group_id: str) -> list[MerchantCategoryRecord]:
         self.ensure_authorized(user_id, group_id)
         return self._storage.list_merchant_categories(group_id)
 
     def create_merchant_rule(self, user_id: str, group_id: str, merchant: str, category: str) -> MerchantCategoryRecord:
-        self.ensure_authorized(user_id, group_id)
+        self.ensure_admin(user_id, group_id)
         label, key, category = validate_rule(merchant, category)
         try:
             rule_id = self._storage.insert_merchant_category(group_id, key, label, category, user_id)
@@ -434,7 +444,7 @@ class FinSyncService:
     def update_merchant_rule(
         self, user_id: str, group_id: str, rule_id: int, merchant: str, category: str
     ) -> MerchantCategoryRecord:
-        self.ensure_authorized(user_id, group_id)
+        self.ensure_admin(user_id, group_id)
         label, key, category = validate_rule(merchant, category)
         try:
             updated = self._storage.update_merchant_category(group_id, rule_id, key, label, category)
@@ -445,7 +455,7 @@ class FinSyncService:
         return self._merchant_rule(group_id, rule_id)
 
     def delete_merchant_rule(self, user_id: str, group_id: str, rule_id: int) -> MerchantCategoryRecord:
-        self.ensure_authorized(user_id, group_id)
+        self.ensure_admin(user_id, group_id)
         rule = self._merchant_rule(group_id, rule_id)
         self._storage.delete_merchant_category(group_id, rule_id)
         return rule
@@ -456,10 +466,22 @@ class FinSyncService:
             raise NotFoundError("Rule not found")
         return rule
 
-    def list_members(self, user_id: str, group_id: str) -> list[tuple[str, str | None]]:
-        """W8: the group's members (id and sign-in e-mail address)."""
+    def list_members(self, user_id: str, group_id: str) -> list[tuple[str, str | None, str]]:
+        """W8: the group's members (id, sign-in e-mail address, role)."""
         self.ensure_authorized(user_id, group_id)
         return self._storage.list_group_members(group_id)
+
+    def set_member_role(self, user_id: str, group_id: str, member_id: str, role: str) -> None:
+        """W8: an admin makes another member admin or member. The group always keeps one admin."""
+        self.ensure_admin(user_id, group_id)
+        if role not in ROLES:
+            raise ValueError(f"role must be one of: {', '.join(ROLES)}")
+        try:
+            changed = self._storage.set_member_role(member_id, group_id, role)
+        except ValueError as error:
+            raise ConflictError(str(error)) from error
+        if not changed:
+            raise NotFoundError("Member not found")
 
     def overview(self, user_id: str, group_id: str, month: str | None = None) -> Overview:
         """W2: the month's totals over deduplicated events (see finsync/core/overview.py for the rules)."""

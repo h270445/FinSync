@@ -117,12 +117,12 @@ class TokensApiTest(unittest.TestCase):
         self._sign_in()
         members = self.client.get("/v1/members").json()["members"]
         self.assertEqual(members, [
-            {"user_id": "user-a", "email": "anna@example.org", "is_me": True},
-            {"user_id": "user-b", "email": None, "is_me": False},
+            {"user_id": "user-a", "email": "anna@example.org", "role": "admin", "is_me": True},
+            {"user_id": "user-b", "email": None, "role": "member", "is_me": False},
         ])
         # The members list also works with an API token, in the token's group.
         other = self.client.get("/v1/members", headers={"Authorization": f"Bearer {self.token_c}"}).json()
-        self.assertEqual(other["members"], [{"user_id": "user-c", "email": None, "is_me": True}])
+        self.assertEqual(other["members"], [{"user_id": "user-c", "email": None, "role": "admin", "is_me": True}])
 
 
 if __name__ == "__main__":

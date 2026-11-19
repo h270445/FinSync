@@ -94,8 +94,19 @@ class MerchantRulesServiceTest(unittest.TestCase):
         with self.assertRaises(AuthorizationError):
             self.service.list_merchant_rules("user-c", "group-1")
 
-    def test_any_member_edits_and_deletes_and_keys_stay_unique(self) -> None:
+    def test_only_admins_change_rules_and_keys_stay_unique(self) -> None:
+        # Anna is the group's first member, so its admin; Balint is a member.
         rule = self.service.create_merchant_rule("anna", "group-1", "SPAR", "groceries")
+        for change in (
+            lambda: self.service.create_merchant_rule("balint", "group-1", "DM", "household"),
+            lambda: self.service.update_merchant_rule("balint", "group-1", rule.id, "SPAR", "household"),
+            lambda: self.service.delete_merchant_rule("balint", "group-1", rule.id),
+        ):
+            with self.assertRaisesRegex(AuthorizationError, "admin"):
+                change()
+        self.assertEqual(len(self.service.list_merchant_rules("balint", "group-1")), 1)  # members read them
+
+        self.service.set_member_role("anna", "group-1", "balint", "admin")
         with self.assertRaises(ConflictError):
             self.service.create_merchant_rule("balint", "group-1", "Spar 0123 Kft.", "household")
         other = self.service.create_merchant_rule("balint", "group-1", "DM", "household")
@@ -108,6 +119,22 @@ class MerchantRulesServiceTest(unittest.TestCase):
         self.assertEqual([r.merchant_key for r in self.service.list_merchant_rules("anna", "group-1")], ["dm"])
         with self.assertRaises(NotFoundError):
             self.service.delete_merchant_rule("anna", "group-1", rule.id)
+
+    def test_roles_change_only_by_an_admin_and_one_admin_stays(self) -> None:
+        members = {m: r for m, _, r in self.service.list_members("balint", "group-1")}
+        self.assertEqual(members, {"anna": "admin", "balint": "member"})
+        with self.assertRaisesRegex(AuthorizationError, "admin"):
+            self.service.set_member_role("balint", "group-1", "balint", "admin")
+        with self.assertRaisesRegex(ConflictError, "at least one admin"):
+            self.service.set_member_role("anna", "group-1", "anna", "member")
+        with self.assertRaisesRegex(ValueError, "role"):
+            self.service.set_member_role("anna", "group-1", "balint", "owner")
+        with self.assertRaises(NotFoundError):
+            self.service.set_member_role("anna", "group-1", "user-c", "admin")  # not in this group
+        self.service.set_member_role("anna", "group-1", "balint", "admin")
+        self.service.set_member_role("balint", "group-1", "anna", "member")  # now Balint is the admin
+        members = {m: r for m, _, r in self.service.list_members("anna", "group-1")}
+        self.assertEqual(members, {"anna": "member", "balint": "admin"})
 
     def test_merchant_rules_over_http(self) -> None:
         token, _ = TokenService(self.storage).create("anna", "group-1", "test")
@@ -133,6 +160,38 @@ class MerchantRulesServiceTest(unittest.TestCase):
             self.assertEqual(client.delete(path, headers=headers).status_code, 200)
             self.assertEqual(client.delete(path, headers=headers).status_code, 404)
             self.assertEqual(client.get("/v1/merchant-rules", headers=headers).json()["rules"], [])
+
+            member_token, _ = TokenService(self.storage).create("balint", "group-1", "test")
+            member = {"Authorization": f"Bearer {member_token}"}
+            refused = client.post("/v1/merchant-rules", json={"merchant": "DM", "category": "household"}, headers=member)
+            self.assertEqual(refused.status_code, 403)
+            promoted = client.put("/v1/members/balint/role", json={"role": "admin"}, headers=headers)
+            self.assertEqual(promoted.status_code, 200)
+            self.assertEqual({m["user_id"]: m["role"] for m in promoted.json()["members"]}, {"anna": "admin", "balint": "admin"})
+            allowed = client.post("/v1/merchant-rules", json={"merchant": "DM", "category": "household"}, headers=member)
+            self.assertEqual(allowed.status_code, 201)
+
+
+class MembersCommandTest(unittest.TestCase):
+    def test_add_list_and_set_role(self) -> None:
+        from contextlib import redirect_stderr, redirect_stdout
+        import io
+
+        from finsync.api.members import main as members_cli
+
+        with tempfile.TemporaryDirectory() as tempdir:
+            db = os.path.join(tempdir, "test.db")
+            out = io.StringIO()
+            with redirect_stdout(out), redirect_stderr(io.StringIO()):
+                self.assertEqual(members_cli(["--db", db, "add", "--user", "anna", "--group", "lakas"]), 0)
+                self.assertEqual(members_cli(["--db", db, "add", "--user", "balint", "--group", "lakas"]), 0)
+                self.assertEqual(members_cli(["--db", db, "set-role", "--user", "anna", "--group", "lakas", "--role", "member"]), 2)
+                self.assertEqual(members_cli(["--db", db, "set-role", "--user", "balint", "--group", "lakas", "--role", "admin"]), 0)
+                self.assertEqual(members_cli(["--db", db, "set-role", "--user", "cecil", "--group", "lakas", "--role", "admin"]), 1)
+                members_cli(["--db", db, "list", "--group", "lakas"])
+            self.assertIn("anna is admin in lakas", out.getvalue())
+            self.assertIn("balint is member in lakas", out.getvalue())
+            self.assertIn("balint\tadmin", out.getvalue())
 
 
 if __name__ == "__main__":

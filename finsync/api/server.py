@@ -294,10 +294,17 @@ class MerchantRulesOut(BaseModel):
     categories: list[str]
 
 
+class MemberRoleIn(BaseModel):
+    # "admin" (changes the group's settings) or "member".
+    role: str
+
+
 class MemberOut(BaseModel):
     user_id: str
     # The member's sign-in address, if they have a web password.
     email: str | None
+    # "admin" or "member". Only an admin changes group settings (merchant rules, roles).
+    role: str
     # True for the signed-in caller.
     is_me: bool
 
@@ -560,7 +567,8 @@ def create_app(storage: FinSyncStorage) -> FastAPI:
         events = service.list_group_events(caller.user_id, caller.group_id)
         return EventsOut(events=[_event(event) for event in events])
 
-    # W8 group merchant → category rules, the first layer of the hybrid categorizer.
+    # W8 group merchant → category rules, the first layer of the hybrid categorizer. Every member
+    # reads them; only an admin of the group creates, changes or deletes them (403 otherwise).
     @app.get("/v1/merchant-rules")
     def list_merchant_rules(caller: Caller) -> MerchantRulesOut:
         rules = service.list_merchant_rules(caller.user_id, caller.group_id)
@@ -585,8 +593,15 @@ def create_app(storage: FinSyncStorage) -> FastAPI:
     def list_members(caller: Caller) -> MembersOut:
         members = service.list_members(caller.user_id, caller.group_id)
         return MembersOut(members=[
-            MemberOut(user_id=user_id, email=email, is_me=user_id == caller.user_id) for user_id, email in members
+            MemberOut(user_id=user_id, email=email, role=role, is_me=user_id == caller.user_id)
+            for user_id, email, role in members
         ])
+
+    @app.put("/v1/members/{member_id}/role")
+    def set_member_role(member_id: str, body: MemberRoleIn, caller: Caller) -> MembersOut:
+        """An admin changes a member's role; the group must keep at least one admin (else 409)."""
+        service.set_member_role(caller.user_id, caller.group_id, member_id, body.role)
+        return list_members(caller)
 
     # Token management (W8) works only with the web session cookie; an API token gets 403, so a leaked
     # phone token cannot issue new tokens. A member sees and revokes only their own tokens in this group.
