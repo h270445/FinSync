@@ -88,8 +88,16 @@ class Forwarder(context: Context) {
         schedule(app)
     }
 
-    /** Sends the outbox in order. Returns false when a retry is needed later. */
-    fun flush(): Boolean {
+    /**
+     * Sends the outbox in order. Returns false when a retry is needed later.
+     *
+     * Runs one at a time in the process: [schedule] replaces a pending or running send, and a
+     * replaced worker may still be finishing its request, so the next one waits for it and then
+     * reads the outbox again instead of posting the same item twice.
+     */
+    fun flush(): Boolean = synchronized(FLUSH_LOCK) { flushLocked() }
+
+    private fun flushLocked(): Boolean {
         val url = serverUrl
         val token = token
         if (url.isBlank() || token.isBlank()) {
@@ -168,15 +176,23 @@ class Forwarder(context: Context) {
         private const val MAX_SENT_KEYS = 500
         private const val WORK_NAME = "finsync-send"
         private val LOCK = Any()
+        private val FLUSH_LOCK = Any()
         private val POSTED_AT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSxxx")
 
-        /** Sends the outbox as soon as a network is available; a call during a send runs after it, so nothing queued meanwhile waits. */
+        /**
+         * Sends the outbox as soon as a network is available.
+         *
+         * Replaces the pending send instead of queueing behind it: after a long outage the retry
+         * delay grows to hours (exponential backoff), and a send appended behind it would wait
+         * that long too (found on the real phone, 2026-11-21). A new notification, **Save**,
+         * **Send now** and a listener reconnect therefore start a fresh attempt at once.
+         */
         fun schedule(context: Context) {
             val request = OneTimeWorkRequestBuilder<SendWorker>()
                 .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
                 .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
                 .build()
-            WorkManager.getInstance(context).enqueueUniqueWork(WORK_NAME, ExistingWorkPolicy.APPEND_OR_REPLACE, request)
+            WorkManager.getInstance(context).enqueueUniqueWork(WORK_NAME, ExistingWorkPolicy.REPLACE, request)
         }
     }
 }
