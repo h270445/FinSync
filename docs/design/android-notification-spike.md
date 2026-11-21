@@ -100,6 +100,23 @@ Masked the same way (letters `a`/`A`, digits `9`); content never read in clear t
 - **Question 5:** no disconnect for about 22 hours (from the reinstall on Oct 27, 23:09 to the evening of Oct 28), without the *Never sleeping apps* setting; the purchase arrived normally.
 - **Revolut:** one notification that is not a transaction (a name in the title, a date, no amount); the parser must reject it. Revolut puts the whole notification text into the `tag`, so the `key` carries content: keys must not be logged or stored unmasked.
 
+### 2026-11-20–21: M2 forwarding on the real phone
+
+The M2 app (debug build of `main` at `b181baf`) on the same Samsung Galaxy A13 (Android 14), against a local API on the author's computer with a fresh temporary database. The phone reached the API over the USB cable with `adb reverse tcp:8080 tcp:8080` and the server address `http://127.0.0.1:8080`, so no tunnel was needed. The test followed the cases of the [android-emulator-e2e skill](../../.claude/skills/android-emulator-e2e/SKILL.md) with made-up notifications posted by adb, then one real purchase by the author. The real notification's text, amount and merchant were never read: only the app's counters, the status code and field-level checks on the server (present or not, kind, shape).
+
+| Case | Result |
+| --- | --- |
+| A, made-up card purchase | sent (201); event `PELDABOLT KFT`, -4990 HUF, `card_purchase`, `android_notification` |
+| B, made-up transfer | sent (201); event `Minta Anna`, -12000 HUF |
+| C, made-up marketing text | no event; "Dropped on the phone" +1 |
+| D, listener reconnect | still 2 events, dropped count unchanged |
+| E, offline (reverse removed) | one item in the outbox, "no connection, will retry"; sent 16 s after the reverse was restored, outbox empty, 3 events |
+| F, status screen | after **Refresh**: `Waiting: 0, sent: 3, refused by server: 0`, `Last: ... sent (201)` |
+| Real OTP Bank card purchase (Nov 21) | matched on the phone and queued; sent (201) once the API ran again; on the server exactly one new event: one transaction, `android_notification`, `card_purchase`, HUF, expense, merchant parsed, minute precision, `source_ref` a nine-digit number, no duplicate, review state clear |
+| Real Revolut notification | dropped on the phone and counted (`com.revolut.revolut/Revolut` 1), as the allow-list requires |
+
+**Found:** the API was not running when the real purchase arrived, so the send failed and WorkManager retried with exponential backoff (30 s doubling). By the time the API was back, the next retry was about four hours away, and **Send now** did not help: it enqueues with `APPEND_OR_REPLACE`, so the new send waits behind the delayed retry; forcing the job through `cmd jobscheduler run -f` did not either, because WorkManager honours its own delay. The item was sent by force-stopping the app, deleting its WorkManager database (`no_backup/androidx.work.workdb*`; the outbox file is separate and stayed) and reconnecting the listener, whose connect calls `Forwarder.schedule`. **Fixed the same evening** at the author's request: `Forwarder.schedule` now replaces the pending send (`ExistingWorkPolicy.REPLACE`), so a new notification, **Save**, **Send now** and a listener reconnect start a fresh attempt at once, and sends run one at a time so a replaced worker that is still posting cannot send an item twice. Checked on the phone: with the API unreachable a made-up purchase failed three times and the next retry was 1 min 50 s away; after restoring the connection, **Send now** sent it within 2 s (201, one event).
+
 ## Real device checks (from 2026-10-27)
 
 Done on 2026-10-27–28 unless marked open; the open checks move to the M2 Android app.
