@@ -15,6 +15,7 @@ The course requires documenting significant use of AI tools and how their result
 
 | Date | Tool | What it produced | How it was checked | PR / commit |
 | --- | --- | --- | --- | --- |
+| 2026-11-19 | Claude Code | ADR 0012 (no multi-factor authentication in the thesis scope; step-up re-authentication proposed as the next step), with links from the security and privacy page and the thesis map | The authentication facts in the ADR checked against the code (`finsync/api/server.py`, ADRs 0009 and 0010): the web sign-in is a password, not a one-time code as first assumed in the discussion; docs checker OK | session PR |
 | 2026-10-01 | GitHub Copilot agent | Initial MVP backend flow | Unit tests; reviewed and merged by the author | #1 |
 | 2026-10-09 | Claude Code | Matching and duplicate detection design (proposed) | Under review by the author | – |
 | 2026-10-09 | Claude Code | Whole-word categorization fix | Unit tests; carried over to the current layout by Claude Code, tests re-run | #2, #7 |
@@ -98,3 +99,4 @@ One row per use of an [agent skill](../.claude/skills/README.md) that taught som
 | 2026-11-19 | session-wrap-up (1.1) | Closing the second session of the day | Time-log checker, docs checker and the leak search | Nothing missed |
 | 2026-11-19 | dev-test-evaluation (1.0) | The hybrid categorizer runner before the paid run | Checkpoint 2 (approve model, items and cost before a paid call) became question 2 to the author and the runner's cache-only default with `--estimate` and `--preflight`; the decision rule was written into the runner before any run; a test checks that test labels do not change the choice | The skill says "temperature" belongs in the report header, but current models take none; the report states that instead. Not changed in this session |
 | 2026-11-19 | session-wrap-up (1.1) | Closing the third session of the day | Time-log checker, docs checker and the leak search | The leak search flags the categorizer's model id in code and docs; that is the measured product setting (required by dev-test-evaluation), not attribution, so it stays |
+| 2026-11-19 | docs-and-comments (link checker) and session-wrap-up (1.1) | Closing the MFA decision session | Docs checker for the new ADR's links, time-log checker and the leak search | Nothing missed |
