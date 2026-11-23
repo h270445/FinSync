@@ -17,7 +17,7 @@ Status: describes the endpoints **implemented** in `finsync/api/server.py`.
 | `200` | Read succeeded |
 | `400` | Invalid JSON, validation error (`{"error": "..."}`) |
 | `401` | No token, or a malformed, unknown or revoked one (`WWW-Authenticate: Bearer`); no valid session; a failed sign-in |
-| `403` | The member is no longer in the group, a member who is not an admin changes a group setting (merchant rules, own accounts, roles), the member is not in the named group at sign-in, a cookie request without a valid CSRF token, or an API token used on `/v1/tokens` (web session only) |
+| `403` | The member is no longer in the group, a member who is not an admin changes a group setting (merchant rules, own accounts, roles), the member is not in the named group at sign-in, a cookie request without a valid CSRF token, or an API token used on `/v1/tokens` or `PUT /v1/members/{member_id}/role` (web session only, least privilege, ADR 0012) |
 | `404` | Unknown path, or an id that does not exist in the requested group |
 | `409` | A review action that no longer fits, such as answering a decision twice; a file that was already imported; a second merchant rule for the same merchant or a second entry for the same own account; demoting the group's last admin |
 | `413` | A body over the size limit |
@@ -42,7 +42,7 @@ Status: describes the endpoints **implemented** in `finsync/api/server.py`.
 | `POST` | `/v1/events/{event_id}/split` | Move one record out of an event (undo a wrong link) |
 | `GET` | `/v1/overview` | W2: a month's totals per currency, category and member over deduplicated events |
 | `GET` | `/v1/members` | W8: the group's members and their roles |
-| `PUT` | `/v1/members/{member_id}/role` | W8: an admin makes a member `admin` or `member` |
+| `PUT` | `/v1/members/{member_id}/role` | W8: an admin makes a member `admin` or `member` (web session only) |
 | `GET` | `/v1/own-accounts` | W8: the group's own accounts and counterparties (records naming one are transfers) |
 | `POST` | `/v1/own-accounts` | W8: add an account number or a name (admin) |
 | `DELETE` | `/v1/own-accounts/{account_id}` | W8: delete an entry (admin; answers it as it was) |
@@ -206,7 +206,7 @@ Response `200`: `{"members": [{"user_id": "anna", "email": "anna@example.org", "
 
 ### `PUT /v1/members/{member_id}/role`
 
-`{"role": "admin"}` or `{"role": "member"}`, only by an admin. Returns the member list as `GET /v1/members` does. Demoting the group's last admin returns `409`; a member of another group returns `404`.
+`{"role": "admin"}` or `{"role": "member"}`, only by an admin and only with the web session cookie and the CSRF token: an API token gets `403`, even an admin's, so a leaked phone token cannot make anyone an admin (least privilege, [ADR 0012](../architecture/decisions/0012-no-multi-factor-authentication.md) point 6, since 2026-11-23). Returns the member list as `GET /v1/members` does. Demoting the group's last admin returns `409`; a member of another group returns `404`.
 
 ### `GET`, `POST /v1/own-accounts`, `DELETE /v1/own-accounts/{account_id}`
 

@@ -123,6 +123,14 @@ A transfer between members of the same group (for example within a family, throu
 
 ## Review in the web app
 
+**UX principles for the category correction, the "mixed" flag and category lines** (supervisor, 2026-11-23; the same principle as the W2 overview, which says openly how much is still waiting for review):
+
+1. **Show where a suggestion comes from and how sure it is.** Every suggested category carries its source (member, group rule, dictionary, model) and its uncertainty (`high`, `low` or "Bizonytalan", and for the model the share of agreeing samples) in Hungarian on the screen, so a member never mistakes a guess for a decision.
+2. **Few clicks.** Confirming or changing a category is one tap from the event list or the event detail; marking an event as mixed is one more; a split into category lines opens pre-filled with the current category for the whole amount, and the last line takes the remainder.
+3. **Merchant memory learns a final rule only for non-mixed merchants.** Changing a category at a clear merchant offers "always use this for …" and can create a group rule; at a merchant on the mixed-assortment list, or for an event marked mixed or split into lines, the correction stays on that event and no group rule is written.
+
+Details:
+
 - The event list shows `low` categories in a lighter style with a "suggestion" marker; one tap confirms or changes it.
 - A filter "uncertain categories" lists them; there is no mandatory queue, because a wrong category is a smaller error than a wrong merge.
 - Confirming or changing a category at a merchant offers "always use this for Tesco" only when the merchant is not on the mixed-assortment list.

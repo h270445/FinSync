@@ -1,6 +1,7 @@
 # Design views
 
 - Status: **Draft** (2026-11-14; views 1–2 added 2026-11-19). Views 3–6 are first drafts drawn from the code and the design documents; views 1–2 were drawn on 2026-11-19 from the built W1–W8 screens (W2 and W8 with admin/member roles, [PR #31](https://github.com/h270445/FinSync/pull/31)) and the Android spike. All six are finalised before M2 (2026-12-04), after the category correction (Nov 23–27) is built. The supervisor judged views 3–6 accurate and consistent with the code and agreed to finalising views 1–2 after W2 and W8 ([feedback, 2026-11-16](../planning/supervisor-feedback.md#2026-11-16--reply-to-the-weekly-report-of-nov-915)).
+- To do before finalising (supervisor, [2026-11-23](../planning/supervisor-feedback.md#2026-11-23--reply-to-the-weekly-report-of-nov-1622)): as soon as the hybrid categorizer's LLM layer is wired into the live flow, views 5 and 6 show the optional outbound model call as a trust boundary and its data-minimization rule (see the notes under both views), so all six stay in step with the system. Until then the LLM layer runs only in the offline measurement and is not drawn.
 - Asked for by the supervisor: six design views that form one coherent frame ([feedback, action D2](../planning/supervisor-feedback.md#2026-11-11--reply-to-the-m1-e-mail)).
 - Notation: [Mermaid](https://mermaid.js.org/), which GitHub renders, so each view is versioned and reviewed like code. Names (states, routes, packages, screen ids) are the ones used in the code, so the views can be checked against it.
 
@@ -122,7 +123,7 @@ Notes:
 
 - Any other path shows the "Nincs ilyen oldal" page inside the shell; without a session every path shows W1.
 - On W8 the screen is the same for both roles; a member sees the group settings without edit controls, and the API refuses their changes with 403 as well, so the UI is not the only guard.
-- A1 and A2 are the planned screens of the M2 Android app. Today the [spike](../../clients/android/README.md) has both on one screen (notification access, test notification, server URL and token, Send now, last result), so the arrows between A1 and A2 are the target, not the current state.
+- A1 and A2 are the target screens of the Android app. Today the [spike](../../clients/android/README.md) has both on one screen (notification access, test notification, server URL and token, Send now, last result), so the arrows between A1 and A2 are the target, not the current state. The supervisor called the split the right direction for a later cleanup, but it has lower priority than the hybrid measurement, the category correction and the unified demo for M2 (2026-11-23).
 - The planned category correction (Nov 23–27) adds actions to W3 and W4, not new pages.
 
 ## 3. Ingest, match, store or review
@@ -215,6 +216,8 @@ flowchart TB
 
 A layer calls only the layers below it; the matching, parsing and categorization packages have no database or HTTP access ([overview](overview.md#layers-and-responsibilities)).
 
+**When the LLM layer is wired in** ([ADR 0011](decisions/0011-llm-categorization-layer.md)): add an external "model endpoint (optional, off by default)" outside the system boundary, reached only from the categorization layer through its interface, asynchronously after the record is stored, with a cost cap; mark that a local OpenAI-compatible model can stand behind the same interface, and that a person's category always overrides the model's.
+
 ## 6. Security: authentication and group isolation
 
 ```mermaid
@@ -233,6 +236,9 @@ sequenceDiagram
     end
     D-->>A: member and group of the token or session
     Note over A: identity never comes from the body,<br/>the query or X-User-Id / X-Group-Id headers
+    opt action that widens access: /v1/tokens, PUT /v1/members/{id}/role
+        A-->>C: 403 if the caller used an API token (web session only, even for an admin)
+    end
     A->>K: use case with (member, group)
     K->>D: ensure_authorized(member, group)
     K->>D: every query filtered by group_id
@@ -241,4 +247,6 @@ sequenceDiagram
     A-->>C: 2xx, or 400 / 401 / 403 / 404 / 413 as {"error": "…"}
 ```
 
-Details: [ADR 0009](decisions/0009-api-tokens.md) (API tokens), [ADR 0010](decisions/0010-web-sign-in.md) (web sign-in), [security and privacy](security-and-privacy.md); every endpoint has a cross-group test in `tests/test_auth.py`.
+Details: [ADR 0009](decisions/0009-api-tokens.md) (API tokens), [ADR 0010](decisions/0010-web-sign-in.md) (web sign-in), [security and privacy](security-and-privacy.md); every endpoint has a cross-group test in `tests/test_auth.py`. Least privilege ([ADR 0012](decisions/0012-no-multi-factor-authentication.md) point 6, 2026-11-23): actions that widen access work only from a web session, so a leaked phone token stays limited to one member's data in one group; `tests/test_tokens_api.py`.
+
+**When the LLM layer is wired in:** add the outbound call to the model endpoint as a separate trust boundary with its data-minimization rule: only one record's merchant, description and amount leave the server, never member ids, e-mail addresses, account numbers, counterparty names or other records; the answer is untrusted input, checked against the category list ([security and privacy](security-and-privacy.md#rules)).

@@ -1,7 +1,7 @@
 # 0012. No multi-factor authentication in the thesis scope; step-up re-authentication as the next step
 
-- Status: Proposed (the author asked on 2026-11-19 to record the decision not to build MFA now)
-- Date: 2026-11-19
+- Status: Accepted (proposed 2026-11-19 at the author's request; approved by the supervisor on 2026-11-23, who added the least-privilege rule in point 6)
+- Date: 2026-11-19, amended 2026-11-23
 
 ## Context
 
@@ -11,7 +11,7 @@ What exists today (checked in the code on 2026-11-19):
 
 - **Web app:** one factor, a password ([ADR 0010](0010-web-sign-in.md)). Sign-in takes an e-mail address or member id and a password, stored as salted scrypt; the session is an `HttpOnly`, `Secure`, `SameSite=Strict` cookie for 12 hours, with a CSRF token on every change. There is no limit on failed sign-in attempts yet, and passwords are set with a command-line tool (`python -m finsync.api.passwords`), not in the web app.
 - **Android app and Sheets script:** a per-member, per-group API token stored as a SHA-256 hash ([ADR 0009](0009-api-tokens.md)). Tokens are issued and revoked on the W8 screen only from a web session; an API token gets `403` on `/v1/tokens`, so a leaked phone token cannot issue new tokens or revoke the member's others.
-- **Roles:** an admin changes group settings (merchant rules, own accounts, roles). `PUT /v1/members/{member_id}/role` accepts either a web session or an admin's API token.
+- **Roles:** an admin changes group settings (merchant rules, own accounts, roles). On 2026-11-19 `PUT /v1/members/{member_id}/role` accepted either a web session or an admin's API token; since 2026-11-23 it accepts only the web session (point 6).
 
 What an attacker gains with a member's credentials:
 
@@ -28,15 +28,21 @@ The thesis is about accurate, explainable spending tracking (the main contributi
 3. **Cheaper controls come first.** The weaknesses that matter more than a missing second factor are listed in ADR 0010 and the security evaluation: no limit on failed sign-in attempts, and no e-mail verification of addresses. A per-login attempt limit belongs to the December security evaluation.
 4. **Proposed next step, not implemented now: step-up re-authentication.** Sensitive actions would ask the member to re-enter their password (or, once e-mail sending exists, a fresh one-time code sent by e-mail) if the session's last authentication is older than a few minutes. Candidates:
    - issuing an API token (`POST /v1/tokens`);
-   - changing a member's role (`PUT /v1/members/{member_id}/role`), which would then also accept only the web session, like token management;
+   - changing a member's role (`PUT /v1/members/{member_id}/role`), which accepts only the web session since 2026-11-23 (point 6);
    - later, changing the password or e-mail address once the settings screen does it.
 
    This targets the actions that widen access (a new long-lived token, a new admin), costs one timestamp on the session and one check per such route, and is a common pattern (GitHub's "sudo mode"). It is built only if the author asks for it.
 5. **Full MFA is future work.** The thesis's "Limitations and future work" names TOTP or passkeys for the web sign-in as the step to take before FinSync holds real households' data outside a test setting.
+6. **Least privilege: actions that widen access work only from a web session** (supervisor, 2026-11-23). Every admin action that widens anyone's access is allowed only from a signed-in web session, never with a long-lived API token from the phone or the Sheets script. Today these are:
+   - issuing, listing and revoking API tokens (`/v1/tokens`, since 2026-11-19);
+   - changing a member's role (`PUT /v1/members/{member_id}/role`, since 2026-11-23).
+
+   An API token gets `403` on them, even an admin's (`require_web_session` in `finsync/core/auth.py`, tests in `tests/test_tokens_api.py`). Any future action of this kind (inviting a member, changing the password or e-mail address) follows the same rule. Group settings that do not widen access (merchant rules, own accounts) stay available to an admin's token, because they change only how the group's data is labelled. With this rule a compromised phone token is limited, by design, to the data of one member in one group: it cannot create further credentials or raise any member's role.
 
 ## Consequences
 
 - One factor protects the web sign-in. A stolen or guessed password gives full access to that member's groups until the password is changed (which ends the member's sessions) or the session expires. scrypt slows offline guessing; online guessing is slowed only by the scrypt check per attempt until the attempt limit exists.
-- A stolen API token still gives read and write access to the member's data in one group, but cannot be used to issue more tokens; revoking it stops it at once ([ADR 0009](0009-api-tokens.md)). An admin's token can still change roles until step-up (or a session-only rule) covers that route.
+- A stolen API token still gives read and write access to the member's data in one group, but cannot issue more tokens or change any role, even when it belongs to an admin; revoking it stops it at once ([ADR 0009](0009-api-tokens.md)).
+- Step-up re-authentication (point 4) and the attempt limit remain the next steps; they would apply to the same web-session-only routes as point 6.
 - The decision is recorded in [security and privacy](../security-and-privacy.md) and in the thesis map, so the defence question "why no MFA?" has a written answer.
 - If FinSync later gains a payment, export or bank-connection feature, or is used with real households outside a test setting, this decision must be revisited, because the harm of a takeover then grows.

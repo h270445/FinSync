@@ -2109,7 +2109,7 @@
     "/v1/members/{member_id}/role": {
       "put": {
         "summary": "Set Member Role",
-        "description": "An admin changes a member's role; the group must keep at least one admin (else 409).",
+        "description": "An admin changes a member's role; the group must keep at least one admin (else 409).\nWeb session cookie only; an API token gets 403.",
         "operationId": "set_member_role_v1_members__member_id__role_put",
         "security": [
           {

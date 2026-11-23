@@ -39,13 +39,18 @@ class Principal:
 
 
 class WebSessionRequired(PermissionError):
-    """Raised when an API token tries to manage tokens: only a signed-in web session may (W8)."""
+    """Raised when an API token tries an action that widens access: only a signed-in web session may (W8)."""
 
 
-def _require_web_session(principal: Principal) -> None:
-    # A leaked phone or spreadsheet token must not be able to issue new tokens or hide its tracks.
+def require_web_session(principal: Principal) -> None:
+    """Refuse a caller that authenticated with an API token (least privilege, ADR 0012).
+
+    Every action that widens access (issuing or revoking API tokens, changing a member's role) works
+    only from a signed-in web session, never with a long-lived phone or spreadsheet token, so a leaked
+    token cannot issue new tokens, make anyone an admin or hide its tracks.
+    """
     if principal.session_id is None:
-        raise WebSessionRequired("API tokens can be managed only from the web app, after signing in")
+        raise WebSessionRequired("This action works only from the web app, after signing in, not with an API token")
 
 
 def hash_token(token: str) -> str:
@@ -86,13 +91,13 @@ class TokenService:
 
     def list_own(self, principal: Principal) -> list[ApiTokenRecord]:
         """The caller's tokens in the caller's group, newest first. Only from a web session."""
-        _require_web_session(principal)
+        require_web_session(principal)
         tokens = [t for t in self._storage.list_api_tokens(principal.user_id) if t.group_id == principal.group_id]
         return sorted(tokens, key=lambda t: t.id, reverse=True)
 
     def create_own(self, principal: Principal, name: str) -> tuple[str, ApiTokenRecord]:
         """A new token for the caller in the caller's group, for the W8 screen. Only from a web session."""
-        _require_web_session(principal)
+        require_web_session(principal)
         name = name.strip()
         if not name:
             raise ValueError("name is required, for example \"Anna phone\"")
@@ -102,7 +107,7 @@ class TokenService:
 
     def revoke_own(self, principal: Principal, token_id: int) -> ApiTokenRecord | None:
         """Revoke one of the caller's tokens; None when the id is not the caller's token in this group."""
-        _require_web_session(principal)
+        require_web_session(principal)
         return self._storage.revoke_member_api_token(token_id, principal.user_id, principal.group_id)
 
     def revoke(self, token_id: int) -> bool:

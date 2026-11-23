@@ -1,4 +1,8 @@
-"""W8 token management: GET/POST /v1/tokens and POST /v1/tokens/{id}/revoke, only from a web session."""
+"""W8 actions that widen access, only from a web session (least privilege, ADR 0012).
+
+Token management (GET/POST /v1/tokens, POST /v1/tokens/{id}/revoke) and role changes
+(PUT /v1/members/{id}/role): an API token gets 403 for them, even an admin's.
+"""
 
 from __future__ import annotations
 
@@ -112,6 +116,29 @@ class TokensApiTest(unittest.TestCase):
         self.storage.remove_group_membership("user-a", "group-1")
         self.assertEqual(self.client.get("/v1/tokens").status_code, 403)
         self.assertEqual(self.client.post("/v1/tokens", json={"name": "phone"}, headers=csrf).status_code, 403)
+
+    def test_roles_change_only_from_the_web_session(self) -> None:
+        # B's phone token cannot make B an admin, even after A made B an admin once.
+        bearer_b = {"Authorization": f"Bearer {self.token_b}"}
+        refused = self.client.put("/v1/members/user-b/role", json={"role": "admin"}, headers=bearer_b)
+        self.assertEqual(refused.status_code, 403)
+        self.assertIn("web app", refused.json()["error"])
+
+        csrf = self._sign_in()
+        self.assertEqual(self.client.put("/v1/members/user-b/role", json={"role": "admin"}).status_code, 403)  # no CSRF
+        promoted = self.client.put("/v1/members/user-b/role", json={"role": "admin"}, headers=csrf)
+        self.assertEqual(promoted.status_code, 200)
+        self.assertEqual({m["user_id"]: m["role"] for m in promoted.json()["members"]}, {"user-a": "admin", "user-b": "admin"})
+
+        # Now an admin, B still cannot change roles with the phone token.
+        demote = self.client.put("/v1/members/user-a/role", json={"role": "member"}, headers=bearer_b)
+        self.assertEqual(demote.status_code, 403)
+        self.assertIn("web app", demote.json()["error"])
+        # Another group's member is not found from A's session.
+        self.assertEqual(self.client.put("/v1/members/user-c/role", json={"role": "admin"}, headers=csrf).status_code, 404)
+        self.assertEqual(
+            {m: r for m, _, r in self.storage.list_group_members("group-1")}, {"user-a": "admin", "user-b": "admin"}
+        )
 
     def test_members_list_shows_the_group_only(self) -> None:
         self._sign_in()

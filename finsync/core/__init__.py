@@ -1,6 +1,6 @@
 """Application core: use cases that combine ingestion, categorization, matching and storage."""
 
-from finsync.core.auth import AuthenticationError, Principal, TokenService, WebSessionRequired
+from finsync.core.auth import AuthenticationError, Principal, TokenService, WebSessionRequired, require_web_session
 from finsync.core.service import (
     AuthorizationError,
     ConflictError,
@@ -27,4 +27,5 @@ __all__ = [
     "TokenService",
     "TransactionInput",
     "WebSessionRequired",
+    "require_web_session",
 ]
