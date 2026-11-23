@@ -81,6 +81,7 @@ Decisions made by the author, as opposed to suggested by an AI tool. Filled in b
 | 2026-11-19 | Tokens managed only from a web session, each member sees only their own; members list without invite/remove; merchant rules apply to new records only; `transfer` direction with the own-accounts list brought forward | Recommended by Claude | Chosen from the options offered |
 | 2026-11-19 | LLM layer: Anthropic `claude-haiku-5-5`, API key in the cloud environment, USD 2 budget, confidence from five samples, threshold rule (highest dev coverage with at most 5 % wrong settled answers, ties to the higher threshold) | Recommended by Claude | Chosen from the options offered |
 | 2026-11-19 | Before the LLM is called, members can set an uncertain category themselves; when the LLM runs is a setting (X hours after the purchase, daily or weekly at a set time, or never) | Claude refined it: group-level admin setting, "never" by default, an "ask now" button, monthly budget, batch interface for scheduled runs | The author's own proposal |
+| 2026-11-23 | Finish the M2 closing package by Nov 27 and send it to the supervisor then, so his feedback arrives before the Dec 4 close | Day-by-day schedule drafted by Claude ([M2 closing schedule](planning/m2-closing-schedule.md)) | Time to fix the supervisor's feedback before the deadline |
 
 ## Skill usage
 

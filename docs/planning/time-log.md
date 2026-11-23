@@ -39,6 +39,7 @@ Time spent on the project, for the weekly-effort figure the supervisor asked for
 | 2026-11-21 | 22:42–23:12 | 30 | Real OTP Bank card purchase checked end to end without reading its content (sent once, one event); long retry delay found, worked around, then fixed in the app at the author's request and checked on the phone; results in the spike document, plan and milestone, PR; merge conflict with `main` resolved | Project messages and commits |
 | 2026-11-21 | 23:13–23:25 | 12 | Weekly status e-mail to the supervisor (Nov 16–22) drafted with the status e-mail skill, claims checked against `main` (242 Python and 43 web tests) | Project messages and commits (end time estimated at the pull request; to be corrected by the author) |
 | 2026-11-23 | 18:31–18:40 | 9 | Supervisor reply to the Nov 16–22 report stored and summarised; ADR 0012 accepted with the least-privilege rule, role changes made web-session only in the API with tests; local-model comparison, UX principles for the category correction, Android A1/A2 priority and the views 5–6 LLM boundary added to the plan, M2, designs and thesis map | Project messages and commits (end time estimated at the pull request; to be corrected by the author) |
+| 2026-11-23 | 18:42–18:56 | 14 | Day-by-day schedule for finishing the M2 closing package by Nov 27 (supervisor priorities, author's steps, buffer until Dec 3, cut order, risks); roadmap, M2 milestone and planning index linked | Project messages and commits (end time estimated at the pull request; to be corrected by the author) |
 
 ## Weekly totals
 
@@ -52,5 +53,5 @@ Time spent on the project, for the weekly-effort figure the supervisor asked for
 | 2026-11-02 – 11-08 | 149 | 2.5 |
 | 2026-11-09 – 11-15 | 380 | 6.3 |
 | 2026-11-16 – 11-22 | 166 | 2.8 |
-| 2026-11-23 – 11-29 | 9 | 0.15 |
-| **Total** | **1409** | **23.5** |
+| 2026-11-23 – 11-29 | 23 | 0.4 |
+| **Total** | **1423** | **23.7** |

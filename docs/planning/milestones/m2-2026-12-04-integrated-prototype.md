@@ -3,7 +3,7 @@
 - Deadline: 2026-12-04 23:59
 - Tag: `v0.3.0`
 - Status: planned
-- Internal target: 2026-11-27
+- Internal target: 2026-11-27 (package sent to the supervisor that day; day plan in the [M2 closing schedule](../m2-closing-schedule.md))
 
 ## Expected result (course)
 
