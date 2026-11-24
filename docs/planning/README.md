@@ -4,6 +4,7 @@
 | --- | --- |
 | [roadmap.md](roadmap.md) | Semester roadmap: scope, phases, weekly plan, risks, and the Szakdolgozat II. outline |
 | [supervisor-feedback.md](supervisor-feedback.md) | Summary of each supervisor letter and the actions it created |
+| [family-pilot-readiness.md](family-pilot-readiness.md) | What is missing before family members install FinSync, the estimate and the blockers (proposed) |
 | [time-log.md](time-log.md) | Time spent per session and per week |
 | [milestones/](milestones/README.md) | One target file per course deadline: expected result, acceptance criteria, checklist, version tag |
 
