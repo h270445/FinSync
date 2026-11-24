@@ -17,15 +17,19 @@ from typing import Any
 import uuid
 
 from finsync.categorization import (
+    CATEGORIES,
     TRANSFER,
     MerchantRule,
     OwnAccount,
     categorize_record,
     is_transfer,
+    merchant_key,
     own_account_key,
     validate_rule,
 )
-from finsync.core.overview import Overview, build_overview, parse_month
+from finsync.categorization.dictionary import find_merchant
+from finsync.categorization.hybrid import HIGH
+from finsync.core.overview import Overview, build_overview, is_uncertain, lines_add_up, parse_month
 from finsync.ingestion import ColumnMapping, ImportRow, RowError, parse_export, parse_notification, parse_xlsx
 from finsync.ingestion.csv_import import normalize_content
 from finsync.ingestion.local_time import local_to_utc
@@ -43,6 +47,7 @@ from finsync.matching.normalize import local_date
 from finsync.matching.scoring import DAY_WINDOW_DAYS
 from finsync.storage import (
     ADMIN,
+    CategoryLineRecord,
     ROLES,
     EventRecord,
     FinSyncStorage,
@@ -66,6 +71,14 @@ class NotFoundError(LookupError):
 
 class ConflictError(ValueError):
     """Raised when a review action no longer fits the current state, such as a decision already answered."""
+
+
+# A category a member decided: never overwritten by automation (categorization design, order of precedence).
+SOURCE_USER = "user"
+# A record naming one of the group's own accounts (W8) is a transfer.
+SOURCE_OWN_ACCOUNT = "own_account"
+# At most this many category lines per event: a receipt split by hand, not an itemised import.
+MAX_CATEGORY_LINES = 20
 
 
 @dataclass(frozen=True)
@@ -98,6 +111,19 @@ class ReviewItem:
     candidate_event: EventRecord
     score: float | None
     features: dict[str, Any] | None
+
+
+@dataclass(frozen=True)
+class CategoryCorrection:
+    """A member's category decision on an event, and what it did to the group's merchant rules.
+
+    `merchant_rule_outcome` is None when the member did not ask to remember the category, otherwise
+    `created`, `confirmed`, `updated` (an admin changed the rule) or `kept` (a member cannot change an
+    existing rule; an admin does that on W8)."""
+
+    event: EventRecord
+    merchant_rule_outcome: str | None = None
+    merchant_rule: MerchantCategoryRecord | None = None
 
 
 @dataclass(frozen=True)
@@ -517,6 +543,126 @@ class FinSyncService:
         today = local_date(datetime.now(timezone.utc), "minute")
         return build_overview(self._storage.list_events(group_id), parse_month(month, today))
 
+    # Category correction (categorization design: mixed baskets, money transfers, review in the web app).
+    # Every member of the group may correct an event; each change is logged in category_changes in the
+    # same transaction, and a member's decision (`user`) is never overwritten by automation.
+
+    def set_event_category(
+        self, user_id: str, group_id: str, event_id: int, category: str, *, remember: bool = False
+    ) -> CategoryCorrection:
+        """Confirm or change an event's category; it becomes the member's decision (`user`, `high`).
+
+        With `remember`, the group's merchant memory learns it (merchant_rule_offer() says when that is
+        allowed; otherwise 400 and nothing changes). A member creates or confirms a rule; only an admin
+        changes an existing rule to another category, for a member it is `kept`."""
+        self.ensure_authorized(user_id, group_id)
+        if category not in CATEGORIES:
+            raise ValueError(f"category must be one of: {', '.join(CATEGORIES)}")
+        is_admin = self._storage.member_role(user_id, group_id) == ADMIN
+        with self._storage.transaction() as session:
+            event = _event_in_group(session, group_id, event_id)
+            if event.direction == TRANSFER:
+                raise ConflictError("The event is a transfer; unmark it as a transfer first")
+            if event.lines:
+                raise ConflictError("The event is split into category lines; change or remove the lines instead")
+            offer = merchant_rule_offer(event) if remember else None
+            if remember and offer is None:
+                raise ValueError(
+                    "This category cannot be remembered for the merchant: it sells many kinds of goods, "
+                    "the event is mixed, or it has no merchant name"
+                )
+            old = _category_state(event)
+            session.set_event_category(group_id, event_id, category, SOURCE_USER, HIGH)
+            new: dict[str, Any] = {"category": category, "source": SOURCE_USER, "confidence": HIGH}
+            outcome = rule_id = None
+            if offer is not None:
+                label, key, _ = validate_rule(offer, category)
+                outcome, rule_id = session.remember_merchant_category(
+                    group_id, key, label, category, user_id, may_change=is_admin
+                )
+                new["merchant_rule"] = {"outcome": outcome, "merchant_key": key}
+            session.insert_category_change(group_id, event_id, "category", old, new, user_id)
+            updated = _event_in_group(session, group_id, event_id)
+        rule = self._storage.get_merchant_category(group_id, rule_id) if rule_id is not None else None
+        return CategoryCorrection(updated, outcome, rule)
+
+    def set_event_mixed(self, user_id: str, group_id: str, event_id: int, mixed: bool) -> EventRecord:
+        """Mark the event as a mixed purchase (several kinds, no amounts given), or unmark it."""
+        self.ensure_authorized(user_id, group_id)
+        if not isinstance(mixed, bool):
+            raise ValueError("mixed must be true or false")
+        with self._storage.transaction() as session:
+            event = _event_in_group(session, group_id, event_id)
+            if event.direction == TRANSFER:
+                raise ConflictError("A transfer is not a purchase; it cannot be mixed")
+            if event.mixed != mixed:
+                session.set_event_mixed(group_id, event_id, mixed)
+                session.insert_category_change(group_id, event_id, "mixed", event.mixed, mixed, user_id)
+            return _event_in_group(session, group_id, event_id)
+
+    def set_category_lines(self, user_id: str, group_id: str, event_id: int, lines: Any) -> EventRecord:
+        """Split the event's amount into category lines, replacing the previous set as one logged change.
+
+        The event's category becomes the category of its largest line, as the member's decision, so the
+        list shows the main category; no lines removes the split and keeps that category."""
+        self.ensure_authorized(user_id, group_id)
+        with self._storage.transaction() as session:
+            event = _event_in_group(session, group_id, event_id)
+            if event.direction == TRANSFER:
+                raise ConflictError("A transfer is not a purchase; it cannot be split into categories")
+            parsed = _validate_lines(event, lines)
+            old = _lines_state(event.lines)
+            if old == _lines_state(parsed):
+                return event
+            session.replace_category_lines(group_id, event_id, parsed, user_id)
+            if parsed:
+                main = max(parsed, key=lambda line: abs(line[1]))[0]  # the first of equal lines
+                session.set_event_category(group_id, event_id, main, SOURCE_USER, HIGH)
+            session.insert_category_change(group_id, event_id, "lines", old, _lines_state(parsed), user_id)
+            return _event_in_group(session, group_id, event_id)
+
+    def set_event_transfer(self, user_id: str, group_id: str, event_id: int, transfer: bool) -> EventRecord:
+        """Mark the event as a transfer within the group, or undo it (categorization design, money transfers).
+
+        Marking gives the event and its records the direction and category `transfer` as the member's
+        decision, so the overview leaves it out and matching never links it to a purchase. Undoing gives the
+        records the direction of their amount's sign again and the category the categorizer gives them
+        (without the own-accounts list, which the member has just overruled)."""
+        self.ensure_authorized(user_id, group_id)
+        if not isinstance(transfer, bool):
+            raise ValueError("transfer must be true or false")
+        with self._storage.transaction() as session:
+            event = _event_in_group(session, group_id, event_id)
+            if (event.direction == TRANSFER) == transfer:
+                return event
+            old = {"direction": event.direction, **_category_state(event), "mixed": event.mixed}
+            if transfer:
+                if event.lines:
+                    raise ConflictError("The event is split into category lines; remove the lines first")
+                session.classify_event_records(group_id, event_id, TRANSFER, TRANSFER, SOURCE_USER, HIGH)
+                session.set_event_category(group_id, event_id, TRANSFER, SOURCE_USER, HIGH)
+                session.set_event_mixed(group_id, event_id, False)
+            else:
+                primary = next(tx for tx in event.transactions if tx.id == event.primary_transaction_id)
+                decision = _categorize(session, group_id, primary.merchant, primary.description)
+                session.classify_event_records(
+                    group_id, event_id, None, decision.category, decision.source, decision.confidence
+                )
+                session.set_event_category(group_id, event_id, decision.category, decision.source, decision.confidence)
+            session.refresh_event(event_id)
+            updated = _event_in_group(session, group_id, event_id)
+            new = {"direction": updated.direction, **_category_state(updated), "mixed": updated.mixed}
+            session.insert_category_change(group_id, event_id, "transfer", old, new, user_id)
+            return updated
+
+    def list_category_changes(self, user_id: str, group_id: str, event_id: int) -> list[dict[str, Any]]:
+        """The event's category change log (category, mixed, lines, transfer), oldest first."""
+        self.ensure_authorized(user_id, group_id)
+        changes = self._storage.list_category_changes(group_id, event_id)
+        if changes is None:
+            raise NotFoundError("Event not found")
+        return changes
+
     def list_open_reviews(self, user_id: str, group_id: str) -> list[ReviewItem]:
         """Undecided needs_review decisions, each with the record and the event it may belong to."""
         self.ensure_authorized(user_id, group_id)
@@ -616,7 +762,11 @@ class FinSyncService:
                 merchant=record.merchant,
                 category=record.category,
                 review_state="clear",
+                category_source=record.category_source,
+                category_confidence=record.category_confidence,
             )
+            # The category lines and the mixed flag stay on the original event (categorization design,
+            # mixed baskets); the event's lines_match_amount tells the member when they need checking.
             session.move_record(record.id, new_event_id)
             session.insert_decision(
                 group_id=group_id,
@@ -731,9 +881,94 @@ def _classify(session: StorageSession, record: dict[str, Any]) -> None:
     if is_transfer(accounts, record.get("merchant"), record.get("description")):
         record["direction"] = TRANSFER
         record["category"] = TRANSFER
+        record["category_source"] = SOURCE_OWN_ACCOUNT
+        record["category_confidence"] = HIGH
         return
-    rules = [MerchantRule(r.id, r.merchant_key, r.category) for r in session.merchant_categories(record["group_id"])]
-    record["category"] = categorize_record(record.get("merchant"), record.get("description"), rules).category
+    decision = _categorize(session, record["group_id"], record.get("merchant"), record.get("description"))
+    record["category"] = decision.category
+    record["category_source"] = decision.source
+    record["category_confidence"] = decision.confidence
+
+
+def _categorize(session: StorageSession, group_id: str, merchant: str | None, description: str | None):
+    rules = [MerchantRule(r.id, r.merchant_key, r.category) for r in session.merchant_categories(group_id)]
+    return categorize_record(merchant, description, rules)
+
+
+def merchant_rule_offer(event: EventRecord) -> str | None:
+    """The merchant name to offer "always use this for …" with, or None when no rule may be learned.
+
+    Merchant memory learns a rule only for a clear merchant (supervisor, 2026-11-23): never for a merchant
+    on the dictionary's mixed-assortment list, an event marked mixed or split into lines, or a transfer.
+    The name is the event's merchant, or its primary record's description when it has none, the same text
+    a rule is matched against."""
+    if event.direction == TRANSFER or event.mixed or event.lines:
+        return None
+    primary = next((tx for tx in event.transactions if tx.id == event.primary_transaction_id), None)
+    name = (event.merchant or (primary.description if primary else "") or "").strip()
+    if not name or len(name) > 80 or not merchant_key(name):
+        return None
+    entry = find_merchant(name)
+    if entry is not None and entry.mixed:
+        return None
+    return name
+
+
+def _category_state(event: EventRecord) -> dict[str, str]:
+    return {
+        "category": event.category,
+        "source": event.category_source,
+        "confidence": event.category_confidence,
+    }
+
+
+def _lines_state(lines: tuple[CategoryLineRecord, ...] | list[tuple[str, Decimal]]) -> list[dict[str, str]]:
+    pairs = [(line.category, line.amount) if isinstance(line, CategoryLineRecord) else line for line in lines]
+    return [{"category": category, "amount": str(amount)} for category, amount in pairs]
+
+
+def _validate_lines(event: EventRecord, lines: Any) -> list[tuple[str, Decimal]]:
+    """(category, signed amount) pairs, checked against the event; ValueError with the reason otherwise.
+
+    No lines removes the split. Otherwise two to MAX_CATEGORY_LINES lines, each an allowed category once,
+    each amount non-zero with the event's sign, adding up to the event's amount exactly."""
+    if not isinstance(lines, list):
+        raise ValueError("lines must be a list")
+    if not lines:
+        return []
+    if len(lines) < 2:
+        raise ValueError("A split needs at least two lines; send no lines to remove the split")
+    if len(lines) > MAX_CATEGORY_LINES:
+        raise ValueError(f"At most {MAX_CATEGORY_LINES} lines")
+    parsed: list[tuple[str, Decimal]] = []
+    for index, line in enumerate(lines):
+        if not isinstance(line, dict) or not {"category", "amount"} <= line.keys():
+            raise ValueError(f"Line {index}: needs category and amount")
+        category = line["category"]
+        if category not in CATEGORIES:
+            raise ValueError(f"Line {index}: category must be one of: {', '.join(CATEGORIES)}")
+        if category in (c for c, _ in parsed):
+            raise ValueError(f"Line {index}: {category} is already a line; put its amount on one line")
+        try:
+            amount = Decimal(str(line["amount"]))
+        except (InvalidOperation, ValueError) as error:
+            raise ValueError(f"Line {index}: invalid amount") from error
+        if not amount.is_finite() or amount == 0:
+            raise ValueError(f"Line {index}: amount must be a non-zero number")
+        if (amount < 0) != (event.amount < 0):
+            raise ValueError(f"Line {index}: amount must have the event's sign ({event.amount})")
+        parsed.append((category, amount))
+    total = sum((amount for _, amount in parsed), Decimal("0"))
+    if total != event.amount:
+        raise ValueError(f"The lines add up to {total}, not to the event's amount {event.amount}")
+    return parsed
+
+
+def _event_in_group(session: StorageSession, group_id: str, event_id: int) -> EventRecord:
+    event = session.get_event(group_id, event_id)
+    if event is None:
+        raise NotFoundError("Event not found")
+    return event
 
 
 def _instant(value: str) -> datetime:
@@ -859,6 +1094,8 @@ def _store_new_event(
         merchant=record["merchant"],
         category=record["category"],
         review_state="clear",
+        category_source=record["category_source"],
+        category_confidence=record["category_confidence"],
     )
     transaction_id = session.insert_record(**record, event_id=event_id)
     session.refresh_event(event_id)

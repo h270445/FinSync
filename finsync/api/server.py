@@ -21,6 +21,7 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 from finsync.core import (
     AuthenticationError,
     AuthorizationError,
+    CategoryCorrection,
     ConflictError,
     FinSyncService,
     ImportResult,
@@ -31,10 +32,12 @@ from finsync.core import (
     StoreResult,
     TokenService,
     WebSessionRequired,
+    is_uncertain,
+    merchant_rule_offer,
     require_web_session,
 )
 from finsync.categorization import CATEGORIES
-from finsync.core.overview import Bucket
+from finsync.core.overview import Bucket, lines_add_up
 from finsync.core.sessions import SESSION_LIFETIME, csrf_token
 from finsync.ingestion import ColumnMapping
 from finsync.storage import (
@@ -123,6 +126,34 @@ class SplitIn(BaseModel):
     transaction_id: StrictInt
 
 
+class CategoryIn(BaseModel):
+    # One of the allowed categories; sending the current one confirms a suggestion.
+    category: str
+    # "Always use this for …": the group's merchant memory learns it. Only allowed when the event's
+    # remember_merchant is set (a clear merchant, not mixed, not split); otherwise 400.
+    remember: bool = False
+
+
+class MixedIn(BaseModel):
+    mixed: bool
+
+
+class CategoryLineIn(BaseModel):
+    category: str
+    # With the event's sign (negative for an expense); the lines add up to the event's amount exactly.
+    amount: Decimal | str
+
+
+class CategoryLinesIn(BaseModel):
+    # Two or more lines replace the previous split; an empty list removes it.
+    lines: list[CategoryLineIn]
+
+
+class TransferIn(BaseModel):
+    # True marks the event as a transfer within the group (left out of the totals); false undoes it.
+    transfer: bool
+
+
 class MerchantRuleIn(BaseModel):
     # The merchant as the member types it ("SPAR"); matched on its normalised words.
     merchant: str
@@ -207,6 +238,9 @@ class TransactionOut(BaseModel):
     created_at: str
     event_id: int | None
     duplicate_of_id: int | None
+    # Who decided the record's category and how sure it is (see EventOut).
+    category_source: str
+    category_confidence: str
 
 
 class TransactionsOut(BaseModel):
@@ -221,9 +255,55 @@ class EventOut(BaseModel):
     happened_at: str
     merchant: str | None
     category: str
+    # Who decided: "user" (a member), "merchant_rule" (the group's rule), "dictionary" or "keyword" (the
+    # built-in Hungarian dictionary), "llm", "own_account" (a transfer by the own-accounts list), "none".
+    category_source: str
+    # "high" (settled) or "low" (a suggestion).
+    category_confidence: str
+    # True for a suggested category no member has settled: shown as a suggestion, listed by the filter.
+    uncertain: bool
+    # A member marked it as a purchase of several kinds, without amounts.
+    mixed: bool
+    # The amount split into categories by a member; empty when it is not split.
+    lines: list["CategoryLineOut"]
+    # False when the lines no longer add up to the amount (a record was split off since): the member
+    # should check them; the overview then counts the whole amount under `category`. None without lines.
+    lines_match_amount: bool | None
+    # The merchant name to offer "always use this for …" with; None when no rule may be learned (a
+    # merchant selling many kinds of goods, a mixed or split event, a transfer).
+    remember_merchant: str | None
     primary_transaction_id: int | None
     review_state: str
     transactions: list[TransactionOut]
+
+
+class CategoryLineOut(BaseModel):
+    category: str
+    amount: str
+    created_by: str
+    created_at: str
+
+
+class CategoryCorrectionOut(BaseModel):
+    event: EventOut
+    # Only with remember: "created", "confirmed", "updated" (an admin changed the rule) or "kept"
+    # (the group already has another category for the merchant; only an admin changes it, on W8).
+    merchant_rule_outcome: str | None
+    merchant_rule: "MerchantRuleOut | None"
+
+
+class CategoryChangeOut(BaseModel):
+    id: int
+    # "category", "mixed", "lines" or "transfer".
+    kind: str
+    old_value: Any
+    new_value: Any
+    changed_by: str
+    created_at: str
+
+
+class CategoryChangesOut(BaseModel):
+    changes: list[CategoryChangeOut]
 
 
 class EventsOut(BaseModel):
@@ -271,6 +351,12 @@ class OverviewBucketOut(BaseModel):
     # Events in this bucket still waiting for review: already in the sums above, counted here too.
     review_count: int
     review_amount: str
+    # Month totals only (zero elsewhere): events with a suggested category nobody settled, and events
+    # marked mixed without lines, so the screen can say how much of the category split may be inaccurate.
+    uncertain_count: int
+    uncertain_amount: str
+    mixed_count: int
+    mixed_amount: str
 
 
 class OverviewOut(BaseModel):
@@ -680,6 +766,44 @@ def create_app(storage: FinSyncStorage) -> FastAPI:
             transfer_count=result.transfer_count,
         )
 
+    # Category correction (categorization design: mixed baskets, transfers, review in the web app). Every
+    # member of the group may correct an event; each change is logged and listed by /category-changes.
+    @app.put("/v1/events/{event_id}/category")
+    def set_event_category(event_id: int, body: CategoryIn, caller: Caller) -> CategoryCorrectionOut:
+        """Confirm or change the event's category (stored as the member's decision); with remember, the
+        group's merchant memory learns it. 409 for a transfer or an event split into lines."""
+        return _correction(
+            service.set_event_category(caller.user_id, caller.group_id, event_id, body.category, remember=body.remember)
+        )
+
+    @app.put("/v1/events/{event_id}/mixed")
+    def set_event_mixed(event_id: int, body: MixedIn, caller: Caller) -> EventOut:
+        """Mark the event as a purchase of several kinds (without amounts), or unmark it."""
+        return _event(service.set_event_mixed(caller.user_id, caller.group_id, event_id, body.mixed))
+
+    @app.put("/v1/events/{event_id}/category-lines")
+    def set_category_lines(event_id: int, body: CategoryLinesIn, caller: Caller) -> EventOut:
+        """Split the amount into category lines (replacing the previous ones), or remove the split with []."""
+        lines = [{"category": line.category, "amount": str(line.amount)} for line in body.lines]
+        return _event(service.set_category_lines(caller.user_id, caller.group_id, event_id, lines))
+
+    @app.put("/v1/events/{event_id}/transfer")
+    def set_event_transfer(event_id: int, body: TransferIn, caller: Caller) -> EventOut:
+        """Mark the event as a transfer within the group, or undo it."""
+        return _event(service.set_event_transfer(caller.user_id, caller.group_id, event_id, body.transfer))
+
+    @app.get("/v1/events/{event_id}/category-changes")
+    def list_category_changes(event_id: int, caller: Caller) -> CategoryChangesOut:
+        """The event's category change log, oldest first."""
+        changes = service.list_category_changes(caller.user_id, caller.group_id, event_id)
+        return CategoryChangesOut(changes=[
+            CategoryChangeOut(
+                id=c["id"], kind=c["kind"], old_value=c["old_value"], new_value=c["new_value"],
+                changed_by=c["changed_by"], created_at=c["created_at"],
+            )
+            for c in changes
+        ])
+
     @app.get("/v1/events/{event_id}/decisions")
     def list_event_decisions(event_id: int, caller: Caller) -> DecisionsOut:
         decisions = service.list_event_decisions(caller.user_id, caller.group_id, event_id)
@@ -789,6 +913,10 @@ def _bucket(bucket: Bucket) -> OverviewBucketOut:
         event_count=bucket.event_count,
         review_count=bucket.review_count,
         review_amount=str(bucket.review_amount),
+        uncertain_count=bucket.uncertain_count,
+        uncertain_amount=str(bucket.uncertain_amount),
+        mixed_count=bucket.mixed_count,
+        mixed_amount=str(bucket.mixed_amount),
     )
 
 
@@ -824,6 +952,8 @@ def _transaction(tx: TransactionRecord) -> TransactionOut:
         created_at=tx.created_at.isoformat(),
         event_id=tx.event_id,
         duplicate_of_id=tx.duplicate_of_id,
+        category_source=tx.category_source,
+        category_confidence=tx.category_confidence,
     )
 
 
@@ -836,9 +966,30 @@ def _event(event: EventRecord) -> EventOut:
         happened_at=event.happened_at.isoformat(),
         merchant=event.merchant,
         category=event.category,
+        category_source=event.category_source,
+        category_confidence=event.category_confidence,
+        uncertain=is_uncertain(event),
+        mixed=event.mixed,
+        lines=[
+            CategoryLineOut(
+                category=line.category, amount=str(line.amount), created_by=line.created_by,
+                created_at=line.created_at.isoformat(),
+            )
+            for line in event.lines
+        ],
+        lines_match_amount=lines_add_up(event) if event.lines else None,
+        remember_merchant=merchant_rule_offer(event),
         primary_transaction_id=event.primary_transaction_id,
         review_state=event.review_state,
         transactions=[_transaction(tx) for tx in event.transactions],
+    )
+
+
+def _correction(result: CategoryCorrection) -> CategoryCorrectionOut:
+    return CategoryCorrectionOut(
+        event=_event(result.event),
+        merchant_rule_outcome=result.merchant_rule_outcome,
+        merchant_rule=_rule(result.merchant_rule) if result.merchant_rule else None,
     )
 
 

@@ -42,6 +42,11 @@ ENDPOINTS = (
     ("POST", "/v1/matches/{decision}/confirm"),
     ("POST", "/v1/matches/{decision}/reject"),
     ("POST", "/v1/events/{event}/split"),
+    ("PUT", "/v1/events/{event}/category"),
+    ("PUT", "/v1/events/{event}/mixed"),
+    ("PUT", "/v1/events/{event}/category-lines"),
+    ("PUT", "/v1/events/{event}/transfer"),
+    ("GET", "/v1/events/{event}/category-changes"),
 )
 # Actions that widen access (token management, role changes) work only with the web session cookie;
 # an API token gets 403 (least privilege, ADR 0012). tests/test_tokens_api.py covers them.
@@ -124,6 +129,12 @@ class TokenServiceTest(unittest.TestCase):
             connection.execute("DROP TABLE merchant_categories")  # added after the baseline (revision 0002)
             connection.execute("ALTER TABLE group_memberships DROP COLUMN role")  # revision 0003
             connection.execute("DROP TABLE own_accounts")  # revision 0005
+            # revision 0006: category correction
+            connection.execute("DROP TABLE category_changes")
+            connection.execute("DROP TABLE event_category_lines")
+            for table, column in (("events", "mixed"), ("events", "category_source"), ("events", "category_confidence"),
+                                  ("transactions", "category_source"), ("transactions", "category_confidence")):
+                connection.execute(f"ALTER TABLE {table} DROP COLUMN {column}")
             connection.execute("CREATE TABLE schema_version (version INTEGER NOT NULL)")
             connection.executemany("INSERT INTO schema_version (version) VALUES (?)", [(2,), (3,), (4,)])
             connection.execute("DROP TABLE api_tokens")
@@ -244,6 +255,16 @@ class AuthApiTest(unittest.TestCase):
             return {"content": EXPORT}
         if path.endswith("/split"):
             return {"transaction_id": self.group_1_record}
+        if path.endswith("/category"):
+            return {"category": "groceries"}
+        if path.endswith("/mixed"):
+            return {"mixed": True}
+        if path.endswith("/category-lines"):
+            # Two lines that add up to the event's amount, whatever it is at the time of the call.
+            amount = next(e.amount for e in self.storage.list_events("group-1") if e.id == self.event_id)
+            return {"lines": [{"category": "groceries", "amount": str(amount + 1)}, {"category": "clothing", "amount": "-1"}]}
+        if path.endswith("/transfer"):
+            return {"transfer": False}  # not a transfer already: answered without a change
         return MANUAL
 
     def _group_1_state(self):

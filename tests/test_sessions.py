@@ -158,6 +158,12 @@ class SessionServiceTest(unittest.TestCase):
             connection.execute("DROP TABLE merchant_categories")  # added after the baseline (revision 0002)
             connection.execute("ALTER TABLE group_memberships DROP COLUMN role")  # revision 0003
             connection.execute("DROP TABLE own_accounts")  # revision 0005
+            # revision 0006: category correction
+            connection.execute("DROP TABLE category_changes")
+            connection.execute("DROP TABLE event_category_lines")
+            for table, column in (("events", "mixed"), ("events", "category_source"), ("events", "category_confidence"),
+                                  ("transactions", "category_source"), ("transactions", "category_confidence")):
+                connection.execute(f"ALTER TABLE {table} DROP COLUMN {column}")
             connection.execute("CREATE TABLE schema_version (version INTEGER NOT NULL)")
             connection.executemany("INSERT INTO schema_version (version) VALUES (?)", [(2,), (3,), (4,)])
             connection.execute("DROP TABLE member_accounts")
