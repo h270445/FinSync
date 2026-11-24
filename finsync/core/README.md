@@ -5,7 +5,8 @@ The use cases of the system. Each public method of `FinSyncService` is one opera
 | File | Contents |
 | --- | --- |
 | `auth.py` | `TokenService` (create, authenticate, revoke, list API tokens; `list_own`, `create_own`, `revoke_own` for the W8 screen, web session only), `Principal` (member and group of a token or session), `AuthenticationError`, `WebSessionRequired` |
-| `overview.py` | `build_overview()`: the W2 month totals per currency, category and member over events, transfers left out, review items counted |
+| `overview.py` | `build_overview()`: the W2 month totals per currency, category and member over events, transfers left out, review items counted, category lines counted per line, uncertain and mixed amounts reported |
+| `llm_schedule.py` | When the LLM layer is asked in the live flow: validating the group's setting, `next_due()` (Budapest time), the budget month, the measured threshold (0.40) |
 | `service.py` | `FinSyncService`, `TransactionInput` (validated manual input), `StoreResult` (record, event and match outcome), `AuthorizationError` |
 | `__init__.py` | Public names: `AuthenticationError`, `AuthorizationError`, `ConflictError`, `FinSyncService`, `NotFoundError`, `Principal`, `ReviewItem`, `StoreResult`, `SessionService`, `TokenService`, `TransactionInput`, `WebSessionRequired` |
 
@@ -25,6 +26,8 @@ The use cases of the system. Each public method of `FinSyncService` is one opera
 | `list_members`, `set_member_role` | – | W8: the group's members with e-mail and role; an admin changes roles, the last admin stays |
 | `list_own_accounts`, `create_own_account`, `delete_own_account` | – | W8: own accounts and counterparties; records naming one become transfers (admin changes the list) |
 | `list_merchant_rules`, `create_merchant_rule`, `update_merchant_rule`, `delete_merchant_rule` | – | W8: the group's merchant → category rules; only an admin changes them (`ensure_admin`); a duplicate key is a `ConflictError` |
+| `set_event_category`, `set_event_mixed`, `set_category_lines`, `set_event_transfer`, `list_category_changes` | – | Category correction by any member, each change logged in `category_changes`; a member's category (`user`) is never overwritten; `remember` teaches merchant memory only for a clear merchant (`merchant_rule_offer`) |
+| `llm_status`, `set_llm_settings`, `suggest_category_now`, `run_due_llm` | – | The LLM layer in the live flow: the admin's schedule (never by default), "ask now", the monthly budget, the server's scheduled run; every call logged in `llm_calls` |
 
 Every use case calls `ensure_authorized(user_id, group_id)` first. The API takes `user_id` and `group_id` from the caller's token (`TokenService.authenticate`), never from client headers.
 

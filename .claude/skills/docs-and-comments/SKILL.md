@@ -5,7 +5,7 @@ description: Use when writing or changing FinSync code or docs, and before a ses
 
 # Documentation and code comments
 
-- Version: 1.0 (2026-11-12)
+- Version: 1.1 (2026-11-24)
 - Owner: Bence Varga
 - Why it exists: the thesis, the report and the defence in Szakdolgozat II. are written from what is in the repository now: why something was built this way, what was decided and what was measured. Without a fixed habit, that knowledge ends up in chat history and commit messages, the docs drift from the code (on 2026-11-12 the project overview still listed review, measurement, authentication, the web app and Android as "planned", all built by then) and comments explain what the code does instead of why. The author asked for this skill on 2026-11-12.
 
@@ -72,8 +72,9 @@ A package README answers, in this order: what the package is for, how it works i
    python .claude/skills/docs-and-comments/check_docs.py
    ```
 
-4. Read the diff once more for the prohibitions: comments that repeat code, comments that no longer match, planned work called done.
-5. Update the thesis map if the change produced material for it.
+4. When a Mermaid diagram changed (design views, READMEs): render every block once before committing, because GitHub shows a broken diagram as an error box and the checker cannot see it. Without network access to a CDN, take a pinned Mermaid release from npm into a scratch folder (`npm pack mermaid@11.4.1`, unpack) and render each `mermaid` block with `mermaid.render()` in Playwright's headless Chromium; report the number of blocks and that each rendered, and look at the image of every changed diagram. The script stays in the scratch folder (helpers in the repository use the standard library only).
+5. Read the diff once more for the prohibitions: comments that repeat code, comments that no longer match, planned work called done.
+6. Update the thesis map if the change produced material for it.
 
 ## Self-check
 
@@ -89,4 +90,5 @@ A package README answers, in this order: what the package is for, how it works i
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.1 | 2026-11-24 | Step 4: render changed Mermaid diagrams before committing, as done for the six design views on 2026-11-24 (seven blocks with Mermaid 11.4.1). |
 | 1.0 | 2026-11-12 | First version, at the author's request. First use: the checker found nine modules without a docstring, and an unlisted design document; the overview's status list was rewritten (it still called built features planned); the thesis map was started. |

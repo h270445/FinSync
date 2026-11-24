@@ -318,8 +318,12 @@ def preflight(args: argparse.Namespace, items: Sequence[Item], llm: LlmCategoriz
         print(f"provider: Anthropic API, model {args.model}")
         if importlib.util.find_spec("anthropic") is None:
             problems.append("the anthropic package is missing: pip install -r requirements.txt")
-        if not (os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN")):
-            problems.append("no ANTHROPIC_API_KEY in the environment")
+        if os.environ.get("FINSYNC_ANTHROPIC_API_KEY"):
+            print("credential: FINSYNC_ANTHROPIC_API_KEY, sent to https://api.anthropic.com")
+        elif os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN"):
+            print("credential: ANTHROPIC_API_KEY")
+        else:
+            problems.append("no FINSYNC_ANTHROPIC_API_KEY or ANTHROPIC_API_KEY in the environment")
     dev = sum(1 for i in items if i.split == "dev")
     print(f"dataset: {args.dataset.as_posix()} ({len(items)} items, dev {dev}, test {len(items) - dev})")
     print(f"cache: {llm.cache.path.as_posix()} ({len(llm.cache.entries)} answers cached)")

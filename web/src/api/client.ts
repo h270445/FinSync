@@ -19,6 +19,11 @@ export type MerchantRuleInput = components['schemas']['MerchantRuleIn']
 export type OwnAccount = components['schemas']['OwnAccountOut']
 export type Overview = components['schemas']['OverviewOut']
 export type OverviewBucket = components['schemas']['OverviewBucketOut']
+export type CategoryCorrection = components['schemas']['CategoryCorrectionOut']
+export type CategoryChange = components['schemas']['CategoryChangeOut']
+export type CategoryLineInput = components['schemas']['CategoryLineIn']
+export type LlmSettings = components['schemas']['LlmSettingsOut']
+export type LlmSettingsInput = components['schemas']['LlmSettingsIn']
 
 /** A refused request, with the backend's `{"error": "..."}` message. */
 export class ApiError extends Error {

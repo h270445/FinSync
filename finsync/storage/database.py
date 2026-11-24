@@ -61,6 +61,10 @@ class TransactionRecord:
     duplicate_of_id: int | None = None
     source_ref: str | None = None
     import_batch_id: str | None = None
+    # Who decided the category (`merchant_rule`, `dictionary`, `keyword`, `own_account`, `none`, ...) and
+    # whether it is settled (`high`) or a suggestion (`low`); Alembic revision 0006.
+    category_source: str = "none"
+    category_confidence: str = "low"
 
 
 @dataclass(frozen=True)
@@ -118,6 +122,16 @@ class WebSessionRecord:
 
 
 @dataclass(frozen=True)
+class CategoryLineRecord:
+    """One line of an event split into categories: a part of its amount, with the event's sign."""
+
+    category: str
+    amount: Decimal
+    created_by: str
+    created_at: datetime
+
+
+@dataclass(frozen=True)
 class EventRecord:
     id: int
     group_id: str
@@ -130,6 +144,34 @@ class EventRecord:
     primary_transaction_id: int | None
     review_state: str
     transactions: tuple[TransactionRecord, ...]
+    # Where the category came from and how sure it is; `user` is a member's decision and is never
+    # overwritten by automation (revision 0006).
+    category_source: str = "none"
+    category_confidence: str = "low"
+    # A member said the purchase was of several kinds, without amounts.
+    mixed: bool = False
+    # The event's amount split into categories by a member; empty when it is not split.
+    lines: tuple[CategoryLineRecord, ...] = ()
+    # For an `llm` category: the share of the model's samples that agreed (revision 0007).
+    category_agreement: float | None = None
+    # When the scheduled LLM run may ask about this uncertain event; None when not scheduled.
+    llm_due_at: datetime | None = None
+
+
+# The group's LLM schedule (revision 0007). `never` is the default: nothing leaves the system.
+LLM_MODES = ("never", "after_arrival", "daily", "weekly")
+
+
+@dataclass(frozen=True)
+class LlmSettingsRecord:
+    group_id: str
+    mode: str = "never"
+    hours_after: int = 24
+    run_time: str = "20:00"
+    weekday: int = 6
+    monthly_budget_usd: Decimal = Decimal("1.00")
+    updated_by: str | None = None
+    updated_at: datetime | None = None
 
 
 # A needs_review decision nobody has answered yet (no later decision supersedes it).
@@ -141,7 +183,7 @@ _OPEN_REVIEW = """
 _TRANSACTION_COLUMNS = """
     id, user_id, group_id, amount, currency, description, merchant, category, source,
     happened_at, created_at, event_id, direction, happened_at_precision, duplicate_of_id,
-    source_ref, import_batch_id
+    source_ref, import_batch_id, category_source, category_confidence
 """
 
 
@@ -359,18 +401,21 @@ class FinSyncStorage:
         legacy = connection.execute("SELECT * FROM transactions ORDER BY id").fetchall()
         for row in legacy:
             session = StorageSession(connection)
-            event_id = session.create_event(
-                group_id=row["group_id"],
-                amount=Decimal(row["amount"]),
-                currency=row["currency"],
-                direction=row["direction"],
-                happened_at=row["happened_at"],
-                merchant=row["merchant"],
-                category=row["category"],
-                review_state="clear",
+            # Plain SQL against the version 2 schema: StorageSession's event methods use later columns.
+            now = _now()
+            event_id = connection.insert(
+                """
+                INSERT INTO events (
+                    group_id, amount, currency, direction, happened_at, merchant, category,
+                    primary_transaction_id, review_state, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'clear', ?, ?)
+                """,
+                (
+                    row["group_id"], str(Decimal(row["amount"])), row["currency"], row["direction"],
+                    row["happened_at"], row["merchant"], row["category"], row["id"], now, now,
+                ),
             )
             connection.execute("UPDATE transactions SET event_id = ? WHERE id = ?", (event_id, row["id"]))
-            session.refresh_event(event_id)
             session.insert_decision(
                 group_id=row["group_id"],
                 transaction_id=row["id"],
@@ -773,20 +818,57 @@ class FinSyncStorage:
                 """,
                 (group_id,),
             ).fetchall()
+            lines = _lines_by_event(connection, group_id)
         return [
-            EventRecord(
-                id=int(row["id"]),
-                group_id=str(row["group_id"]),
-                amount=Decimal(str(row["amount"])),
-                currency=str(row["currency"]),
-                direction=str(row["direction"]),
-                happened_at=datetime.fromisoformat(str(row["happened_at"])),
-                merchant=row["merchant"],
-                category=str(row["category"]),
-                primary_transaction_id=row["primary_transaction_id"],
-                review_state=str(row["review_state"]),
-                transactions=tuple(transactions_by_event.get(int(row["id"]), ())),
-            )
+            _row_to_event(row, tuple(transactions_by_event.get(int(row["id"]), ())), lines.get(int(row["id"]), ()))
+            for row in rows
+        ]
+
+    # The LLM schedule (revision 0007).
+
+    def get_llm_settings(self, group_id: str) -> LlmSettingsRecord:
+        with self._session() as connection:
+            return _llm_settings(connection, group_id)
+
+    def llm_cost_since(self, group_id: str, since: datetime) -> Decimal:
+        """The group's LLM spending since an instant (the start of the Budapest month)."""
+        with self._session() as connection:
+            rows = connection.execute(
+                "SELECT cost_usd FROM llm_calls WHERE group_id = ? AND created_at >= ?", (group_id, since.isoformat())
+            ).fetchall()
+        return sum((Decimal(str(row["cost_usd"])) for row in rows), Decimal("0"))
+
+    def due_llm_events(self, now: datetime, limit: int = 100) -> list[tuple[str, int]]:
+        """(group, event) pairs whose scheduled LLM time has come, oldest first. Read across groups by the
+        server's own runner only; each event is then handled within its own group."""
+        with self._session() as connection:
+            rows = connection.execute(
+                """
+                SELECT group_id, id FROM events
+                WHERE llm_due_at IS NOT NULL AND llm_due_at <= ? AND review_state != 'empty'
+                ORDER BY llm_due_at, id LIMIT ?
+                """,
+                (now.isoformat(), limit),
+            ).fetchall()
+        return [(str(row["group_id"]), int(row["id"])) for row in rows]
+
+    def list_category_changes(self, group_id: str, event_id: int) -> list[dict[str, Any]] | None:
+        """The event's logged category changes, oldest first; None if the group has no such event."""
+        with self._session() as connection:
+            if connection.execute(
+                "SELECT 1 FROM events WHERE group_id = ? AND id = ?", (group_id, event_id)
+            ).fetchone() is None:
+                return None
+            rows = connection.execute(
+                "SELECT * FROM category_changes WHERE group_id = ? AND event_id = ? ORDER BY id",
+                (group_id, event_id),
+            ).fetchall()
+        return [
+            {
+                **dict(row),
+                "old_value": json.loads(row["old_value"]) if row["old_value"] is not None else None,
+                "new_value": json.loads(row["new_value"]) if row["new_value"] is not None else None,
+            }
             for row in rows
         ]
 
@@ -890,6 +972,8 @@ class StorageSession:
         merchant: str | None,
         category: str,
         review_state: str,
+        category_source: str = "none",
+        category_confidence: str = "low",
     ) -> int:
         now = _now()
         happened = happened_at.isoformat() if isinstance(happened_at, datetime) else happened_at
@@ -897,10 +981,13 @@ class StorageSession:
             """
             INSERT INTO events (
                 group_id, amount, currency, direction, happened_at, merchant, category,
-                review_state, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                category_source, category_confidence, review_state, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (group_id, str(amount), currency, direction, happened, merchant, category, review_state, now, now),
+            (
+                group_id, str(amount), currency, direction, happened, merchant, category,
+                category_source, category_confidence, review_state, now, now,
+            ),
         )
 
     def insert_record(
@@ -923,14 +1010,16 @@ class StorageSession:
         duplicate_of_id: int | None = None,
         source_ref: str | None = None,
         import_batch_id: str | None = None,
+        category_source: str = "none",
+        category_confidence: str = "low",
     ) -> int:
         return self._connection.insert(
             """
             INSERT INTO transactions (
                 user_id, group_id, amount, currency, description, merchant, category, source,
                 happened_at, created_at, event_id, direction, happened_at_precision, fingerprint,
-                duplicate_of_id, raw_payload, source_ref, import_batch_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                duplicate_of_id, raw_payload, source_ref, import_batch_id, category_source, category_confidence
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 user_id,
@@ -951,11 +1040,15 @@ class StorageSession:
                 raw_payload,
                 source_ref,
                 import_batch_id,
+                category_source,
+                category_confidence,
             ),
         )
 
     def refresh_event(self, event_id: int) -> None:
-        """Copy display values from the primary record: a notification first, then the earliest."""
+        """Copy display values from the primary record: a notification first, then the earliest.
+
+        A category a member decided (`user`) stays: linking or splitting records never overwrites it."""
         originals = self.event_originals(event_id)
         if not originals:
             return
@@ -963,7 +1056,7 @@ class StorageSession:
         self._connection.execute(
             """
             UPDATE events SET amount = ?, currency = ?, direction = ?, happened_at = ?, merchant = ?,
-                category = ?, primary_transaction_id = ?, updated_at = ?
+                primary_transaction_id = ?, updated_at = ?
             WHERE id = ?
             """,
             (
@@ -972,12 +1065,229 @@ class StorageSession:
                 primary.direction,
                 primary.happened_at.isoformat(),
                 primary.merchant,
-                primary.category,
                 primary.id,
                 _now(),
                 event_id,
             ),
         )
+        self._connection.execute(
+            """
+            UPDATE events SET category = ?, category_source = ?, category_confidence = ?,
+                category_agreement = CASE WHEN ? = 'llm' THEN category_agreement ELSE NULL END
+            WHERE id = ? AND category_source != 'user'
+            """,
+            (primary.category, primary.category_source, primary.category_confidence, primary.category_source, event_id),
+        )
+
+    # Category correction (revision 0006). Every write here is a member's action, logged by the core
+    # with insert_category_change in the same transaction.
+
+    def get_event(self, group_id: str, event_id: int) -> EventRecord | None:
+        """One event of the group with its records and category lines; None outside the group."""
+        row = self._connection.execute(
+            "SELECT * FROM events WHERE group_id = ? AND id = ? AND review_state != 'empty'", (group_id, event_id)
+        ).fetchone()
+        if row is None:
+            return None
+        records = self._connection.execute(
+            f"SELECT {_TRANSACTION_COLUMNS} FROM transactions WHERE group_id = ? AND event_id = ? ORDER BY id",
+            (group_id, event_id),
+        ).fetchall()
+        lines = _lines_by_event(self._connection, group_id, event_id)
+        return _row_to_event(row, tuple(_row_to_transaction(r) for r in records), lines.get(event_id, ()))
+
+    def set_event_category(self, group_id: str, event_id: int, category: str, source: str, confidence: str) -> None:
+        self._connection.execute(
+            """
+            UPDATE events SET category = ?, category_source = ?, category_confidence = ?, updated_at = ?
+            WHERE group_id = ? AND id = ?
+            """,
+            (category, source, confidence, _now(), group_id, event_id),
+        )
+
+    def set_event_mixed(self, group_id: str, event_id: int, mixed: bool) -> None:
+        self._connection.execute(
+            "UPDATE events SET mixed = ?, updated_at = ? WHERE group_id = ? AND id = ?",
+            (1 if mixed else 0, _now(), group_id, event_id),
+        )
+
+    def replace_category_lines(
+        self, group_id: str, event_id: int, lines: Sequence[tuple[str, Decimal]], created_by: str
+    ) -> None:
+        """Replace the event's category lines as one set (an empty set removes them)."""
+        self._connection.execute(
+            "DELETE FROM event_category_lines WHERE group_id = ? AND event_id = ?", (group_id, event_id)
+        )
+        now = _now()
+        for category, amount in lines:
+            self._connection.execute(
+                """
+                INSERT INTO event_category_lines (group_id, event_id, category, amount, created_by, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (group_id, event_id, category, str(amount), created_by, now),
+            )
+
+    def classify_event_records(
+        self, group_id: str, event_id: int, direction: str | None, category: str, source: str, confidence: str
+    ) -> None:
+        """Set the classification of every record of the event (a member marks or unmarks a transfer).
+
+        `direction` None gives each record the direction of its amount's sign again."""
+        if direction is None:
+            self._connection.execute(
+                """
+                UPDATE transactions SET direction = CASE WHEN amount LIKE ? THEN 'expense' ELSE 'income' END
+                WHERE group_id = ? AND event_id = ?
+                """,
+                ("-%", group_id, event_id),
+            )
+        else:
+            self._connection.execute(
+                "UPDATE transactions SET direction = ? WHERE group_id = ? AND event_id = ?",
+                (direction, group_id, event_id),
+            )
+        self._connection.execute(
+            """
+            UPDATE transactions SET category = ?, category_source = ?, category_confidence = ?
+            WHERE group_id = ? AND event_id = ?
+            """,
+            (category, source, confidence, group_id, event_id),
+        )
+
+    def insert_category_change(
+        self, group_id: str, event_id: int, kind: str, old: Any, new: Any, changed_by: str
+    ) -> int:
+        return self._connection.insert(
+            """
+            INSERT INTO category_changes (group_id, event_id, kind, old_value, new_value, changed_by, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (group_id, event_id, kind, json.dumps(old), json.dumps(new), changed_by, _now()),
+        )
+
+    def llm_settings(self, group_id: str) -> LlmSettingsRecord:
+        return _llm_settings(self._connection, group_id)
+
+    def save_llm_settings(self, settings: LlmSettingsRecord, updated_by: str) -> None:
+        params = (
+            settings.mode, settings.hours_after, settings.run_time, settings.weekday,
+            str(settings.monthly_budget_usd), updated_by, _now(),
+        )
+        exists = self._connection.execute(
+            "SELECT 1 FROM group_llm_settings WHERE group_id = ?", (settings.group_id,)
+        ).fetchone()
+        if exists:
+            self._connection.execute(
+                """
+                UPDATE group_llm_settings SET mode = ?, hours_after = ?, run_time = ?, weekday = ?,
+                    monthly_budget_usd = ?, updated_by = ?, updated_at = ?
+                WHERE group_id = ?
+                """,
+                (*params, settings.group_id),
+            )
+        else:
+            self._connection.execute(
+                """
+                INSERT INTO group_llm_settings (
+                    mode, hours_after, run_time, weekday, monthly_budget_usd, updated_by, updated_at, group_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (*params, settings.group_id),
+            )
+
+    def uncertain_event_ids(self, group_id: str) -> list[tuple[int, datetime]]:
+        """(event, arrival of its first record) for the group's events with a suggested category nobody
+        settled, which the LLM schedule may cover: spending only, so transfers and income are never sent."""
+        rows = self._connection.execute(
+            """
+            SELECT e.id, MIN(t.created_at) AS arrived FROM events e JOIN transactions t ON t.event_id = e.id
+            WHERE e.group_id = ? AND e.review_state != 'empty' AND e.direction = 'expense'
+              AND e.category_source != 'user' AND e.category_confidence != 'high'
+            GROUP BY e.id ORDER BY e.id
+            """,
+            (group_id,),
+        ).fetchall()
+        return [(int(row["id"]), datetime.fromisoformat(str(row["arrived"]))) for row in rows]
+
+    def set_llm_due(self, group_id: str, event_id: int, due: datetime | None) -> None:
+        self._connection.execute(
+            "UPDATE events SET llm_due_at = ? WHERE group_id = ? AND id = ?",
+            (due.isoformat() if due else None, group_id, event_id),
+        )
+
+    def clear_llm_due(self, group_id: str) -> None:
+        self._connection.execute("UPDATE events SET llm_due_at = NULL WHERE group_id = ?", (group_id,))
+
+    def set_llm_category(
+        self, group_id: str, event_id: int, category: str, source: str, confidence: str, agreement: float | None
+    ) -> None:
+        """The LLM layer's answer for the event and its records (never over a member's decision)."""
+        self._connection.execute(
+            """
+            UPDATE events SET category = ?, category_source = ?, category_confidence = ?, category_agreement = ?,
+                llm_due_at = NULL, updated_at = ?
+            WHERE group_id = ? AND id = ? AND category_source != 'user'
+            """,
+            (category, source, confidence, agreement, _now(), group_id, event_id),
+        )
+        self._connection.execute(
+            """
+            UPDATE transactions SET category = ?, category_source = ?, category_confidence = ?
+            WHERE group_id = ? AND event_id = ? AND category_source != 'user'
+            """,
+            (category, source, confidence, group_id, event_id),
+        )
+
+    def insert_llm_call(
+        self, *, group_id: str, event_id: int, requested_by: str, model: str, new_calls: int,
+        input_tokens: int, output_tokens: int, cost_usd: Decimal,
+    ) -> int:
+        return self._connection.insert(
+            """
+            INSERT INTO llm_calls (
+                group_id, event_id, requested_by, model, new_calls, input_tokens, output_tokens, cost_usd, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (group_id, event_id, requested_by, model, new_calls, input_tokens, output_tokens, str(cost_usd), _now()),
+        )
+
+    def remember_merchant_category(
+        self, group_id: str, key: str, label: str, category: str, created_by: str, *, may_change: bool
+    ) -> tuple[str, int]:
+        """A member's "always use this" for a merchant: (outcome, rule id).
+
+        No rule yet: `created`. A rule with the same category: `confirmed` (times_confirmed + 1). A rule
+        with another category: `updated` when `may_change` (an admin), otherwise `kept`."""
+        row = self._connection.execute(
+            "SELECT * FROM merchant_categories WHERE group_id = ? AND merchant_key = ?", (group_id, key)
+        ).fetchone()
+        now = _now()
+        if row is None:
+            rule_id = self._connection.insert(
+                """
+                INSERT INTO merchant_categories (
+                    group_id, merchant_key, merchant_label, category, times_confirmed, created_by, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, 1, ?, ?, ?)
+                """,
+                (group_id, key, label, category, created_by, now, now),
+            )
+            return "created", rule_id
+        rule_id = int(row["id"])
+        if row["category"] == category:
+            self._connection.execute(
+                "UPDATE merchant_categories SET times_confirmed = times_confirmed + 1, updated_at = ? "
+                "WHERE group_id = ? AND id = ?",
+                (now, group_id, rule_id),
+            )
+            return "confirmed", rule_id
+        if not may_change:
+            return "kept", rule_id
+        self._connection.execute(
+            "UPDATE merchant_categories SET category = ?, times_confirmed = 1, updated_at = ? WHERE group_id = ? AND id = ?",
+            (category, now, group_id, rule_id),
+        )
+        return "updated", rule_id
 
     def refresh_review_state(self, event_id: int) -> None:
         """needs_review while a record of the event has an undecided review, or a later record contests one of
@@ -1181,6 +1491,67 @@ def _row_to_api_token(row: Mapping[str, Any]) -> ApiTokenRecord:
     )
 
 
+def _llm_settings(connection: _Connection, group_id: str) -> LlmSettingsRecord:
+    row = connection.execute("SELECT * FROM group_llm_settings WHERE group_id = ?", (group_id,)).fetchone()
+    if row is None:
+        return LlmSettingsRecord(group_id)
+    return LlmSettingsRecord(
+        group_id=group_id,
+        mode=str(row["mode"]),
+        hours_after=int(row["hours_after"]),
+        run_time=str(row["run_time"]),
+        weekday=int(row["weekday"]),
+        monthly_budget_usd=Decimal(str(row["monthly_budget_usd"])),
+        updated_by=str(row["updated_by"]),
+        updated_at=datetime.fromisoformat(str(row["updated_at"])),
+    )
+
+
+def _lines_by_event(
+    connection: _Connection, group_id: str, event_id: int | None = None
+) -> dict[int, tuple[CategoryLineRecord, ...]]:
+    sql = "SELECT * FROM event_category_lines WHERE group_id = ?"
+    params: tuple[Any, ...] = (group_id,)
+    if event_id is not None:
+        sql += " AND event_id = ?"
+        params += (event_id,)
+    grouped: dict[int, list[CategoryLineRecord]] = {}
+    for row in connection.execute(sql + " ORDER BY id", params).fetchall():
+        grouped.setdefault(int(row["event_id"]), []).append(
+            CategoryLineRecord(
+                category=str(row["category"]),
+                amount=Decimal(str(row["amount"])),
+                created_by=str(row["created_by"]),
+                created_at=datetime.fromisoformat(str(row["created_at"])),
+            )
+        )
+    return {key: tuple(value) for key, value in grouped.items()}
+
+
+def _row_to_event(
+    row: Mapping[str, Any], transactions: tuple[TransactionRecord, ...], lines: tuple[CategoryLineRecord, ...]
+) -> EventRecord:
+    return EventRecord(
+        id=int(row["id"]),
+        group_id=str(row["group_id"]),
+        amount=Decimal(str(row["amount"])),
+        currency=str(row["currency"]),
+        direction=str(row["direction"]),
+        happened_at=datetime.fromisoformat(str(row["happened_at"])),
+        merchant=row["merchant"],
+        category=str(row["category"]),
+        primary_transaction_id=row["primary_transaction_id"],
+        review_state=str(row["review_state"]),
+        transactions=transactions,
+        category_source=str(row["category_source"]),
+        category_confidence=str(row["category_confidence"]),
+        mixed=bool(row["mixed"]),
+        lines=lines,
+        category_agreement=float(row["category_agreement"]) if row["category_agreement"] is not None else None,
+        llm_due_at=_optional_time(row["llm_due_at"]),
+    )
+
+
 def _decision_dict(row: Mapping[str, Any]) -> dict[str, Any]:
     return {**dict(row), "features": json.loads(row["features"]) if row["features"] else None}
 
@@ -1204,4 +1575,6 @@ def _row_to_transaction(row: Mapping[str, Any]) -> TransactionRecord:
         duplicate_of_id=row["duplicate_of_id"],
         source_ref=row["source_ref"],
         import_batch_id=row["import_batch_id"],
+        category_source=str(row["category_source"]),
+        category_confidence=str(row["category_confidence"]),
     )

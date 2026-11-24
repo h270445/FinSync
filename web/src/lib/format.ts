@@ -85,6 +85,31 @@ const CATEGORIES: Record<string, string> = {
   household: 'Háztartás',
   other: 'Egyéb',
   transfer: 'Átvezetés',
+  uncategorized: 'Bizonytalan',
+}
+
+/** The nine categories a member can choose (the API's allowed list), in the order of the design. */
+export const CATEGORY_CHOICES = [
+  'groceries',
+  'eating_out',
+  'transport',
+  'housing_utilities',
+  'health',
+  'clothing',
+  'entertainment',
+  'household',
+  'other',
+] as const
+
+// Where a category came from (EventOut.category_source), as the member reads it.
+const CATEGORY_SOURCES: Record<string, string> = {
+  user: 'tag döntése',
+  merchant_rule: 'csoportszabály',
+  dictionary: 'beépített szótár',
+  keyword: 'kulcsszó a leírásban',
+  llm: 'nyelvi modell',
+  own_account: 'saját számlák listája',
+  none: 'nincs támpont',
 }
 
 const OUTCOMES: Record<string, string> = {
@@ -100,6 +125,7 @@ const OUTCOMES: Record<string, string> = {
 export const sourceLabel = (source: string) => SOURCES[source] ?? source
 export const categoryLabel = (category: string) => CATEGORIES[category] ?? category
 export const outcomeLabel = (outcome: string) => OUTCOMES[outcome] ?? outcome
+export const categorySourceLabel = (source: string) => CATEGORY_SOURCES[source] ?? source
 
 /** "4 990" or "12,50" as "4990" / "12.50"; null when it is not a positive amount with at most 2 decimals. */
 export function parseAmount(text: string): string | null {

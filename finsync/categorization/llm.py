@@ -89,6 +89,10 @@ class LlmReply:
     seconds: float
 
 
+FINSYNC_KEY_VARIABLE = "FINSYNC_ANTHROPIC_API_KEY"
+PUBLIC_API_URL = "https://api.anthropic.com"
+
+
 class LlmClient(Protocol):
     model: str
 
@@ -98,13 +102,22 @@ class LlmClient(Protocol):
 class AnthropicClient:
     """`LlmClient` on the Anthropic Messages API with a JSON schema for the answer.
 
-    Credentials come from the environment (`ANTHROPIC_API_KEY` or an `ant auth login` profile)."""
+    Credentials come from the environment: `FINSYNC_ANTHROPIC_API_KEY` first, then `ANTHROPIC_API_KEY` or an
+    `ant auth login` profile. The FinSync-specific name exists because a Claude Code cloud session does not pass
+    `ANTHROPIC_API_KEY` on to its commands and points `ANTHROPIC_BASE_URL` at its own proxy; with that name
+    the client always talks to the public API."""
 
     def __init__(self, model: str = DEFAULT_MODEL, client=None) -> None:
+        import os
+
         import anthropic  # imported here so FinSync runs without the package when the LLM layer is off
 
         self.model = model
-        self._client = client if client is not None else anthropic.Anthropic()
+        if client is None:
+            own_key = os.environ.get(FINSYNC_KEY_VARIABLE)
+            client = (anthropic.Anthropic(api_key=own_key, base_url=PUBLIC_API_URL) if own_key
+                      else anthropic.Anthropic())
+        self._client = client
 
     def complete(self, system: str, user: str) -> LlmReply:
         started = time.perf_counter()

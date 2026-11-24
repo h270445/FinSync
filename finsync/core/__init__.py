@@ -3,22 +3,30 @@
 from finsync.core.auth import AuthenticationError, Principal, TokenService, WebSessionRequired, require_web_session
 from finsync.core.service import (
     AuthorizationError,
+    CategoryCorrection,
     ConflictError,
     FinSyncService,
     ImportResult,
+    LlmStatus,
+    LlmUnavailable,
     NotFoundError,
     ReviewItem,
     StoreResult,
     TransactionInput,
+    is_uncertain,
+    merchant_rule_offer,
 )
 from finsync.core.sessions import SessionService
 
 __all__ = [
     "AuthenticationError",
     "AuthorizationError",
+    "CategoryCorrection",
     "ConflictError",
     "FinSyncService",
     "ImportResult",
+    "LlmStatus",
+    "LlmUnavailable",
     "NotFoundError",
     "Principal",
     "ReviewItem",
@@ -27,5 +35,7 @@ __all__ = [
     "TokenService",
     "TransactionInput",
     "WebSessionRequired",
+    "is_uncertain",
+    "merchant_rule_offer",
     "require_web_session",
 ]

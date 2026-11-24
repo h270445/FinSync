@@ -19,7 +19,11 @@ The [technology stack](../technology-stack.md) planned one provider's official S
 6. **Abstention:** at or above the threshold the LLM category is settled (`llm`, `high`); below it the record is "Bizonytalan" and keeps a `low` suggestion (the dictionary's, else the LLM's top answer, else `uncategorized`).
 7. **Threshold rule, fixed before the run:** on the dev split, the highest coverage at which at most 5 % of the settled answers are wrong; ties go to the higher threshold; if no threshold meets the target, the highest threshold. The test split is categorized once, after the choice ([dev-test-evaluation](../../../.claude/skills/dev-test-evaluation/SKILL.md)).
 8. **Cache:** every answer is cached by model, prompt version, record text and sample number. In the measurement the cache file is committed under `docs/evaluation/results/llm-cache/`, so a re-run gives the same numbers without new calls; the runner calls the provider only with `--call-llm`.
-9. **Not yet in the live path:** the layer is used by the measurement only. Wiring it into the core, asynchronously (a record is stored at once with the deterministic result and updated when the LLM answers) and off by default, comes with storing `category_source` and `category_confidence` (Nov 23–27).
+9. **Live path (updated 2026-11-24):** at first the layer was used by the measurement only. Since 2026-11-24 it is wired into the core, off by default, with the members deciding first and a monthly budget per group; those rules are [ADR 0013](0013-llm-in-the-live-flow.md).
+
+## Measured result (2026-11-24)
+
+The paid run of 2026-11-24 ([report](../../evaluation/results/2026-11-24-categorization-hybrid.md)) followed points 5–8 without changes. The rule of point 7 chose the threshold **0.40** on dev (77.2 % coverage, 96.2 % of settled answers right). On the test split, categorized once afterwards, the hybrid settles 79.8 % of the records with 93.7 % of them right, against 63.6 % coverage (100 % right) for the dictionary alone and 13.1 % accuracy for the rule-based baseline. All five wrong settled test answers are mixed-assortment supermarkets answered `groceries`; cryptic payment texts stay uncertain. Cost: USD 0.034 for 390 answers, about USD 0.0004 per record sent; median latency 0.98 s per call. The author read the report on 2026-11-24.
 
 ## Consequences
 
@@ -29,4 +33,4 @@ The [technology stack](../technology-stack.md) planned one provider's official S
 - The `anthropic` package is a new dependency, imported only when the provider is called, so the tests run without network or key.
 - A provider change needs a new answer cache and a new measurement report; old reports stay valid for their model and prompt version.
 - **Planned comparison with a local model** (supervisor, 2026-11-23): after the paid baseline run is closed, a small local model behind `OpenAICompatibleClient` is measured with the same runner, dataset, prompt version and threshold rule, so the thesis can compare privacy (nothing leaves the server), accuracy (coverage-accuracy curve) and cost/latency. Scheduled for the December refinement if time allows, otherwise at the start of Szakdolgozat II.; the paid run comes first and is not changed by it.
-- When the layer is wired into the live path, design views 5 and 6 show the optional outbound model call as a trust boundary with the rule of point 2 ([design views](../design-views.md)).
+- Now that the layer is wired into the live path ([ADR 0013](0013-llm-in-the-live-flow.md)), design views 5 and 6 show the optional outbound model call as a trust boundary with the rule of point 2 ([design views](../design-views.md)).

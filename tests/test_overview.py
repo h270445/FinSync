@@ -137,6 +137,8 @@ class OverviewTest(unittest.TestCase):
             self.assertEqual(body["totals"], [{
                 "key": "all", "currency": "HUF", "expense": "4500", "income": "0", "event_count": 1,
                 "review_count": 0, "review_amount": "0",
+                # Tesco sells many kinds of goods: its usual category is only a suggestion.
+                "uncertain_count": 1, "uncertain_amount": "4500", "mixed_count": 0, "mixed_amount": "0",
             }])
             self.assertEqual(body["months"], ["2026-09"])
             bad = client.get("/v1/overview", params={"month": "september"}, headers=headers)

@@ -17,6 +17,7 @@ import {
   useTokens,
   useUpdateMerchantRule,
 } from '@/api/queries'
+import { LlmSettingsCard } from '@/components/LlmSettingsCard'
 import { NativeSelect } from '@/components/NativeSelect'
 import { EmptyState, ErrorState, LoadingRows } from '@/components/states'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -32,7 +33,7 @@ const refusal = (error: unknown, fallback: string) => (error instanceof ApiError
 /**
  * W8 settings (docs/design/user-interface.md#settings): the group's members, the signed-in member's
  * API tokens for the Android app and the Sheets script, and the group's merchant → category rules,
- * the first layer of the hybrid categorizer.
+ * the first layer of the hybrid categorizer, the own accounts and the LLM setting.
  */
 export function SettingsPage() {
   const members = useMembers()
@@ -44,6 +45,7 @@ export function SettingsPage() {
       <TokensCard />
       <MerchantRulesCard isAdmin={isAdmin} />
       <OwnAccountsCard isAdmin={isAdmin} />
+      <LlmSettingsCard isAdmin={isAdmin} />
     </section>
   )
 }

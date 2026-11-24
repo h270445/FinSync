@@ -1,0 +1,2192 @@
+{
+ "00c321facfed5131518aa03d": {
+  "input_tokens": 887,
+  "output_tokens": 10,
+  "seconds": 0.855,
+  "text": "{\"category\": \"other\"}"
+ },
+ "036b10bae50f791a1e268a75": {
+  "input_tokens": 887,
+  "output_tokens": 10,
+  "seconds": 1.39,
+  "text": "{\"category\": \"other\"}"
+ },
+ "0392d4d303cc23afd6208aeb": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 1.596,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "04c23a1d6ed4755904683eb5": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 1.385,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "06a8fef4cd0f0c83d47e4b59": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 1.315,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "083fd204825c433e96c7d134": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 1.072,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "0981705058bc6a33745c49fa": {
+  "input_tokens": 857,
+  "output_tokens": 12,
+  "seconds": 1.128,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "0baa0412530dde7b8e0956d0": {
+  "input_tokens": 867,
+  "output_tokens": 12,
+  "seconds": 1.038,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "0bc91ca184cdd8a9a8de720b": {
+  "input_tokens": 857,
+  "output_tokens": 12,
+  "seconds": 1.238,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "0bd2db043d3c1f16b0267222": {
+  "input_tokens": 869,
+  "output_tokens": 10,
+  "seconds": 1.03,
+  "text": "{\"category\": \"health\"}"
+ },
+ "0ca1c0a11ebba97fa11b818c": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 0.782,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "0e2f9aa330f8e4d99d1a26eb": {
+  "input_tokens": 867,
+  "output_tokens": 12,
+  "seconds": 0.88,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "0e584d43f1b462fbb2823ee1": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 1.023,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "0f17fc9ab50b867c6ccaa7fa": {
+  "input_tokens": 887,
+  "output_tokens": 12,
+  "seconds": 1.043,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "0ff79e0b7c57aca75705e55b": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 0.765,
+  "text": "{\"category\": \"groceries\"}"
+ },
+ "11b4b27e32358b59fcf0692e": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 1.0,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "11da0db8bc2c2ff6e4fe1ca3": {
+  "input_tokens": 885,
+  "output_tokens": 10,
+  "seconds": 1.442,
+  "text": "{\"category\":\"health\"}"
+ },
+ "11e15b28e5da411b53147220": {
+  "input_tokens": 857,
+  "output_tokens": 12,
+  "seconds": 0.892,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "12e2be26898fdabc369c2e9d": {
+  "input_tokens": 870,
+  "output_tokens": 12,
+  "seconds": 1.092,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "133c520e1198eb0ddd3e6bab": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 1.826,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "1418a40f8ab6247a34bee7c1": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 0.797,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "144821cb2028611f1d4fdc7a": {
+  "input_tokens": 860,
+  "output_tokens": 13,
+  "seconds": 2.565,
+  "text": "{\"category\":\"entertainment\"}"
+ },
+ "16ec94a71451ec3a433358c7": {
+  "input_tokens": 867,
+  "output_tokens": 12,
+  "seconds": 1.086,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "175336a036a94e974486dc7c": {
+  "input_tokens": 859,
+  "output_tokens": 12,
+  "seconds": 0.893,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "17baa3a9240ac60af1ccde9c": {
+  "input_tokens": 857,
+  "output_tokens": 12,
+  "seconds": 1.12,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "19a11be2688fa890554dc41e": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 0.952,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "19ad06c65df367b065ee4e11": {
+  "input_tokens": 857,
+  "output_tokens": 12,
+  "seconds": 0.908,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "1aca5d2cbc6baa4a89ae14c2": {
+  "input_tokens": 872,
+  "output_tokens": 12,
+  "seconds": 1.069,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "1b7ce423c0ccc093d4f07c55": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 0.858,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "1cb3768b204126906f78f615": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 0.939,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "1fc7c34bb4ecdf7c317cdf17": {
+  "input_tokens": 861,
+  "output_tokens": 10,
+  "seconds": 1.125,
+  "text": "{\"category\":\"household\"}"
+ },
+ "203c1b8f3c27c1a8265472aa": {
+  "input_tokens": 867,
+  "output_tokens": 12,
+  "seconds": 1.399,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "20c10450ef2e1172637b8caf": {
+  "input_tokens": 871,
+  "output_tokens": 12,
+  "seconds": 0.966,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "20e5e8e4e600b0180d7467f3": {
+  "input_tokens": 859,
+  "output_tokens": 12,
+  "seconds": 1.02,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "233572ab54bac9688ef656f6": {
+  "input_tokens": 867,
+  "output_tokens": 12,
+  "seconds": 1.024,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "23cbc5343a914b23b3460ebc": {
+  "input_tokens": 887,
+  "output_tokens": 12,
+  "seconds": 0.853,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "241154baaeb852e081d5092c": {
+  "input_tokens": 887,
+  "output_tokens": 12,
+  "seconds": 1.148,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "250c7d37d1d1499e894c3f2e": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 0.86,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "257ca8caa13a1a6aac4476c3": {
+  "input_tokens": 870,
+  "output_tokens": 12,
+  "seconds": 0.955,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "25fdadad70f0dd5f0f3ad960": {
+  "input_tokens": 865,
+  "output_tokens": 10,
+  "seconds": 1.281,
+  "text": "{\"category\": \"other\"}"
+ },
+ "27868c91e483ba450bc1d6ae": {
+  "input_tokens": 885,
+  "output_tokens": 10,
+  "seconds": 0.761,
+  "text": "{\"category\":\"household\"}"
+ },
+ "29c91fb67ac353f6a9a62df2": {
+  "input_tokens": 872,
+  "output_tokens": 12,
+  "seconds": 1.004,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "2a762a63d2d8d8587f7cb04b": {
+  "input_tokens": 857,
+  "output_tokens": 12,
+  "seconds": 1.014,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "2a77b89b6e56dab8887a189b": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 0.848,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "2a794607fd311dde716cb0fc": {
+  "input_tokens": 867,
+  "output_tokens": 12,
+  "seconds": 0.915,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "2b2a564b4a42f32f823cf00a": {
+  "input_tokens": 865,
+  "output_tokens": 10,
+  "seconds": 0.897,
+  "text": "{\"category\": \"other\"}"
+ },
+ "2b916c91d1fe9fbf61ede896": {
+  "input_tokens": 887,
+  "output_tokens": 12,
+  "seconds": 1.145,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "2cc14c92e7ff993c1fd99f99": {
+  "input_tokens": 859,
+  "output_tokens": 12,
+  "seconds": 1.634,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "2d4af5c3d443718a865cb5f4": {
+  "input_tokens": 860,
+  "output_tokens": 12,
+  "seconds": 1.669,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "2da09dce57ed7ddb4574d6ef": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 0.918,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "2e2fed8ed54945cbfc60a71a": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 1.193,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "2e6d32168bcf910a943d9a25": {
+  "input_tokens": 855,
+  "output_tokens": 12,
+  "seconds": 1.063,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "2eb4b23feea3e49fbf60e7d4": {
+  "input_tokens": 872,
+  "output_tokens": 12,
+  "seconds": 0.993,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "2f9a3701523d2d1d805ee17b": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 1.12,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "307b021be3ec2faa99a0f8e9": {
+  "input_tokens": 872,
+  "output_tokens": 12,
+  "seconds": 0.916,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "30c93852ab4c61ca28438be4": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 0.877,
+  "text": "{\"category\": \"groceries\"}"
+ },
+ "312ff3058073288277169887": {
+  "input_tokens": 855,
+  "output_tokens": 12,
+  "seconds": 1.093,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "32a38c22eabc4bd761fd8c71": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 0.995,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "331f92aa8f0a554ca38a8336": {
+  "input_tokens": 870,
+  "output_tokens": 12,
+  "seconds": 0.93,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "348b740f126bc4b874d372ac": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 0.887,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "349c204661ad9e8f0f7db6aa": {
+  "input_tokens": 892,
+  "output_tokens": 12,
+  "seconds": 1.496,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "35cbbe99cededfd623528070": {
+  "input_tokens": 860,
+  "output_tokens": 13,
+  "seconds": 1.467,
+  "text": "{\"category\":\"entertainment\"}"
+ },
+ "36f2ac829bf3f61a36329ba8": {
+  "input_tokens": 870,
+  "output_tokens": 12,
+  "seconds": 2.348,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "38357414a771477af7cc1da6": {
+  "input_tokens": 860,
+  "output_tokens": 13,
+  "seconds": 2.069,
+  "text": "{\"category\":\"entertainment\"}"
+ },
+ "384a4655773c5bbb6abf16a5": {
+  "input_tokens": 893,
+  "output_tokens": 12,
+  "seconds": 1.003,
+  "text": "{\"category\": \"groceries\"}"
+ },
+ "3a02c788a7d8dca13a5cb9b5": {
+  "input_tokens": 882,
+  "output_tokens": 13,
+  "seconds": 0.753,
+  "text": "{\"category\":\"entertainment\"}"
+ },
+ "3a3530bc9e0aec385161d18b": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 0.792,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "3a48d69b265bd1521c23a2e3": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 1.871,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "3a78d41bd35067d0602fc83f": {
+  "input_tokens": 867,
+  "output_tokens": 12,
+  "seconds": 1.361,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "3c05d82e40ee57213b0e4b8e": {
+  "input_tokens": 867,
+  "output_tokens": 12,
+  "seconds": 1.625,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "3c86e6da41f273ddffde55a9": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 1.386,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "3d346e5c1f594cbaebe3cbe1": {
+  "input_tokens": 869,
+  "output_tokens": 10,
+  "seconds": 0.834,
+  "text": "{\"category\": \"health\"}"
+ },
+ "3d5e89e69ac72cc34ca194cb": {
+  "input_tokens": 893,
+  "output_tokens": 12,
+  "seconds": 1.026,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "3d74a780c527e0158c3d84f7": {
+  "input_tokens": 882,
+  "output_tokens": 13,
+  "seconds": 1.024,
+  "text": "{\"category\":\"entertainment\"}"
+ },
+ "3d82041de587e2008531ca3a": {
+  "input_tokens": 855,
+  "output_tokens": 12,
+  "seconds": 1.239,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "3dd35afa8c5a6669c65da768": {
+  "input_tokens": 887,
+  "output_tokens": 12,
+  "seconds": 0.87,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "3de342be0b8f282f98368442": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 0.786,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "3e0c7b4b563d39775b71c47e": {
+  "input_tokens": 893,
+  "output_tokens": 12,
+  "seconds": 1.038,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "3e0e0d307fa14db1a8459800": {
+  "input_tokens": 893,
+  "output_tokens": 12,
+  "seconds": 1.041,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "3e3889dbb57583b61bdcb019": {
+  "input_tokens": 870,
+  "output_tokens": 12,
+  "seconds": 0.955,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "3edc634113e4e4a8dec3bab6": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 1.061,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "3f7ec63c213c12d5a7b2d104": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 1.021,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "400185451961ac597450f620": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 1.131,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "404b4e33a8aa970ceecdc9a5": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 0.949,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "41e7d8477730871c5e69783e": {
+  "input_tokens": 870,
+  "output_tokens": 12,
+  "seconds": 1.026,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "41fd43fc82b411030b4f4d2b": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 0.888,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "425103ef74c71785b0b9d571": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 0.972,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "429d62be799ab77afc3d1d17": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 0.977,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "438828ea181d6ac4cc86ab36": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 0.948,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "450f43fd617ffdff1b0f3045": {
+  "input_tokens": 871,
+  "output_tokens": 12,
+  "seconds": 0.893,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "4529497bb7e58e0e856c3198": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 0.929,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "45b16ebd0ba5fd4ca12bf4ca": {
+  "input_tokens": 859,
+  "output_tokens": 12,
+  "seconds": 0.887,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "461bf76bb91acbb6cdff106b": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 1.442,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "47a1fc1f4f01d5e64a806e51": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 0.946,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "48cbb61847842467d6def202": {
+  "input_tokens": 871,
+  "output_tokens": 12,
+  "seconds": 0.981,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "48dc58fa2c09f5eaea74c99b": {
+  "input_tokens": 894,
+  "output_tokens": 12,
+  "seconds": 0.918,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "497653d71056ec44c7c48092": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 0.918,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "4a3ee5bb35704af1b398b095": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 0.926,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "4a5045f5cd9358de6154e01f": {
+  "input_tokens": 859,
+  "output_tokens": 12,
+  "seconds": 0.91,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "4aad7018f29e2d180c35c416": {
+  "input_tokens": 867,
+  "output_tokens": 12,
+  "seconds": 1.126,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "4b564c8dda9d430d917e69d2": {
+  "input_tokens": 887,
+  "output_tokens": 12,
+  "seconds": 1.063,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "4c203c20b0c8634f61d6e284": {
+  "input_tokens": 867,
+  "output_tokens": 12,
+  "seconds": 1.02,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "4c52137f8bfdfff6af5b5f2e": {
+  "input_tokens": 855,
+  "output_tokens": 12,
+  "seconds": 0.986,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "4c6c075a84d7af4f76d44f0e": {
+  "input_tokens": 871,
+  "output_tokens": 12,
+  "seconds": 1.01,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "4ca980f15a984ce646ebfdd5": {
+  "input_tokens": 865,
+  "output_tokens": 10,
+  "seconds": 0.969,
+  "text": "{\"category\": \"other\"}"
+ },
+ "4caadfd9bb661852f42fe8f8": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 1.386,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "4dce94ee4af6c1eb28f74707": {
+  "input_tokens": 865,
+  "output_tokens": 10,
+  "seconds": 2.022,
+  "text": "{\"category\": \"other\"}"
+ },
+ "503d88fba8865deb67202c27": {
+  "input_tokens": 867,
+  "output_tokens": 12,
+  "seconds": 2.403,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "5082465f3e5b80fc97067f5d": {
+  "input_tokens": 859,
+  "output_tokens": 12,
+  "seconds": 1.031,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "50dbf3999b29395e46a18bc3": {
+  "input_tokens": 871,
+  "output_tokens": 12,
+  "seconds": 0.983,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "511373a995f10be1e341764c": {
+  "input_tokens": 893,
+  "output_tokens": 12,
+  "seconds": 1.371,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "5177db9748b19d8d014a2261": {
+  "input_tokens": 887,
+  "output_tokens": 10,
+  "seconds": 0.937,
+  "text": "{\"category\": \"other\"}"
+ },
+ "52a8f4eeef52deddcfa9c0e3": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 0.841,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "53bdc90124648dadac602c8a": {
+  "input_tokens": 855,
+  "output_tokens": 12,
+  "seconds": 1.079,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "53d64bc73728b1a0d60bd11e": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 0.803,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "53e747e5ce555ad099ee0c60": {
+  "input_tokens": 867,
+  "output_tokens": 12,
+  "seconds": 0.934,
+  "text": "{\"category\": \"groceries\"}"
+ },
+ "549d5f2b37e4acf8ffe8f5aa": {
+  "input_tokens": 887,
+  "output_tokens": 12,
+  "seconds": 1.165,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "587d94787f39aba63f817454": {
+  "input_tokens": 867,
+  "output_tokens": 12,
+  "seconds": 1.034,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "58b5c7622a13c962a366a12b": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 0.984,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "5902ae61d2bba780371bdb43": {
+  "input_tokens": 859,
+  "output_tokens": 12,
+  "seconds": 0.941,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "590a8dd3bda5f6faa4fd3bcf": {
+  "input_tokens": 867,
+  "output_tokens": 12,
+  "seconds": 0.887,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "592b40b54f6d7f13ad2118e0": {
+  "input_tokens": 857,
+  "output_tokens": 12,
+  "seconds": 1.076,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "5995139b6f64e76fe9395dd3": {
+  "input_tokens": 867,
+  "output_tokens": 12,
+  "seconds": 0.768,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "59d56620c62b3b79119d5fbe": {
+  "input_tokens": 867,
+  "output_tokens": 12,
+  "seconds": 0.92,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "5a4fa1c9a98cdf5fee66ea78": {
+  "input_tokens": 859,
+  "output_tokens": 12,
+  "seconds": 0.903,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "5aaeeae8cff2887be5154611": {
+  "input_tokens": 893,
+  "output_tokens": 12,
+  "seconds": 0.993,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "5bda26e33fe18ea2ec9ad71a": {
+  "input_tokens": 861,
+  "output_tokens": 11,
+  "seconds": 1.421,
+  "text": "{\"category\":\"transport\"}"
+ },
+ "5fb87888702677d42c516ecb": {
+  "input_tokens": 865,
+  "output_tokens": 10,
+  "seconds": 0.91,
+  "text": "{\"category\": \"other\"}"
+ },
+ "5fb9636fb6ab3401116d6c48": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 1.178,
+  "text": "{\"category\": \"groceries\"}"
+ },
+ "5feff7562ac03397c58e4e6e": {
+  "input_tokens": 887,
+  "output_tokens": 10,
+  "seconds": 1.549,
+  "text": "{\"category\": \"other\"}"
+ },
+ "61e2384095e3c0d15629c03b": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 0.895,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "62243e2c728e75d00e510967": {
+  "input_tokens": 887,
+  "output_tokens": 10,
+  "seconds": 0.941,
+  "text": "{\"category\": \"other\"}"
+ },
+ "62bd5082b1b70a974597a111": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 1.022,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "64a9259c20610ab45558f09c": {
+  "input_tokens": 887,
+  "output_tokens": 12,
+  "seconds": 0.888,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "64d5b2953954b4551b243f40": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 0.901,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "653b97997337af0f402493c8": {
+  "input_tokens": 867,
+  "output_tokens": 12,
+  "seconds": 0.849,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "6576c85154aa551fffaefa4b": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 0.818,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "65a1402f1f1a07bb4a90a3a8": {
+  "input_tokens": 860,
+  "output_tokens": 13,
+  "seconds": 0.955,
+  "text": "{\"category\":\"entertainment\"}"
+ },
+ "664004427a20bbd354611897": {
+  "input_tokens": 859,
+  "output_tokens": 12,
+  "seconds": 0.938,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "6869727ff35de7bb67d703c8": {
+  "input_tokens": 870,
+  "output_tokens": 12,
+  "seconds": 0.981,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "694645e23c520b4de31ecd11": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 0.747,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "69683ab34af38e8cc5bc7a4d": {
+  "input_tokens": 869,
+  "output_tokens": 10,
+  "seconds": 0.972,
+  "text": "{\"category\":\"health\"}"
+ },
+ "6b02bddd8731a4575d414def": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 0.848,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "6b14bc7ffc8474745f8f9ff9": {
+  "input_tokens": 867,
+  "output_tokens": 12,
+  "seconds": 1.019,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "6b9e136683d9b0068b272d23": {
+  "input_tokens": 857,
+  "output_tokens": 12,
+  "seconds": 0.939,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "6c2d11f16b615426ac23be01": {
+  "input_tokens": 872,
+  "output_tokens": 12,
+  "seconds": 0.958,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "6cd0c47bace64ae2927fd183": {
+  "input_tokens": 870,
+  "output_tokens": 12,
+  "seconds": 0.782,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "6d09bcf619af7e3a85267935": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 1.338,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "6d3068e965feeabffb6bf69b": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 0.958,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "6d82ebde9f602054880161dc": {
+  "input_tokens": 860,
+  "output_tokens": 13,
+  "seconds": 1.04,
+  "text": "{\"category\":\"entertainment\"}"
+ },
+ "6db981c3454cf0edd71d932d": {
+  "input_tokens": 865,
+  "output_tokens": 10,
+  "seconds": 0.925,
+  "text": "{\"category\": \"other\"}"
+ },
+ "6e13232a617f978e4c3e215d": {
+  "input_tokens": 858,
+  "output_tokens": 10,
+  "seconds": 1.416,
+  "text": "{\"category\": \"household\"}"
+ },
+ "6e20d06f36907b31ccc29bfa": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 1.081,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "6ec54dfb64f4e3ea47cf7bdd": {
+  "input_tokens": 855,
+  "output_tokens": 12,
+  "seconds": 0.878,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "6ef1c314609b2330aa5af66a": {
+  "input_tokens": 859,
+  "output_tokens": 12,
+  "seconds": 0.894,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "6f8b61cae21db34223a0c7f5": {
+  "input_tokens": 870,
+  "output_tokens": 12,
+  "seconds": 0.832,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "703ac073a78e828450db5ba6": {
+  "input_tokens": 855,
+  "output_tokens": 12,
+  "seconds": 1.023,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "71b70650e1be94964f6e5b4b": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 0.831,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "735f948c0a05bc48b90af08b": {
+  "input_tokens": 871,
+  "output_tokens": 12,
+  "seconds": 1.569,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "73e254e6d1ee3bdd6dbdcbbc": {
+  "input_tokens": 860,
+  "output_tokens": 13,
+  "seconds": 0.9,
+  "text": "{\"category\":\"entertainment\"}"
+ },
+ "753f2a30041775fd07d2d940": {
+  "input_tokens": 869,
+  "output_tokens": 10,
+  "seconds": 0.937,
+  "text": "{\"category\": \"health\"}"
+ },
+ "75596356e25496bcbd6019b7": {
+  "input_tokens": 887,
+  "output_tokens": 12,
+  "seconds": 1.39,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "76585a78ba845e8add75df6d": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 1.031,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "7733236e79f61fb1da86eaf7": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 1.594,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "77e46c3620ded0c5e1cb45aa": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 1.027,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "783d14fd2f840bdc81520b24": {
+  "input_tokens": 859,
+  "output_tokens": 12,
+  "seconds": 0.821,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "784e099b80094d3ea79e422a": {
+  "input_tokens": 859,
+  "output_tokens": 12,
+  "seconds": 0.937,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "78b8dd99d9330976d79c16e6": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 0.808,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "79c45fc54ee76cbbe193739e": {
+  "input_tokens": 859,
+  "output_tokens": 12,
+  "seconds": 0.961,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "7aa4b9c62cae7d511d655ce7": {
+  "input_tokens": 867,
+  "output_tokens": 12,
+  "seconds": 1.227,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "7af60cd5f28586245014f752": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 0.839,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "7b49d1c79f6f2e61b47854cd": {
+  "input_tokens": 861,
+  "output_tokens": 11,
+  "seconds": 1.77,
+  "text": "{\"category\":\"transport\"}"
+ },
+ "7d1ca6d2678d361f8d1ea8af": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 0.82,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "7e09744c57e96655664a9409": {
+  "input_tokens": 859,
+  "output_tokens": 12,
+  "seconds": 0.925,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "7f4bfd82c0689b500dfc9864": {
+  "input_tokens": 891,
+  "output_tokens": 10,
+  "seconds": 1.083,
+  "text": "{\"category\": \"health\"}"
+ },
+ "8170565a73c9210b7ced00a9": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 0.937,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "81a20c317311b7e3c741385b": {
+  "input_tokens": 867,
+  "output_tokens": 12,
+  "seconds": 0.909,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "8277b7da860ca84475dd5964": {
+  "input_tokens": 891,
+  "output_tokens": 10,
+  "seconds": 1.13,
+  "text": "{\"category\": \"health\"}"
+ },
+ "82dbc891665b5ca2aff2878b": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 0.81,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "84b1e420da762a41f8bef28d": {
+  "input_tokens": 867,
+  "output_tokens": 12,
+  "seconds": 0.938,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "84c50cc71ea5910791c4cf15": {
+  "input_tokens": 857,
+  "output_tokens": 12,
+  "seconds": 1.103,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "8523ef5e6447fb4947717d3e": {
+  "input_tokens": 867,
+  "output_tokens": 12,
+  "seconds": 0.823,
+  "text": "{\"category\": \"groceries\"}"
+ },
+ "859cb39eb9870cc980037cce": {
+  "input_tokens": 857,
+  "output_tokens": 12,
+  "seconds": 1.057,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "87fb872688c6f46b34cf8a6f": {
+  "input_tokens": 882,
+  "output_tokens": 13,
+  "seconds": 0.913,
+  "text": "{\"category\": \"entertainment\"}"
+ },
+ "885a31bf7ca849e5bfaeda15": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 1.526,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "88f9290d4257cdcc7f930382": {
+  "input_tokens": 859,
+  "output_tokens": 12,
+  "seconds": 0.883,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "89768c73fa08457351d6979b": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 2.24,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "8ac913aff4feb0105711d9f2": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 1.09,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "8b21da23781fe872fa0f3a11": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 0.991,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "8b9e7919d2e48f8240fe7ef9": {
+  "input_tokens": 857,
+  "output_tokens": 12,
+  "seconds": 0.852,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "8be998beb401758aabaf3fbd": {
+  "input_tokens": 872,
+  "output_tokens": 12,
+  "seconds": 1.068,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "8cc2d1ef4699aa3ecf2e190d": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 0.843,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "8cca5aa2d0f11711c542ee32": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 0.946,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "8de5475906cd0379b7e89e3f": {
+  "input_tokens": 867,
+  "output_tokens": 12,
+  "seconds": 1.1,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "906584f1b5d20a7e0ed89ffe": {
+  "input_tokens": 870,
+  "output_tokens": 12,
+  "seconds": 1.01,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "938056cae90d0f866522f705": {
+  "input_tokens": 871,
+  "output_tokens": 12,
+  "seconds": 0.852,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "93c44a32eddb1e667f11248c": {
+  "input_tokens": 867,
+  "output_tokens": 12,
+  "seconds": 1.15,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "958fb406365324877c637e5f": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 0.902,
+  "text": "{\"category\": \"groceries\"}"
+ },
+ "96da541c3491c0cf9df82ee1": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 0.926,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "96f8068b84ac768adf4947af": {
+  "input_tokens": 871,
+  "output_tokens": 12,
+  "seconds": 1.197,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "9767689fe0f76c56840bdc33": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 0.964,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "97a355b6049cdd2d38163d5a": {
+  "input_tokens": 861,
+  "output_tokens": 10,
+  "seconds": 0.757,
+  "text": "{\"category\":\"household\"}"
+ },
+ "97e1555c41ba65810479eaf1": {
+  "input_tokens": 887,
+  "output_tokens": 12,
+  "seconds": 0.894,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "98b1af37b9109c8f6fa504db": {
+  "input_tokens": 861,
+  "output_tokens": 11,
+  "seconds": 0.957,
+  "text": "{\"category\": \"transport\"}"
+ },
+ "99d2d2b88b3acd2d41d77209": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 0.748,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "9ab53b4a3e01bf2c992de9d3": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 1.025,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "9acf9c517cb2f2b812452522": {
+  "input_tokens": 882,
+  "output_tokens": 13,
+  "seconds": 0.98,
+  "text": "{\"category\": \"entertainment\"}"
+ },
+ "9b192c69c08db2ffdccfc6dc": {
+  "input_tokens": 859,
+  "output_tokens": 12,
+  "seconds": 1.034,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "9b2ee5886033a102e5e6a1ea": {
+  "input_tokens": 891,
+  "output_tokens": 10,
+  "seconds": 1.927,
+  "text": "{\"category\": \"health\"}"
+ },
+ "9be6da3883285caafe2757da": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 1.112,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "9c0eb3a5d2706e47ad65b890": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 0.807,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "9c7ecc284553d0cfcafd76aa": {
+  "input_tokens": 861,
+  "output_tokens": 10,
+  "seconds": 0.99,
+  "text": "{\"category\":\"household\"}"
+ },
+ "9d469a0eb9fb5a239ab9fbe4": {
+  "input_tokens": 860,
+  "output_tokens": 13,
+  "seconds": 2.305,
+  "text": "{\"category\":\"entertainment\"}"
+ },
+ "9fd8bc64315e81cb3215b5a8": {
+  "input_tokens": 887,
+  "output_tokens": 12,
+  "seconds": 0.959,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "9fdaab5bf5022f2b247561b8": {
+  "input_tokens": 893,
+  "output_tokens": 12,
+  "seconds": 0.786,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "a09b46c9123102cfafe07960": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 0.943,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "a1879c2b4bb938b1d1582943": {
+  "input_tokens": 893,
+  "output_tokens": 12,
+  "seconds": 0.818,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "a1a6f1a28a18d6ecbcf7bd9a": {
+  "input_tokens": 872,
+  "output_tokens": 12,
+  "seconds": 1.074,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "a1f1ac4a5f1cc7954ed61927": {
+  "input_tokens": 870,
+  "output_tokens": 12,
+  "seconds": 1.571,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "a224b8dbbdcdfda43b5c865c": {
+  "input_tokens": 885,
+  "output_tokens": 10,
+  "seconds": 0.82,
+  "text": "{\"category\":\"health\"}"
+ },
+ "a273bb4b18b2fb2a86d7c39c": {
+  "input_tokens": 870,
+  "output_tokens": 12,
+  "seconds": 1.446,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "a2841a2454801a6c1dde3dd1": {
+  "input_tokens": 870,
+  "output_tokens": 12,
+  "seconds": 0.881,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "a37c3734c74041247670a9e7": {
+  "input_tokens": 857,
+  "output_tokens": 12,
+  "seconds": 0.945,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "a47e0ecb676da3aeba603930": {
+  "input_tokens": 872,
+  "output_tokens": 12,
+  "seconds": 0.901,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "a4b900c0a4db9a9bd5eb37b0": {
+  "input_tokens": 894,
+  "output_tokens": 12,
+  "seconds": 1.062,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "a5659cc9102b543f4180c343": {
+  "input_tokens": 860,
+  "output_tokens": 13,
+  "seconds": 0.772,
+  "text": "{\"category\":\"entertainment\"}"
+ },
+ "a579713b479ae6a5d8c20889": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 1.027,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "a5be4165b316fde5ae1ce2c4": {
+  "input_tokens": 857,
+  "output_tokens": 12,
+  "seconds": 0.582,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "a5e7ddd9034e44a5db07aa01": {
+  "input_tokens": 867,
+  "output_tokens": 12,
+  "seconds": 1.039,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "a6a9510767c779ea2dbbc2db": {
+  "input_tokens": 858,
+  "output_tokens": 10,
+  "seconds": 0.859,
+  "text": "{\"category\": \"household\"}"
+ },
+ "a76742538bb8af8777d05546": {
+  "input_tokens": 887,
+  "output_tokens": 12,
+  "seconds": 1.242,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "a8720f06e1776d52b514f182": {
+  "input_tokens": 859,
+  "output_tokens": 12,
+  "seconds": 1.019,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "a99254c168ae82e2de6f9372": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 1.228,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "aa44008e8b7d0c9f32d54767": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 1.318,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "aa92aafa9490446a2f5e9aaa": {
+  "input_tokens": 867,
+  "output_tokens": 12,
+  "seconds": 1.451,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "aa968992042d6c4e25cd457d": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 0.967,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "abbd863f2b8751576b2b86c3": {
+  "input_tokens": 871,
+  "output_tokens": 12,
+  "seconds": 0.844,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "abec495645c8a9080eb1d1ba": {
+  "input_tokens": 871,
+  "output_tokens": 12,
+  "seconds": 0.784,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "ad1862ce27b7bcc43d33ecf1": {
+  "input_tokens": 867,
+  "output_tokens": 12,
+  "seconds": 0.996,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "ad22953aad5956956318394a": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 1.045,
+  "text": "{\"category\": \"groceries\"}"
+ },
+ "ae18fb130c6a52bec8ff4a79": {
+  "input_tokens": 882,
+  "output_tokens": 13,
+  "seconds": 0.921,
+  "text": "{\"category\": \"entertainment\"}"
+ },
+ "aedc967681afb39fe651a604": {
+  "input_tokens": 893,
+  "output_tokens": 12,
+  "seconds": 0.935,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "afb85b74674140f228dbfd69": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 1.254,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "b0d55982d5378f9bc85a44ee": {
+  "input_tokens": 859,
+  "output_tokens": 12,
+  "seconds": 0.945,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "b0f4bf80991dc5a3525aa984": {
+  "input_tokens": 870,
+  "output_tokens": 12,
+  "seconds": 0.783,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "b15b7719267f8144a840455f": {
+  "input_tokens": 891,
+  "output_tokens": 10,
+  "seconds": 1.609,
+  "text": "{\"category\": \"health\"}"
+ },
+ "b1c9a0cf3cc6fdeed35050ff": {
+  "input_tokens": 885,
+  "output_tokens": 10,
+  "seconds": 1.077,
+  "text": "{\"category\": \"health\"}"
+ },
+ "b46c51797a70e673cb18164e": {
+  "input_tokens": 865,
+  "output_tokens": 10,
+  "seconds": 0.905,
+  "text": "{\"category\": \"other\"}"
+ },
+ "b49c8de7c2440161afbe5bf8": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 0.821,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "b49fde4a568bd4d854f89ea9": {
+  "input_tokens": 861,
+  "output_tokens": 11,
+  "seconds": 1.717,
+  "text": "{\"category\":\"transport\"}"
+ },
+ "b4c914782b7afa96f1a559af": {
+  "input_tokens": 892,
+  "output_tokens": 12,
+  "seconds": 1.001,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "b648d3b641115f4aeac69afd": {
+  "input_tokens": 871,
+  "output_tokens": 12,
+  "seconds": 1.112,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "b790f7629e418c4a4a8ca6ce": {
+  "input_tokens": 883,
+  "output_tokens": 10,
+  "seconds": 0.913,
+  "text": "{\"category\":\"household\"}"
+ },
+ "b83f3da2ad629296b58efae3": {
+  "input_tokens": 867,
+  "output_tokens": 12,
+  "seconds": 0.839,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "b99545719d01beb1ad74e9c1": {
+  "input_tokens": 872,
+  "output_tokens": 12,
+  "seconds": 0.948,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "ba8abc9366050d04e7163a06": {
+  "input_tokens": 861,
+  "output_tokens": 11,
+  "seconds": 0.993,
+  "text": "{\"category\":\"transport\"}"
+ },
+ "bb5801b289dce7b64c76a74f": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 0.794,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "bba7e5054dae1dd3ba865c39": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 0.803,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "bbbca410573bd9df2a02138c": {
+  "input_tokens": 867,
+  "output_tokens": 12,
+  "seconds": 0.773,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "bbbdc1f0b60743297fb253b6": {
+  "input_tokens": 859,
+  "output_tokens": 12,
+  "seconds": 0.935,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "bbd2dc76a6f77f4b796de1c3": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 1.346,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "bc2f64a4c11a78cf9ed43a34": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 0.869,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "bc36a18878a508265e5a7dfd": {
+  "input_tokens": 893,
+  "output_tokens": 12,
+  "seconds": 0.961,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "bc8a3990b8f196babe887a24": {
+  "input_tokens": 859,
+  "output_tokens": 12,
+  "seconds": 0.925,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "bd6739ec7f11a70fefb8650e": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 1.286,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "be08d1e6feef99aba18736db": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 1.022,
+  "text": "{\"category\": \"groceries\"}"
+ },
+ "be856d7591bb59dd7b0d8b24": {
+  "input_tokens": 865,
+  "output_tokens": 10,
+  "seconds": 1.412,
+  "text": "{\"category\": \"other\"}"
+ },
+ "bf842b3a8f24abfbf2bad2ea": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 1.149,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "c0476b04189a114e5694891f": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 0.832,
+  "text": "{\"category\": \"groceries\"}"
+ },
+ "c1157f5a80f7a577a2689e76": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 0.985,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "c226de2507cec2bcae0cd539": {
+  "input_tokens": 891,
+  "output_tokens": 10,
+  "seconds": 1.387,
+  "text": "{\"category\": \"health\"}"
+ },
+ "c287e14e5e86e1c79317a557": {
+  "input_tokens": 867,
+  "output_tokens": 12,
+  "seconds": 1.365,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "c3c432c133f4dbec671d0ece": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 1.031,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "c41617dca8e34950f1099518": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 1.186,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "c43e112bb483c7f6a10a10ad": {
+  "input_tokens": 867,
+  "output_tokens": 12,
+  "seconds": 0.887,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "c44f99b10aaeac9f90bb944c": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 1.001,
+  "text": "{\"category\":\"clothing\"}"
+ },
+ "c4e18f89bfde48915dd9ef1f": {
+  "input_tokens": 865,
+  "output_tokens": 10,
+  "seconds": 0.973,
+  "text": "{\"category\": \"other\"}"
+ },
+ "c572d8d7048fa7d5e7e42704": {
+  "input_tokens": 870,
+  "output_tokens": 12,
+  "seconds": 0.927,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "c6c825ba6b8ebab1d93fd217": {
+  "input_tokens": 883,
+  "output_tokens": 10,
+  "seconds": 0.957,
+  "text": "{\"category\":\"household\"}"
+ },
+ "c728dd6acd7ce890fc2ef47c": {
+  "input_tokens": 870,
+  "output_tokens": 12,
+  "seconds": 0.848,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "c73a210f88c7b23c4a1e5df0": {
+  "input_tokens": 869,
+  "output_tokens": 10,
+  "seconds": 1.063,
+  "text": "{\"category\": \"health\"}"
+ },
+ "cafc99ee114e088333a55355": {
+  "input_tokens": 894,
+  "output_tokens": 12,
+  "seconds": 0.969,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "cb0daecae3d27aa12f199293": {
+  "input_tokens": 872,
+  "output_tokens": 12,
+  "seconds": 1.027,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "cbd51da5be17e0850debe67a": {
+  "input_tokens": 860,
+  "output_tokens": 13,
+  "seconds": 1.06,
+  "text": "{\"category\":\"entertainment\"}"
+ },
+ "cc1083e88b16c08608e0fee4": {
+  "input_tokens": 885,
+  "output_tokens": 10,
+  "seconds": 0.89,
+  "text": "{\"category\": \"health\"}"
+ },
+ "cca79787854ff65ecdb25356": {
+  "input_tokens": 867,
+  "output_tokens": 12,
+  "seconds": 0.794,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "cd57154e5b85156b51dc0130": {
+  "input_tokens": 865,
+  "output_tokens": 10,
+  "seconds": 1.011,
+  "text": "{\"category\": \"other\"}"
+ },
+ "ce6adc46bbc5ea275f9432c1": {
+  "input_tokens": 883,
+  "output_tokens": 10,
+  "seconds": 0.903,
+  "text": "{\"category\":\"household\"}"
+ },
+ "cf2c4d432b3d2eb308111579": {
+  "input_tokens": 870,
+  "output_tokens": 12,
+  "seconds": 0.964,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "d34cc12581a2c735961b65af": {
+  "input_tokens": 855,
+  "output_tokens": 12,
+  "seconds": 0.976,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "d52227e61556810045d5dd3c": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 0.943,
+  "text": "{\"category\": \"groceries\"}"
+ },
+ "d56cc44a53ff724611c6b34c": {
+  "input_tokens": 859,
+  "output_tokens": 12,
+  "seconds": 0.932,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "d574a41e1fc8250be8d175a9": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 0.783,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "d5dc70337dcc9cc622d01ee8": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 1.174,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "d617a33e93f1cecf87ab4c07": {
+  "input_tokens": 871,
+  "output_tokens": 12,
+  "seconds": 1.166,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "d623d6237e006593d7002dc6": {
+  "input_tokens": 858,
+  "output_tokens": 10,
+  "seconds": 0.709,
+  "text": "{\"category\": \"household\"}"
+ },
+ "d6c33c2a911d557582275771": {
+  "input_tokens": 871,
+  "output_tokens": 12,
+  "seconds": 0.894,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "d6cc9cc5703052329c63731f": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 1.532,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "d8e353ed5115195c29ad7141": {
+  "input_tokens": 887,
+  "output_tokens": 12,
+  "seconds": 1.084,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "da3d0ea16ec5d801cf5a5f11": {
+  "input_tokens": 855,
+  "output_tokens": 12,
+  "seconds": 0.866,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "db5f5a638abc53745c99dbeb": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 0.923,
+  "text": "{\"category\": \"groceries\"}"
+ },
+ "dd65821e1555f8baad6e114a": {
+  "input_tokens": 860,
+  "output_tokens": 12,
+  "seconds": 0.871,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "dd904bc918ecb7ff14fdf2fb": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 0.859,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "de728cf79c7a7c31e3fa950d": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 1.041,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "df33c0d713eb929ee9494d6f": {
+  "input_tokens": 867,
+  "output_tokens": 12,
+  "seconds": 0.851,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "df7746190d8c3e0d47a2d7b5": {
+  "input_tokens": 861,
+  "output_tokens": 104,
+  "seconds": 1.061,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "e04c8acfab64ace19ac44bbd": {
+  "input_tokens": 860,
+  "output_tokens": 13,
+  "seconds": 1.228,
+  "text": "{\"category\":\"entertainment\"}"
+ },
+ "e0d2d8d611a6f02b04de4d6e": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 0.874,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "e122f13f2edb308b83e467f7": {
+  "input_tokens": 883,
+  "output_tokens": 10,
+  "seconds": 0.943,
+  "text": "{\"category\":\"household\"}"
+ },
+ "e14b2700424f96de123efb43": {
+  "input_tokens": 855,
+  "output_tokens": 12,
+  "seconds": 0.92,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "e17bf30ca67152b5dd55e4b1": {
+  "input_tokens": 857,
+  "output_tokens": 12,
+  "seconds": 1.079,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "e2340337e327f5e3b3443a4e": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 0.855,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "e23ac64ed0fe943cae79aa91": {
+  "input_tokens": 894,
+  "output_tokens": 12,
+  "seconds": 0.568,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "e2c0e75cc6a4ad091faa23a7": {
+  "input_tokens": 887,
+  "output_tokens": 12,
+  "seconds": 0.876,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "e42a73a7b8cb774451375bde": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 0.983,
+  "text": "{\"category\":\"clothing\"}"
+ },
+ "e497e696159d76bac76ee636": {
+  "input_tokens": 870,
+  "output_tokens": 12,
+  "seconds": 0.759,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "e4a15f4e7f58027eafa099a2": {
+  "input_tokens": 883,
+  "output_tokens": 10,
+  "seconds": 0.95,
+  "text": "{\"category\":\"household\"}"
+ },
+ "e4de334c9c7adc5e49d41e1f": {
+  "input_tokens": 859,
+  "output_tokens": 12,
+  "seconds": 0.989,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "e4ff5333623a10eac64e10db": {
+  "input_tokens": 860,
+  "output_tokens": 13,
+  "seconds": 1.902,
+  "text": "{\"category\":\"entertainment\"}"
+ },
+ "e533a2edd50d4d93a334096d": {
+  "input_tokens": 870,
+  "output_tokens": 12,
+  "seconds": 1.038,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "e545e930b6a1337181db7dd8": {
+  "input_tokens": 859,
+  "output_tokens": 12,
+  "seconds": 0.927,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "e5dec739b60f089c25d172b4": {
+  "input_tokens": 858,
+  "output_tokens": 10,
+  "seconds": 0.967,
+  "text": "{\"category\": \"household\"}"
+ },
+ "e654c4bbdce6eaca1e038ade": {
+  "input_tokens": 867,
+  "output_tokens": 12,
+  "seconds": 1.079,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "e658d4a6f88d1b8d503ed2e4": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 0.904,
+  "text": "{\"category\": \"groceries\"}"
+ },
+ "e6dba8d845f4864976520f42": {
+  "input_tokens": 861,
+  "output_tokens": 10,
+  "seconds": 1.294,
+  "text": "{\"category\":\"household\"}"
+ },
+ "e7ad5321e1c65e6dfd53ab80": {
+  "input_tokens": 870,
+  "output_tokens": 12,
+  "seconds": 0.869,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "e807245d307b675d422683ee": {
+  "input_tokens": 870,
+  "output_tokens": 12,
+  "seconds": 0.988,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "e82bb3ddd69cf47a658c7c41": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 1.027,
+  "text": "{\"category\": \"groceries\"}"
+ },
+ "e99558caddb2cd7b6e1c1ea0": {
+  "input_tokens": 858,
+  "output_tokens": 10,
+  "seconds": 0.938,
+  "text": "{\"category\": \"household\"}"
+ },
+ "e9bedaff7ba0d06f04975772": {
+  "input_tokens": 870,
+  "output_tokens": 12,
+  "seconds": 1.915,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "e9df5e1e74d1bc42f1a6cf64": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 0.874,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "eb5fc93d26c52574d066af9e": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 0.822,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "eb79bc96d97316d3ce709469": {
+  "input_tokens": 867,
+  "output_tokens": 12,
+  "seconds": 1.688,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "ec51d626f73142b696431b69": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 0.866,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "eca0be89c5c2fcb4e735e38f": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 1.009,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "ed1216f5430aba1ec8040a1d": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 0.914,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "ed3cd649aacdede414ad9401": {
+  "input_tokens": 892,
+  "output_tokens": 12,
+  "seconds": 1.004,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "ee41f8e7b17b9073b1d56b54": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 0.956,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "ee763005df9bb2b6a7870b77": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 1.02,
+  "text": "{\"category\": \"groceries\"}"
+ },
+ "eeeba6526d1b70c3eca11b2b": {
+  "input_tokens": 871,
+  "output_tokens": 12,
+  "seconds": 1.064,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "ef1349a4c2105bbea076c92b": {
+  "input_tokens": 870,
+  "output_tokens": 12,
+  "seconds": 2.018,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "ef706008ae843f62cc7be86e": {
+  "input_tokens": 859,
+  "output_tokens": 12,
+  "seconds": 0.925,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "ef9687e0de47639149509cb2": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 1.036,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "f09c297935b0bd5c99ae7daa": {
+  "input_tokens": 870,
+  "output_tokens": 12,
+  "seconds": 0.941,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "f0f88760c41263bf992af3d7": {
+  "input_tokens": 857,
+  "output_tokens": 12,
+  "seconds": 1.359,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "f123e4e7d617ec17f169bc17": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 1.131,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "f1e046493c9ad4b6957fae20": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 1.44,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "f3a7a5c56ab8e4a87790baa8": {
+  "input_tokens": 887,
+  "output_tokens": 10,
+  "seconds": 1.297,
+  "text": "{\"category\": \"household\"}"
+ },
+ "f46ab56f3270b00d3daf07d2": {
+  "input_tokens": 892,
+  "output_tokens": 12,
+  "seconds": 1.319,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "f46e07a4288b464e723eb3a5": {
+  "input_tokens": 892,
+  "output_tokens": 12,
+  "seconds": 1.123,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "f48651ca6f17d92e1ddd1da3": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 0.964,
+  "text": "{\"category\": \"groceries\"}"
+ },
+ "f5547fe53243dab4e089f913": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 1.012,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "f55a90aaab9bd11eb1671456": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 1.318,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "f5a50c74ac359c9c1844a000": {
+  "input_tokens": 894,
+  "output_tokens": 12,
+  "seconds": 1.063,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "f6bab305d94695eaafa9b747": {
+  "input_tokens": 860,
+  "output_tokens": 12,
+  "seconds": 1.145,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "f6dc59cd41ee588674dd9da3": {
+  "input_tokens": 860,
+  "output_tokens": 13,
+  "seconds": 1.051,
+  "text": "{\"category\":\"entertainment\"}"
+ },
+ "fa5477858759f81edea33ea2": {
+  "input_tokens": 871,
+  "output_tokens": 12,
+  "seconds": 1.016,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "fbef0dc2f9324943daed8e6c": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 0.783,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "fe43ba8c9bf06298a46dc277": {
+  "input_tokens": 870,
+  "output_tokens": 12,
+  "seconds": 0.884,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "fe65fd1fafb5243398996df3": {
+  "input_tokens": 865,
+  "output_tokens": 12,
+  "seconds": 0.933,
+  "text": "{\"category\":\"groceries\"}"
+ },
+ "ff4700d6a81a7eeaf7ec63f9": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 1.018,
+  "text": "{\"category\":\"unknown\"}"
+ },
+ "ff4d8d950405eb2c8d0ac9fe": {
+  "input_tokens": 889,
+  "output_tokens": 12,
+  "seconds": 0.939,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "ff66e1a4cde83dee7d7ee7ca": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 1.136,
+  "text": "{\"category\": \"groceries\"}"
+ },
+ "ff6ab30ae794b6b374db238a": {
+  "input_tokens": 861,
+  "output_tokens": 12,
+  "seconds": 1.281,
+  "text": "{\"category\": \"unknown\"}"
+ },
+ "ff8f5894df6e215e9de2d321": {
+  "input_tokens": 859,
+  "output_tokens": 12,
+  "seconds": 0.978,
+  "text": "{\"category\":\"groceries\"}"
+ }
+}

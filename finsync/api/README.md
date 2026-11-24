@@ -8,6 +8,7 @@ Translates HTTP requests into calls on `FinSyncService` and maps results and err
 | `__main__.py` | Entry point for `python -m finsync.api` (`--host`, `--port`, `--db`; `--openapi` prints the schema) |
 | `tokens.py` | Command line for API tokens: `python -m finsync.api.tokens create|list|revoke` |
 | `members.py` | Command line for group members and roles: `python -m finsync.api.members add|list|set-role` |
+| `demo.py` | Seeds a new database with the synthetic M2 demo and writes its bank export: `python -m finsync.api.demo --db demo.db` ([demo guide](../../docs/guides/demo.md)) |
 | `passwords.py` | Command line for web passwords: `python -m finsync.api.passwords set --user <member> [--email <address>]` |
 | `__init__.py` | Public names: `create_app`, `run_server` |
 

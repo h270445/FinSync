@@ -15,6 +15,8 @@ from finsync.core import AuthenticationError, TokenService
 from finsync.core.auth import hash_token
 from finsync.storage import FinSyncStorage
 
+from fake_llm import fake_categorizer
+
 NOTIFICATION = "CARD PURCHASE -4500 HUF at Tesco on 2026-09-05 16:42"
 MANUAL = {"amount": "-4500", "currency": "HUF", "description": "Weekly shop", "happened_at": "2026-09-05"}
 EXPORT = "date,amount,description,merchant\n2026-09-05,-4500,Weekly shop,Tesco\n"
@@ -42,6 +44,14 @@ ENDPOINTS = (
     ("POST", "/v1/matches/{decision}/confirm"),
     ("POST", "/v1/matches/{decision}/reject"),
     ("POST", "/v1/events/{event}/split"),
+    # Before the category is set, while the event's category is still a suggestion.
+    ("POST", "/v1/events/{event}/llm-suggestion"),
+    ("PUT", "/v1/events/{event}/category"),
+    ("PUT", "/v1/events/{event}/mixed"),
+    ("PUT", "/v1/events/{event}/category-lines"),
+    ("PUT", "/v1/events/{event}/transfer"),
+    ("GET", "/v1/events/{event}/category-changes"),
+    ("GET", "/v1/llm-settings"),
 )
 # Actions that widen access (token management, role changes) work only with the web session cookie;
 # an API token gets 403 (least privilege, ADR 0012). tests/test_tokens_api.py covers them.
@@ -50,6 +60,7 @@ WEB_SESSION_ENDPOINTS = (
     ("POST", "/v1/tokens"),
     ("POST", "/v1/tokens/{token}/revoke"),
     ("PUT", "/v1/members/{member}/role"),
+    ("PUT", "/v1/llm-settings"),
 )
 # The web sign-in routes work with the session cookie, not a token; tests/test_sessions.py covers them.
 SESSION_ENDPOINTS = (
@@ -124,6 +135,18 @@ class TokenServiceTest(unittest.TestCase):
             connection.execute("DROP TABLE merchant_categories")  # added after the baseline (revision 0002)
             connection.execute("ALTER TABLE group_memberships DROP COLUMN role")  # revision 0003
             connection.execute("DROP TABLE own_accounts")  # revision 0005
+            # revision 0007: the LLM schedule
+            connection.execute("DROP TABLE llm_calls")
+            connection.execute("DROP TABLE group_llm_settings")
+            connection.execute("DROP INDEX ix_events_llm_due")
+            connection.execute("ALTER TABLE events DROP COLUMN llm_due_at")
+            connection.execute("ALTER TABLE events DROP COLUMN category_agreement")
+            # revision 0006: category correction
+            connection.execute("DROP TABLE category_changes")
+            connection.execute("DROP TABLE event_category_lines")
+            for table, column in (("events", "mixed"), ("events", "category_source"), ("events", "category_confidence"),
+                                  ("transactions", "category_source"), ("transactions", "category_confidence")):
+                connection.execute(f"ALTER TABLE {table} DROP COLUMN {column}")
             connection.execute("CREATE TABLE schema_version (version INTEGER NOT NULL)")
             connection.executemany("INSERT INTO schema_version (version) VALUES (?)", [(2,), (3,), (4,)])
             connection.execute("DROP TABLE api_tokens")
@@ -185,7 +208,8 @@ class AuthApiTest(unittest.TestCase):
         self.token_b, _ = self.tokens.create("user-b", "group-1", "phone")
         self.token_c, _ = self.tokens.create("user-c", "group-2", "phone")
 
-        self.app = create_app(self.storage)
+        # A fake model, so "ask for a suggestion now" works without a provider (tests/fake_llm.py).
+        self.app = create_app(self.storage, fake_categorizer("groceries"))
         self.client = TestClient(self.app)
 
         self._call("POST", "/v1/notifications/ingest", self.token_a, {"message": NOTIFICATION})
@@ -244,6 +268,16 @@ class AuthApiTest(unittest.TestCase):
             return {"content": EXPORT}
         if path.endswith("/split"):
             return {"transaction_id": self.group_1_record}
+        if path.endswith("/category"):
+            return {"category": "groceries"}
+        if path.endswith("/mixed"):
+            return {"mixed": True}
+        if path.endswith("/category-lines"):
+            # Two lines that add up to the event's amount, whatever it is at the time of the call.
+            amount = next(e.amount for e in self.storage.list_events("group-1") if e.id == self.event_id)
+            return {"lines": [{"category": "groceries", "amount": str(amount + 1)}, {"category": "clothing", "amount": "-1"}]}
+        if path.endswith("/transfer"):
+            return {"transfer": False}  # not a transfer already: answered without a change
         return MANUAL
 
     def _group_1_state(self):

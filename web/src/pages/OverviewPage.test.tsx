@@ -16,6 +16,10 @@ const bucket = (overrides: Partial<OverviewBucket>): OverviewBucket => ({
   event_count: 1,
   review_count: 0,
   review_amount: '0',
+  uncertain_count: 0,
+  uncertain_amount: '0',
+  mixed_count: 0,
+  mixed_amount: '0',
   ...overrides,
 })
 
@@ -107,6 +111,16 @@ describe('OverviewPage', () => {
     expect(await screen.findByText('2026. október hónapban még nincs egy esemény sem.')).toBeInTheDocument()
     const urls = fetchMock.mock.calls.map(([request]) => new URL(request.url).search)
     expect(urls).toContain('?month=2026-10')
+  })
+
+  it('says how much of the category split is only a suggestion or mixed', async () => {
+    const totals = [bucket({ expense: '15490', uncertain_count: 2, uncertain_amount: '8480', mixed_count: 1, mixed_amount: '3490' })]
+    serve({ '2026-11': { ...november, totals } })
+    renderPage()
+
+    expect(
+      await screen.findByText(/2 esemény kategóriája csak javaslat \(8 480 Ft\), 1 vegyes vásárlás felosztás nélkül \(3 490 Ft\)/),
+    ).toBeInTheDocument()
   })
 
   it('shows the backend error', async () => {

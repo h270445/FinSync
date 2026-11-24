@@ -133,6 +133,24 @@ class RequestLimitTest(unittest.TestCase):
                 self.assertTrue(response.json()["error"])
         self.assertEqual(self._stored(), 0)
 
+    def test_malformed_category_corrections_get_a_clear_400(self) -> None:
+        # The body is checked before the event is looked up, so no event is needed.
+        cases = {
+            "category not a string": ("/v1/events/1/category", {"category": 5}),
+            "category missing": ("/v1/events/1/category", {"remember": True}),
+            "mixed not a boolean": ("/v1/events/1/mixed", {"mixed": "maybe"}),
+            "lines not a list": ("/v1/events/1/category-lines", {"lines": "groceries"}),
+            "line without amount": ("/v1/events/1/category-lines", {"lines": [{"category": "groceries"}]}),
+            "transfer missing": ("/v1/events/1/transfer", {}),
+            "llm setting without mode": ("/v1/llm-settings", {"hours_after": 24}),
+            "llm hours not a number": ("/v1/llm-settings", {"mode": "after_arrival", "hours_after": "sok"}),
+        }
+        for name, (path, body) in cases.items():
+            with self.subTest(name):
+                response = self.client.put(path, content=json.dumps(body).encode(), headers=self.headers)
+                self.assertEqual(response.status_code, 400)
+                self.assertTrue(response.json()["error"])
+
     def test_unknown_routes_answer_in_the_same_error_shape(self) -> None:
         response = self.client.get("/v1/nothing", headers=self.headers)
         self.assertEqual(response.status_code, 404)

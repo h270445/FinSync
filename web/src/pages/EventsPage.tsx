@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router'
 import type { FinSyncEvent } from '@/api/client'
 import { useEvents } from '@/api/queries'
 import { ReviewTag, SourceBadge } from '@/components/badges'
+import { QuickCategory } from '@/components/category'
 import { NativeSelect } from '@/components/NativeSelect'
 import { EmptyState, ErrorState, LoadingRows } from '@/components/states'
 import { Input } from '@/components/ui/input'
@@ -20,6 +21,8 @@ interface Filters {
   category: string
   source: string
   search: string
+  /** Only suggested categories nobody settled ("uncertain categories" filter of the design). */
+  uncertain: boolean
 }
 
 function unique(values: string[]): string[] {
@@ -33,6 +36,7 @@ function matches(event: FinSyncEvent, filters: Filters): boolean {
     (filters.member === ALL || event.transactions.some((record) => record.user_id === filters.member)) &&
     (filters.category === ALL || event.category === filters.category) &&
     (filters.source === ALL || event.transactions.some((record) => record.source === filters.source)) &&
+    (!filters.uncertain || event.uncertain) &&
     (event.merchant ?? '').toLocaleLowerCase('hu').includes(search)
   )
 }
@@ -41,7 +45,14 @@ function matches(event: FinSyncEvent, filters: Filters): boolean {
 export function EventsPage() {
   const events = useEvents()
   const navigate = useNavigate()
-  const [filters, setFilters] = useState<Filters>({ month: ALL, member: ALL, category: ALL, source: ALL, search: '' })
+  const [filters, setFilters] = useState<Filters>({
+    month: ALL,
+    member: ALL,
+    category: ALL,
+    source: ALL,
+    search: '',
+    uncertain: false,
+  })
   const set = (key: keyof Filters) => (change: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setFilters({ ...filters, [key]: change.target.value })
 
@@ -113,6 +124,14 @@ export function EventsPage() {
             className="h-9 w-48"
           />
         </Filter>
+        <label className="flex h-9 items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={filters.uncertain}
+            onChange={(change) => setFilters({ ...filters, uncertain: change.target.checked })}
+          />
+          Csak bizonytalan kategóriák ({all.filter((event) => event.uncertain).length})
+        </label>
       </div>
 
       {events.isPending ? (
@@ -162,7 +181,9 @@ export function EventsPage() {
                           {event.merchant ?? 'Ismeretlen kereskedő'}
                         </Link>
                       </TableCell>
-                      <TableCell>{categoryLabel(event.category)}</TableCell>
+                      <TableCell>
+                        <QuickCategory event={event} />
+                      </TableCell>
                       <TableCell className="text-right font-medium tabular-nums">
                         {formatAmount(event.amount, event.currency)}
                       </TableCell>
@@ -188,10 +209,10 @@ export function EventsPage() {
             {shown.map((event) => {
               const precision = primaryRecord(event)?.happened_at_precision
               return (
-                <li key={event.id}>
+                <li key={event.id} className="space-y-2 rounded-lg border bg-card p-3">
                   <Link
                     to={`/esemenyek/${event.id}`}
-                    className="block space-y-2 rounded-lg border bg-card p-3 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                    className="block space-y-2 rounded-md focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
                   >
                     <div className="flex justify-between gap-2">
                       <span className="font-medium">{event.merchant ?? 'Ismeretlen kereskedő'}</span>
@@ -203,6 +224,10 @@ export function EventsPage() {
                       {event.review_state === 'needs_review' && <ReviewTag />}
                     </div>
                   </Link>
+                  {/* Outside the link: one tap confirms or changes the category without opening the event. */}
+                  <div className="text-sm">
+                    <QuickCategory event={event} />
+                  </div>
                 </li>
               )
             })}
