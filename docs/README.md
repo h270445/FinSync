@@ -13,12 +13,13 @@ Everything about FinSync beyond the code lives here. Documents describe the **ac
 | [evaluation/](evaluation/README.md) | How correctness and quality are measured, datasets and results |
 | [planning/](planning/README.md) | Semester roadmap and milestone targets with deadlines |
 | [releases/](releases/README.md) | Milestone release notes and the fix log for the final package |
+| [legal/](legal/README.md) | Draft EULA and privacy notice (Hungarian) for the closed family pilot |
 | [ai-usage.md](ai-usage.md) | Where AI tools were used and how their output was checked |
 | [thesis-map.md](thesis-map.md) | Where the material for the thesis chapters and the defence questions lives |
 
 ## Conventions
 
-- Language: English, except [releases/status-emails/](releases/status-emails/README.md), which keeps the Hungarian e-mails to the supervisor. File names: lowercase, hyphen-separated.
+- Language: English, except [releases/status-emails/](releases/status-emails/README.md), which keeps the Hungarian e-mails to the supervisor, and [legal/](legal/README.md), whose documents are accepted by Hungarian family members. File names: lowercase, hyphen-separated.
 - Every folder has a `README.md` that lists its contents.
 - Status words: **implemented** (in `main` and tested), **in progress**, **planned**, **proposed** (design not yet agreed).
 - When code changes behaviour, the matching document changes in the same pull request.

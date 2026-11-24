@@ -1,6 +1,6 @@
 # Semester roadmap (Szakdolgozat I., autumn 2026)
 
-- Last updated: 2026-11-19
+- Last updated: 2026-11-24
 - Owner: Bence Varga
 
 This roadmap turns the course deadlines into concrete, verifiable steps. Each deadline has a target file in [milestones/](milestones/README.md) with acceptance criteria and a checklist.
@@ -180,3 +180,6 @@ Candidates for Szakdolgozat II. or for the thesis's "Limitations and future work
 | 2026-11-19 | Author's decisions on the LLM layer: Anthropic `claude-haiku-5-5`, five samples per record as the confidence, the threshold rule (highest dev coverage with at most 5 % wrong settled answers), USD 2 for the measurement (ADR 0011 accepted); the API key follows in the week of Nov 23, so the LLM layer and the measurement runner were built early on Nov 19 and the paid run stays on Nov 23–27. The author proposed that members can set uncertain categories before the LLM runs and that admins choose when it runs (never, X hours after the purchase, daily or weekly); scheduled with the category correction. A self-hosted model (LM Studio) may be tried later; the layer already supports it. |
 | 2026-11-19 | Future-work options added (not committed): e-mail confirmation and forgotten password, step-up re-authentication and a sign-in attempt limit, budgets and alerts, a self-hosted LLM, MFA, export, an "ask about your data" adviser, open banking. The author's ideas, grouped and refined by Claude; the author asked to record them. |
 | 2026-11-21 | Real-phone test of the Android forwarding done (supervisor action, Nov 16): made-up cases and one real OTP Bank card purchase passed; found that **Send now** could not shorten a long retry delay, fixed the same evening ( [results](../design/android-notification-spike.md#2026-11-2021-m2-forwarding-on-the-real-phone)). |
+| 2026-11-24 | Closed family pilot assessed at the author's request ([readiness](family-pilot-readiness.md)): outside the course scope, no deadline moves; blockers B1–B7 (hosting, family build of the Android app, accounts, data-subject rights, LLM boundary, accepted EULA and privacy notice, thesis data separation); earliest start estimated for 2026-12-19, fallback 2027-01-16. Draft EULA and privacy notice in Hungarian in [legal/](../legal/README.md). |
+| 2026-11-24 | Author's decision: the family pilot's server is a small VPS in the EU with Caddy for HTTPS (blocker B1), not the home computer with a tunnel; recorded in the readiness plan and the privacy notice. Chosen from the options offered. |
+| 2026-11-24 | Author's decision: Hetzner as the EU VPS provider for now; the options (Hetzner, OVHcloud, Scaleway, AWS Lightsail) are compared again before the VPS is deployed (to-do in the [readiness plan](family-pilot-readiness.md)). |
