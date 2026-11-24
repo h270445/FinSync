@@ -73,6 +73,7 @@ export function OverviewPage() {
             </p>
           )}
 
+          <CategoryNotice totals={data!.totals} />
           <BucketTable title="Kategóriák szerint" column="Kategória" rows={data!.categories} label={categoryLabel} />
           <BucketTable title="Tagok szerint" column="Tag" rows={data!.members} label={(key) => key} />
 
@@ -101,6 +102,34 @@ function TotalCard({ total }: { total: OverviewBucket }) {
         </p>
       </CardContent>
     </Card>
+  )
+}
+
+/** How much of the category split is only a suggestion or marked mixed (UX principle 1, supervisor 2026-11-23). */
+function CategoryNotice({ totals }: { totals: OverviewBucket[] }) {
+  const parts: string[] = []
+  const uncertain = totals.filter((total) => total.uncertain_count > 0)
+  const mixed = totals.filter((total) => total.mixed_count > 0)
+  if (uncertain.length > 0) {
+    const count = uncertain.reduce((sum, total) => sum + total.uncertain_count, 0)
+    parts.push(
+      `${count} esemény kategóriája csak javaslat (${uncertain.map((t) => money(t.uncertain_amount, t.currency)).join(' + ')})`,
+    )
+  }
+  if (mixed.length > 0) {
+    const count = mixed.reduce((sum, total) => sum + total.mixed_count, 0)
+    parts.push(
+      `${count} vegyes vásárlás felosztás nélkül (${mixed.map((t) => money(t.mixed_amount, t.currency)).join(' + ')})`,
+    )
+  }
+  if (parts.length === 0) return null
+  return (
+    <p className="text-sm text-muted-foreground">
+      A kategóriánkénti bontás pontatlan lehet: {parts.join(', ')}.{' '}
+      <Link to="/esemenyek" className="underline underline-offset-4">
+        Javítás az eseményeknél
+      </Link>
+    </p>
   )
 }
 

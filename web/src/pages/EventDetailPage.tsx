@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { ApiError, type Decision, type FinSyncEvent, type Transaction } from '@/api/client'
 import { useEventDecisions, useEvents, useSplitEvent } from '@/api/queries'
 import { ReviewTag, SourceBadge } from '@/components/badges'
+import { CategoryPanel } from '@/components/CategoryPanel'
 import { EmptyState, ErrorState, LoadingRows } from '@/components/states'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -66,6 +67,8 @@ function EventDetail({ event }: { event: FinSyncEvent }) {
           {formatDateTime(event.happened_at, precision)} · {categoryLabel(event.category)}
         </p>
       </header>
+
+      <CategoryPanel event={event} />
 
       <section className="space-y-3" aria-labelledby="sources-heading">
         <h2 id="sources-heading" className="text-lg font-semibold">

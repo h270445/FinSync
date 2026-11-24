@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { api, type ManualTransaction, type MerchantRuleInput, unwrap } from './client'
+import { api, type CategoryLineInput, type ManualTransaction, type MerchantRuleInput, unwrap } from './client'
 import type { components } from './schema'
 
 export function useEvents() {
@@ -66,6 +66,65 @@ export function useSplitEvent() {
           params: { path: { event_id: eventId } },
           body: { transaction_id: transactionId },
         }),
+      ),
+    onSuccess,
+  })
+}
+
+// Category correction (W3 list, W4 detail). A correction changes the event, the overview's category split
+// and possibly the merchant rules, so everything is refetched.
+
+export function useCategoryChanges(eventId: number) {
+  return useQuery({
+    queryKey: ['events', eventId, 'category-changes'],
+    queryFn: async () =>
+      unwrap(await api.GET('/v1/events/{event_id}/category-changes', { params: { path: { event_id: eventId } } }))
+        .changes,
+  })
+}
+
+/** Confirm or change an event's category; `remember` teaches the group's merchant memory. */
+export function useSetCategory() {
+  const onSuccess = useInvalidateAll()
+  return useMutation({
+    mutationFn: async ({ eventId, category, remember = false }: { eventId: number; category: string; remember?: boolean }) =>
+      unwrap(
+        await api.PUT('/v1/events/{event_id}/category', {
+          params: { path: { event_id: eventId } },
+          body: { category, remember },
+        }),
+      ),
+    onSuccess,
+  })
+}
+
+export function useSetMixed() {
+  const onSuccess = useInvalidateAll()
+  return useMutation({
+    mutationFn: async ({ eventId, mixed }: { eventId: number; mixed: boolean }) =>
+      unwrap(await api.PUT('/v1/events/{event_id}/mixed', { params: { path: { event_id: eventId } }, body: { mixed } })),
+    onSuccess,
+  })
+}
+
+/** Replace the event's category lines; an empty list removes the split. */
+export function useSetCategoryLines() {
+  const onSuccess = useInvalidateAll()
+  return useMutation({
+    mutationFn: async ({ eventId, lines }: { eventId: number; lines: CategoryLineInput[] }) =>
+      unwrap(
+        await api.PUT('/v1/events/{event_id}/category-lines', { params: { path: { event_id: eventId } }, body: { lines } }),
+      ),
+    onSuccess,
+  })
+}
+
+export function useSetTransfer() {
+  const onSuccess = useInvalidateAll()
+  return useMutation({
+    mutationFn: async ({ eventId, transfer }: { eventId: number; transfer: boolean }) =>
+      unwrap(
+        await api.PUT('/v1/events/{event_id}/transfer', { params: { path: { event_id: eventId } }, body: { transfer } }),
       ),
     onSuccess,
   })
