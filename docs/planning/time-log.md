@@ -58,5 +58,6 @@ Time spent on the project, for the weekly-effort figure the supervisor asked for
 | 2026-11-02 – 11-08 | 149 | 2.5 |
 | 2026-11-09 – 11-15 | 380 | 6.3 |
 | 2026-11-16 – 11-22 | 166 | 2.8 |
-| 2026-11-23 – 11-29 | 178 | 3.0 |
-| **Total** | **1578** | **26.3** |
+| 2026-11-23 – 11-29 | 186 | 3.1 |
+| 2026-11-24 | 16:47–16:55 | 8 | M2 closing package moved from Fri Nov 27 to Wed Nov 25 at the author's request: schedule, roadmap, M2 milestone and milestone index updated, buffer Nov 26 – Dec 2 | Project messages and commits |
+| **Total** | **1586** | **26.4** |

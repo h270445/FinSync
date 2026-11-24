@@ -98,6 +98,7 @@ Decisions made by the author, as opposed to suggested by an AI tool. Filled in b
 | 2026-11-24 | The December skeleton covers the Bevezetés and chapters 1–3; the Feladatkiírás is drafted from the README and the author's motivation | Proposed by Claude | Accepted by the author |
 | 2026-11-24 | endpoint-and-screen-checklist and dev-test-evaluation are the two skills presented in the methods chapter | Recommended by Claude, the two candidates the supervisor named on 2026-11-16 | Accepted by the author |
 | 2026-11-24 | The thesis-manuscript skill of this branch stays, with the manuscript checker of the parallel draft (PR #42) added | Two parallel versions offered: this branch's skill with the checker (recommended), without it, or the other version's tracked-change workflow | Chosen from the options offered |
+| 2026-11-24 | M2 closing package moved from Nov 27 to Nov 25, sent to the supervisor that day | – (the author's own decision) | The work planned for Nov 24–26 was finished on Nov 24; more time for the supervisor's feedback |
 
 ## Skill usage
 
