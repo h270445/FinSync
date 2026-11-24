@@ -39,7 +39,7 @@ UI text is Hungarian, amounts in HUF (`12 990 Ft`), dates `2026. 10. 09.`. All e
 | W5 | Review queue | Two records side by side, score and feature breakdown (amount, time, merchant), **Same purchase** / **Different purchases** | `GET /v1/matches/review`, `POST /v1/matches/{id}/confirm`, `.../reject` | M2 |
 | W6 | Add transaction | Manual entry form (built 2026-11-14): direction, amount, currency, date with an optional Budapest time (without a time the entry is a calendar day), merchant, description; the member is the signed-in one and the category is automatic; after saving, the match outcome with a link to the event or the review queue | `POST /v1/transactions` | M2 |
 | W7 | Import file | Upload a spreadsheet export, preview rows, import, summary per outcome (new, linked, needs review, re-delivery, rejected rows with reasons) | `POST /v1/imports` (`dry_run` for the preview; implemented 2026-11-12, CSV and XLSX) | M2 |
-| W8 | Settings | Member and group settings, see [Settings](#settings). Built 2026-11-19: member list with roles (an admin changes them), the member's own API tokens (create, shown once; revoke; last used), group merchant → category rules, own accounts and counterparties for transfers; members see group settings read-only | `/v1/members`, `/v1/tokens`, `/v1/merchant-rules`, `/v1/own-accounts` | M2 |
+| W8 | Settings | Member and group settings, see [Settings](#settings). Built 2026-11-19: member list with roles (an admin changes them), the member's own API tokens (create, shown once; revoke; last used), group merchant → category rules, own accounts and counterparties for transfers; members see group settings read-only. Added 2026-11-24: the LLM setting (when the model is asked: never by default, X hours after arrival, daily or weekly at a Budapest time; monthly budget and what was spent; a message when the budget is used up or the server has no model; an admin changes it, every member sees it) | `/v1/members`, `/v1/tokens`, `/v1/merchant-rules`, `/v1/own-accounts`, `/v1/llm-settings` | M2 |
 
 ### Settings
 
@@ -64,6 +64,7 @@ Two levels. A member changes their own settings; group settings are changed only
 | Own accounts and counterparties: account numbers and names whose records are transfers within the group (built 2026-11-19) | – | ⭐ |
 | Category list: rename, add, merge | Starting list from the [categorization design](categorization.md#open-questions) | ⭐ |
 | Merchant memory: the learned "merchant → category" entries, edit or delete; mark a merchant as mixed-assortment. These group rules are the first, deterministic layer of the hybrid categorizer (supervisor, 2026-11-16) | Filled from corrections | ⭐ |
+| LLM category suggestions: when the model is asked about uncertain categories (*never*, *X hours after arrival*, *daily* or *weekly* at a Budapest time) and the monthly budget in USD (built 2026-11-24; [design](categorization.md#when-the-llm-is-called-proposed-by-the-author-2026-11-19)) | Never; 24 h, 20:00, Sunday; USD 1.00 | ⭐ |
 | Import mappings: bank export columns, sheet category values (for example "kaja" → groceries) | Asked on first use | |
 | Currency and time zone | HUF, Europe/Budapest | |
 

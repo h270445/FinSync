@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import type { ApiToken, MerchantRule } from '@/api/client'
+import type { ApiToken, LlmSettings, MerchantRule } from '@/api/client'
 
 import { SettingsPage } from './SettingsPage'
 
@@ -36,7 +36,27 @@ function serve({
   tokens = [token({})],
   rules = [rule({})],
   myRole = 'admin',
-}: { tokens?: ApiToken[]; rules?: MerchantRule[]; myRole?: string } = {}) {
+  llm = {},
+}: {
+  tokens?: ApiToken[]
+  rules?: MerchantRule[]
+  myRole?: string
+  llm?: Partial<LlmSettings>
+} = {}) {
+  const llmSettings: LlmSettings = {
+    mode: 'never',
+    hours_after: 24,
+    run_time: '20:00',
+    weekday: 6,
+    monthly_budget_usd: '1.00',
+    spent_this_month_usd: '0.0123',
+    budget_exhausted: false,
+    available: true,
+    model: 'teszt-modell',
+    updated_by: null,
+    updated_at: null,
+    ...llm,
+  }
   const members = [
     { user_id: 'anna', email: 'anna@example.org', role: myRole, is_me: true },
     { user_id: 'balint', email: null, role: 'member', is_me: false },
@@ -66,6 +86,17 @@ function serve({
     if (call === 'POST /v1/own-accounts')
       return Response.json({ error: 'The group already lists this account or name' }, { status: 409 })
     if (call === 'DELETE /v1/own-accounts/3') return Response.json({})
+    if (call === 'GET /v1/llm-settings') return Response.json(llmSettings)
+    if (call === 'PUT /v1/llm-settings') {
+      const body = await request.clone().json()
+      if (body.monthly_budget_usd === '500')
+        return Response.json({ error: 'monthly_budget_usd must be from 0 to 100' }, { status: 400 })
+      Object.assign(llmSettings, body, {
+        updated_by: 'anna',
+        updated_at: '2026-11-26T09:00:00+00:00',
+      })
+      return Response.json(llmSettings)
+    }
     if (call === 'GET /v1/tokens') return Response.json({ tokens })
     if (call === 'POST /v1/tokens')
       return Response.json(
@@ -139,7 +170,7 @@ describe('SettingsPage', () => {
   it('shows a member the rules and roles read-only', async () => {
     serve({ myRole: 'member' })
     renderPage()
-    expect(await screen.findAllByText('Csak a csoport adminja módosíthatja.', { exact: false })).toHaveLength(2)
+    expect(await screen.findAllByText('Csak a csoport adminja módosíthatja.', { exact: false })).toHaveLength(3)
     expect(await screen.findByText('Élelmiszer')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Szabály hozzáadása' })).not.toBeInTheDocument()
     expect(screen.queryByLabelText('SPAR kategóriája')).not.toBeInTheDocument()
@@ -181,5 +212,59 @@ describe('SettingsPage', () => {
     await userEvent.selectOptions(within(form).getByLabelText('Kategória'), 'groceries')
     await userEvent.click(within(form).getByRole('button', { name: 'Szabály hozzáadása' }))
     expect(await screen.findByText('Erre a kereskedőre már van szabály a csoportban.')).toBeInTheDocument()
+  })
+
+  it('lets an admin schedule the model daily and explains a wrong value', async () => {
+    const fetchMock = serve()
+    renderPage()
+    expect(await screen.findByText(/csak akkor kérdezzük, ha egy tag/)).toBeInTheDocument()
+    expect(screen.getByText('0,0123 USD elköltve, havi keret: 1,00 USD')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Hánykor? (budapesti idő)')).not.toBeInTheDocument()
+
+    await userEvent.selectOptions(screen.getByLabelText('Mikor kérdezzük a modellt?'), 'daily')
+    const time = screen.getByLabelText('Hánykor? (budapesti idő)')
+    await userEvent.clear(time)
+    await userEvent.type(time, '21:30')
+    await userEvent.click(screen.getByRole('button', { name: 'Mentés' }))
+    expect(
+      await screen.findByText('A bizonytalan tételekről naponta 21:30-kor kérdezzük a modellt.'),
+    ).toBeInTheDocument()
+    const put = fetchMock.mock.calls.find(([r]) => r.method === 'PUT' && r.url.endsWith('/v1/llm-settings'))!
+    expect(await (put[0] as Request).json()).toEqual({
+      mode: 'daily',
+      hours_after: 24,
+      run_time: '21:30',
+      weekday: 6,
+      monthly_budget_usd: '1.00',
+    })
+
+    const budget = screen.getByLabelText('Havi keret (USD)')
+    await userEvent.clear(budget)
+    await userEvent.type(budget, '500')
+    await userEvent.click(screen.getByRole('button', { name: 'Mentés' }))
+    expect(await screen.findByText(/Valamelyik érték hibás/)).toBeInTheDocument()
+  })
+
+  it('tells every member when the monthly budget is used up; a member gets no form', async () => {
+    serve({
+      myRole: 'member',
+      llm: {
+        mode: 'weekly',
+        budget_exhausted: true,
+        spent_this_month_usd: '1.00',
+      },
+    })
+    renderPage()
+    expect(await screen.findByTestId('budget-exhausted')).toHaveTextContent('Elfogyott a havi keret')
+    expect(
+      screen.getByText('A bizonytalan tételekről hetente, vasárnap 20:00-kor kérdezzük a modellt.'),
+    ).toBeInTheDocument()
+    expect(screen.queryByLabelText('Mikor kérdezzük a modellt?')).not.toBeInTheDocument()
+  })
+
+  it('says when the server has no model', async () => {
+    serve({ llm: { available: false, model: null } })
+    renderPage()
+    expect(await screen.findByText('Ezen a szerveren nincs beállítva nyelvi modell')).toBeInTheDocument()
   })
 })

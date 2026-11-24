@@ -1,6 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { api, type CategoryLineInput, type ManualTransaction, type MerchantRuleInput, unwrap } from './client'
+import {
+  api,
+  type CategoryLineInput,
+  type LlmSettingsInput,
+  type ManualTransaction,
+  type MerchantRuleInput,
+  unwrap,
+} from './client'
 import type { components } from './schema'
 
 export function useEvents() {
@@ -134,6 +141,15 @@ export function useLlmSettings() {
   return useQuery({
     queryKey: ['llm-settings'],
     queryFn: async () => unwrap(await api.GET('/v1/llm-settings')),
+  })
+}
+
+/** W8 LLM setting (admins only). Saving reschedules the uncertain events, so their due times are refetched too. */
+export function useSaveLlmSettings() {
+  const onSuccess = useInvalidateAll()
+  return useMutation({
+    mutationFn: async (body: LlmSettingsInput) => unwrap(await api.PUT('/v1/llm-settings', { body })),
+    onSuccess,
   })
 }
 
