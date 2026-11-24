@@ -16,6 +16,10 @@ const bucket = (overrides: Partial<OverviewBucket>): OverviewBucket => ({
   event_count: 1,
   review_count: 0,
   review_amount: '0',
+  uncertain_count: 0,
+  uncertain_amount: '0',
+  mixed_count: 0,
+  mixed_amount: '0',
   ...overrides,
 })
 
