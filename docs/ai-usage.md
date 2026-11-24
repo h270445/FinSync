@@ -83,6 +83,7 @@ Decisions made by the author, as opposed to suggested by an AI tool. Filled in b
 | 2026-11-19 | Before the LLM is called, members can set an uncertain category themselves; when the LLM runs is a setting (X hours after the purchase, daily or weekly at a set time, or never) | Claude refined it: group-level admin setting, "never" by default, an "ask now" button, monthly budget, batch interface for scheduled runs | The author's own proposal |
 | 2026-11-24 | A complete EULA must exist before FinSync is installed on family members' phones | – (the author's own condition; the privacy notice next to it was suggested by Claude) | Real family members' spending data and bank notifications are involved |
 | 2026-11-24 | The family pilot's server is a small VPS in the EU (blocker B1) | Two options offered: the author's home computer with a named tunnel, or an EU VPS | Chosen from the options offered |
+| 2026-11-24 | Hetzner as the EU VPS provider for now; compare the options again before deploying | Claude suggested Hetzner, with OVHcloud, Scaleway and AWS Lightsail (Frankfurt) as alternatives, and noted that post-quantum TLS does not depend on the provider for a VPS | The author has some AWS experience and had considered AWS for its post-quantum protection; open to options |
 
 ## Skill usage
 
