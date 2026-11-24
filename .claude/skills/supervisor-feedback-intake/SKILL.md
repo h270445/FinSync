@@ -1,51 +1,73 @@
 ---
 name: supervisor-feedback-intake
-description: Use when a reply from the thesis supervisor arrives (pasted or saved in the project files), to store it outside the repository, summarise it in English in docs/planning/supervisor-feedback.md as assessment, decisions and actions, and carry each action into the plan, the milestone, the ADRs and the thesis map.
+description: Use when the thesis supervisor's reply to a FinSync status e-mail or milestone package arrives. Turns the letter into an English summary with assessment, decisions and actions in docs/planning/supervisor-feedback.md and carries every point into the plan, the milestone, the ADRs, the design docs and the thesis map, without storing the letter itself.
 ---
 
 # Supervisor feedback intake
 
 - Version: 1.0 (2026-11-24)
 - Owner: Bence Varga
-- Why it exists: the supervisor answers every report, lately every week (2026-11-16, 2026-11-23). Each reply was processed the same way from memory: the letter kept out of the repository, an English summary with numbered actions, then the roadmap, milestone, designs, ADR statuses and thesis map updated. The [supervisor-status-email](../supervisor-status-email/SKILL.md) skill covers the outgoing side; this is the incoming side, so the loop report → reply → actions → evidence in the next report is fixed.
+- Why it exists: the supervisor answers every weekly report and milestone package (2026-10-16, 10-29, 11-11, 11-16, 11-23, and from now on weekly). Each reply approves or rejects ADRs, reorders priorities and asks for new work, and each was processed by hand in a session of its own (PR #37, commit 4318f7e), touching 10–14 files. Nothing fixed the order of work, so a point could stay only in the summary and never reach the roadmap or the milestone. The [supervisor-status-email](../supervisor-status-email/SKILL.md) skill answers the open actions; [session-wrap-up](../session-wrap-up/SKILL.md) ticks them when done; this skill is the missing step in between, where the actions are written down and carried into the plan.
 
 ## Input
 
-- The supervisor's reply as the author gives it (pasted text or a file). The author's own comments on it, if any.
-- [supervisor-feedback.md](../../../docs/planning/supervisor-feedback.md) (format of the earlier entries), the [roadmap](../../../docs/planning/roadmap.md), the current milestone file, the ADR index and the [thesis map](../../../docs/thesis-map.md).
+- The supervisor's letter: in the project's shared files (`supervisor/`) or pasted by the author. Its date and which e-mail it replies to (`docs/releases/status-emails/`).
+- `docs/planning/supervisor-feedback.md` (the open actions of earlier replies), the roadmap, the current milestone file, the M2 closing schedule or the plan that is current, the ADR index and the [thesis map](../../../docs/thesis-map.md).
 
 ## Output
 
-1. The letter word for word in the project files: `/mnt/project-files/supervisor/YYYY-MM-DD-<short title>.md`, with a row in that folder's README (Hungarian, as the folder's README says). **Not in the repository.**
-2. A new entry at the top of `docs/planning/supervisor-feedback.md`: `## YYYY-MM-DD — <what it replies to>`, then **Assessment** (what was reviewed, at which commit, what was judged good or weak), **Decisions** (what the supervisor accepted or decided, for example an ADR accepted), **Actions** (one checkbox per point, bold short title, what is asked, and in brackets what was already done or planned and where).
-3. Each action carried where it belongs: a roadmap line or change-log row, a milestone checklist line, an ADR status (with the date and "by the supervisor"), a design note, a thesis-map row. Each place links back to the entry's anchor.
-4. A short report in the reply: the actions table (action, where it is planned or done, open or done), the decisions applied, and questions for the author.
+1. A new entry at the top of `docs/planning/supervisor-feedback.md`: `## YYYY-MM-DD — Reply to <the e-mail>`, then **Assessment**, **Decisions** (only if the letter decides something) and **Actions**, as the existing entries are written.
+2. Every action carried to where the work is planned or done (step 3), and each earlier open action that the letter closes or changes, updated.
+3. A short report in the reply, in Hungarian: the actions as a table (action, where it was carried, due date, author question if any), the decisions applied, and the questions for the author.
 
 ## Prohibitions
 
-- **Never put the letter, a quotation longer than a phrase, the supervisor's e-mail address or any other person's personal data in the repository.** The repository has only the English summary; the letter stays in the project files and the mailbox.
-- Never invent a decision or an action the letter does not contain; a suggestion the supervisor makes is an action, not a decision. An unclear point is asked about, not interpreted.
-- Never tick an action in this step unless it is already done with evidence; new actions start unticked. An action is ticked later, by the session that does it, with a link.
-- Never change an ADR to Accepted unless the letter says so in so many words; write who accepted it and when.
-- Never edit the status e-mails in `docs/releases/status-emails/`; they are what was sent.
-- Never reorder or rewrite earlier entries; a correction to an earlier summary is a dated note under it.
+- **Never store the letter** or quote it at length: no copy, no screenshot, no e-mail address, no greeting or signature. The repository gets an English summary in the project's words; a short phrase may be quoted where the exact wording matters (for example a priority order), marked as the supervisor's.
+- Never invent a decision or an action: an aside, a suggestion with "if time allows" or a question to the author is recorded as such, not as a requirement. If a point is unclear (what is asked, by when), ask the author (checkpoint 1) instead of guessing.
+- Never tick an action in this step unless the letter itself closes it (for example "ADR 0012 accepted": the status change is done in this session and ticked with its link). Work the letter asks for is ticked later by [session-wrap-up](../session-wrap-up/SKILL.md), when it is done.
+- Never change an ADR's status, the milestone dates or the scope beyond what the letter says. A letter that changes the scope or a deadline is applied only after the author confirms (checkpoint 2).
+- Never edit a sent status e-mail. If the e-mail the letter answers is still `Státusz: vázlat`, ask the author for the sent text (the supervisor-status-email skill's checkpoint 2) and match the file to it in the same session.
+- No code change in this step unless the letter asks for a small, clear one and the author agrees; larger work goes into the plan.
 
 ## Steps
 
-1. **Store the letter** in the project files and add its README row. Check that the repository diff does not contain it (`git diff | grep -c` for a distinctive Hungarian phrase gives 0).
-2. **Read against the last report.** Open the status e-mail the reply answers and the open actions of the previous entry; note which of them the reply closes, keeps or changes.
-3. **Write the entry** in English: assessment, decisions, actions. Name the commit the supervisor reviewed when the letter gives it.
-4. **Carry the actions.** For each action, add or change the line in the roadmap (and a change-log row when it changes the plan), the milestone file, the design or ADR, and the thesis map; put the location in the action's brackets.
-5. **Apply the decisions.** ADR status, design status ("approved by the supervisor on ..."), and a roadmap change-log row for each.
-6. **Check.** `python .claude/skills/docs-and-comments/check_docs.py` prints OK (the new anchors resolve); the leak search of the session-wrap-up skill finds no e-mail address.
+1. **Read and split.** Read the whole letter once. Split it into points and label each: assessment (praise, a judgement, a review of a commit), decision (an ADR accepted or rejected, a scope or priority change), action (work asked for, with its due date or milestone), question to the author, or aside. Note which commit the supervisor reviewed, if the letter says so.
+2. **Write the entry.** At the top of `supervisor-feedback.md`, newest first:
+   - **Assessment:** what was reviewed (the commit, the screens, the tests run) and the judgements, in bullets.
+   - **Decisions:** each in bold with its consequence ("**ADR 0012 accepted:** ... Status set to Accepted.").
+   - **Actions:** one checkbox each, a bold short name, then what is asked, in the supervisor's order; add the reference when it refines an earlier action ("Refines C3 of 2026-11-11"). After each, in brackets with today's date, where it was carried: "(2026-11-23: planned in the roadmap, Nov 25; noted in the M2 checklist.)"
+   - Earlier entries: an open action that this letter closes, changes or drops gets a dated note in brackets; never rewrite its text.
+3. **Carry each point.** For each decision and action, update what it touches, as the earlier intakes did:
+
+   | Point | Where it goes |
+   | --- | --- |
+   | ADR accepted, rejected or changed | the ADR's status and a consequence line; the index in `docs/architecture/decisions/README.md` |
+   | New or reordered work | `docs/planning/roadmap.md` (the week's line and a change-log row "Supervisor replied ...") and the current plan (for example `m2-closing-schedule.md`) |
+   | A milestone criterion added, changed or confirmed | the milestone file's acceptance criteria or checklist, with a dated note |
+   | A design rule or UX principle | the design doc it concerns (`docs/design/...`) and the design views when it changes a view |
+   | Security or privacy rule | `docs/architecture/security-and-privacy.md`, and the ADR it refines |
+   | Something for the thesis (a chapter, a defence question, the skills of the methods chapter) | the [thesis map](../../../docs/thesis-map.md) |
+   | A future-work idea | the roadmap's "Future work (options beyond the committed scope)" section, marked as the supervisor's |
+
+4. **Check the open actions.** Read every unticked action of earlier entries: is each still in the plan with a date? An action without a place is either carried now or listed as a question for the author.
+5. **Report and ask.** Give the author the action table and the questions; record the author's answers as author decisions in `docs/ai-usage.md` when the session is wrapped up.
+6. **Wrap up** with the [session-wrap-up](../session-wrap-up/SKILL.md) skill: time log, AI-usage log (one row for the intake), one pull request. The pull request's title names the letter's date and its main decision.
+
+## Self-check
+
+- Every point of the letter appears in the entry, labelled, and every action has a dated "where it was carried" note.
+- `git diff` touches the files the table names for each point, and no file the letter does not concern.
+- No sentence of the letter is copied beyond a short marked phrase; no e-mail address or name other than the supervisor's (already in the file's header); the leak search of session-wrap-up finds nothing.
+- `python .claude/skills/docs-and-comments/check_docs.py` prints `OK` (the new links resolve).
 
 ## Human checkpoints
 
-1. **Before** writing a decision or an action whose meaning is not clear from the letter: ask the author.
-2. **After**: the author reads the entry and the carried actions in the session's pull request before it is merged.
+1. **Before** writing an action whose meaning or due date is unclear: ask the author, quoting the point in a few words.
+2. **Before** applying a change of scope, of a milestone date or of a priority that moves planned work: the author confirms, and the confirmation is recorded as an author decision.
+3. **After**: the author reads the entry before the pull request is merged; the next status e-mail answers each open action (supervisor-status-email skill, step 1).
 
 ## Change log
 
 | Version | Date | Change |
 | --- | --- | --- |
-| 1.0 | 2026-11-24 | First version, from the processing of the replies of 2026-11-16 and 2026-11-23 (PRs of those days). |
+| 1.0 | 2026-11-24 | First version, from the intakes of the replies of 2026-11-16 (commit 4318f7e) and 2026-11-23 (PR #37) and the entry format of `supervisor-feedback.md`. |

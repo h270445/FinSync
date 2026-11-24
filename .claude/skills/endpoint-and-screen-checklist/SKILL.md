@@ -38,21 +38,19 @@ If the request does not say who may call the route, what a member of another gro
 ### Backend
 
 - [ ] Service method in `finsync/core/service.py` that starts with `self.ensure_authorized(user_id, group_id)`; writes go through one transaction so a failure leaves the database unchanged.
-- [ ] Storage method in `finsync/storage/database.py` (SQLAlchemy Core, `?` placeholders) that filters by `group_id`; returns `None` (mapped to `NotFoundError`) for an id outside the group. A service method that looks up an event or record does so **before** any other check that could refuse (for example "no model configured"), so a foreign id answers `404`, not `409` (seen on 2026-11-24 with `llm-suggestion`).
-- [ ] A schema change is a hand-written Alembic revision in `finsync/storage/migrations/versions/NNNN_<name>.py` with `upgrade()` and a `downgrade()` that works on SQLite (`batch_alter_table`), and a docstring that says what each new column means. This needs checkpoint 1. Then:
-  - the record dataclasses and `_TRANSACTION_COLUMNS` (or the matching list) in `database.py` know the new columns;
+- [ ] Storage method on `StorageSession` in `finsync/storage/database.py` that filters by `group_id`, in SQL that both SQLite and PostgreSQL accept (`?` placeholders; a dialect difference stays in `database.py`); returns `None` (mapped to `NotFoundError`) for an id outside the group. A service method that looks up an event or record does so **before** any other check that could refuse (for example "no model configured"), so a foreign id answers `404`, not `409` (seen on 2026-11-24 with `llm-suggestion`).
+- [ ] A schema change is a new hand-written Alembic revision `finsync/storage/migrations/versions/NNNN_<name>.py` (next number, `down_revision` the previous head, a working `downgrade()`). This needs checkpoint 1. A revision that changes existing rows (renames, defaults computed from old data) gets a test in `tests/test_storage_schema.py` that downgrades a filled database with `_downgrade` and opens it again (see `test_revision_0004_renames_housing_to_housing_utilities`); a revision that only adds tables or columns is covered by the existing schema tests. Update the schema table and the revision list in `finsync/storage/README.md`, and run the suite on PostgreSQL too (`python tests/run_on_postgres.py <url>`) when one is available; otherwise report it as not run.
   - the pre-Alembic upgrade (`_migrate_to_2`) never calls storage methods that read new columns: it uses plain SQL (seen on 2026-11-24);
-  - the legacy-database tests that strip later revisions by hand (`tests/test_auth.py`, `tests/test_sessions.py`) drop the new tables, indexes (before their columns) and columns;
-  - the whole suite runs on PostgreSQL too (`python tests/run_on_postgres.py <url>`);
-  - the schema table in `finsync/storage/README.md` names the revision.
+  - the legacy-database tests that strip later revisions by hand (`tests/test_auth.py`, `tests/test_sessions.py`) drop the new tables, indexes (before their columns) and columns.
 - [ ] Route in `finsync/api/server.py` with `caller: Caller`, a Pydantic `...In` model for the body and a `...Out` model as the return type, so the OpenAPI schema is complete. Errors are raised as the core exceptions (`ValueError` → 400, `NotFoundError` → 404, `ConflictError` → 409, `AuthorizationError` → 403), not as `HTTPException`.
 - [ ] A route that must work without an API token (for example signing in) is an authentication change: checkpoint 1. It is kept out of `ENDPOINTS`, gets its own tests (including that it never reveals whether a member exists), and the OpenAPI test is extended to name it as the exception to bearer security.
-- [ ] A body that can exceed 64 KiB in normal use is a design question (only `/v1/transactions/bulk` has the 1 MiB limit). Ask instead of raising the limit.
+- [ ] Every `POST`, `PUT` and `PATCH` body is limited to 64 KiB (`MAX_BODY_BYTES`, `_BODY_METHODS` in `finsync/api/server.py`); only `/v1/transactions/bulk` and `/v1/imports` have 1 MiB (`_LARGE_BODY_PATHS`). A body that can exceed 64 KiB in normal use is a design question: ask instead of raising the limit. A route with a new method (for example the first `DELETE` with a body) checks that `_BODY_METHODS` counts it.
 
 ### Tests
 
 - [ ] The route is added to `ENDPOINTS` in `tests/test_auth.py` (path parameters as `{event}`/`{decision}`, or extend the replacement in `test_every_route_is_listed`). A POST route also gets its body in `_body`, and `test_another_groups_member_cannot_read_or_change_group_1` gets the expected answer for it (404 for a foreign id, 200 without group 1 data for a list, 201 into the caller's own group for a create).
 - [ ] Behaviour tests in the test file of the feature (`test_review.py`, `test_finsync_service.py`, ...): the normal case, the empty case, and the database left unchanged after a refused write.
+- [ ] A `PUT` or `PATCH` route gets an oversized-body case next to the `POST` ones in `tests/test_api_limits.py` (413, see the `PUT /v1/merchant-rules/1` lines in `test_a_body_over_the_limit_is_refused_with_413`).
 - [ ] A route with a body gets a malformed-body case in `test_malformed_requests_get_a_clear_400` (`tests/test_api_limits.py`).
 - [ ] A new response model is used by the route, so `test_the_openapi_schema_describes_what_the_api_does` covers it (no 422, bearer security on every operation).
 
@@ -66,8 +64,9 @@ If the request does not say who may call the route, what a member of another gro
 
 - [ ] Query or mutation hook in `web/src/api/queries.ts`; a mutation that changes events, reviews or totals invalidates the affected queries (review actions use `useInvalidateAll`).
 - [ ] Page in `web/src/pages/`, wired in `web/src/App.tsx` in place of its `PlaceholderPage` route.
-- [ ] Loading, error and empty states with `LoadingRows`, `ErrorState` and `EmptyState` from `web/src/components/states.tsx`; a refused action says why in Hungarian: known answers (`400`, `403`, `409`) get their own Hungarian text, the backend's English message is only the fallback for the unexpected.
-- [ ] No state set synchronously in an effect to copy query data into a form (oxlint `react(set-state-in-effect)`): start the form from the data in a child component keyed by the saved version (seen on 2026-11-24 on the W8 LLM card).
+- [ ] Loading, error and empty states with `LoadingRows`, `ErrorState` and `EmptyState` from `web/src/components/states.tsx`; a refused action shows a Hungarian message (map the backend's English `error` text for the expected 400, 403 and 409 cases, as `saveRefusal` in `web/src/components/LlmSettingsCard.tsx` does; show the backend text only as a fallback).
+- [ ] No state copied from props or query data in a `useEffect` (the linter refuses `setState` in an effect): derive the value during render, or start a form from saved data by giving its component a `key` that changes with that data (see `LlmSettingsForm` in `web/src/components/LlmSettingsCard.tsx`).
+- [ ] A page file exports only its component; helpers it needs elsewhere go to `web/src/lib/` (the linter warns on other exports from a component file, seen on W6).
 - [ ] Hungarian labels, Hungarian number and date formatting through `web/src/lib/format.ts`.
 - [ ] Vitest test next to the page (`*.test.tsx`, see `ReviewPage.test.tsx`) for the behaviour that matters: the main action, a refusal, the empty state.
 - [ ] Usable at 360 px wide and at 1280 px (screenshots when a browser is available).
@@ -105,4 +104,4 @@ Then read the diff once more against the prohibitions, specifically: every new S
 | --- | --- | --- |
 | 1.0 | 2026-11-12 | First version, derived from the W4 decision history change (PR #25) and the token and size-limit tests. |
 | 1.1 | 2026-11-12 | After the first use (web sign-in): a line for routes without a token, and how to regenerate the OpenAPI snapshot with its Pydantic version. |
-| 1.2 | 2026-11-24 | After the category correction, the live LLM flow and the W8 LLM card: storage lines follow the SQLAlchemy and Alembic switch (`database.py`, revisions, legacy-strip tests, PostgreSQL run) instead of `sqlite.py` and `SCHEMA_VERSION`; lookup before other refusals so a foreign id stays `404`; Hungarian refusal texts; the effect-state lint rule. |
+| 1.2 | 2026-11-24 | Storage lines follow the Alembic switch (`database.py`, revisions, upgrade test only for revisions that change data, PostgreSQL run); the body limit covers `PUT` and `PATCH` and names both 1 MiB paths; Hungarian messages for refusals; the two lint rules met on W6 and W8 (state in an effect, extra exports from a page file). Lookup before other refusals so a foreign id stays `404`; the pre-Alembic upgrade and the legacy-strip tests. From the skill-usage log of 2026-11-14, 11-19 and 11-24. |

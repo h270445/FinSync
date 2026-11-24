@@ -1,78 +1,118 @@
 ---
 name: milestone-package
-description: Use when closing a FinSync milestone (M2, M3, M4) before its e-mail, for example "put together the M2 package". Runs the full checks on both databases, ticks the acceptance criteria only with evidence, writes the English release notes docs/releases/vX.Y.Z.md and prepares the tag for the author.
+description: Use when a FinSync milestone package is put together (M2 preliminary package and close, M3, M4), before the status e-mail. Runs every gate on the commit to be submitted, walks the acceptance criteria with evidence, writes the release notes (docs/releases/vX.Y.Z.md) and the fix log, and prepares the tag for the author. Includes a release-notes checker.
 ---
 
 # Milestone package
 
 - Version: 1.0 (2026-11-24)
 - Owner: Bence Varga
-- Why it exists: every milestone ends the same way (M1 on 2026-11-02, M2 on 2026-11-27 and 2026-12-04, M3 on 2026-01-15, M4 on 2026-01-30): full tests, acceptance criteria ticked with evidence, release notes, tag, then the status e-mail. The [supervisor-status-email](../supervisor-status-email/SKILL.md) skill takes the release notes as its input, but nothing fixed how they are made; at M1 this was done from memory. This skill is that missing step, so a "done" in the e-mail always has a tested commit behind it.
+- Why it exists: each milestone ends with a package the supervisor reviews: a commit that passes every test, acceptance criteria ticked with evidence, release notes, a tag and an e-mail. Three of them fall within two months (M2 preliminary package on 2026-11-27 and close on 2026-12-04, M3 on 2027-01-15, M4 on 2027-01-30). Until now only a schedule line and the four steps in [milestones/README.md](../../../docs/planning/milestones/README.md) described it; the [supervisor-status-email](../supervisor-status-email/SKILL.md) skill takes the release notes as input, but nothing said how they are made or checked. Writing the notes from memory risks claims that the commit does not hold.
 
 ## Input
 
-- The milestone (M2, M3, M4), its file in `docs/planning/milestones/`, the version (`v0.3.0` for M2, then one minor version per milestone) and the commit the package describes (normally the head of the session's branch; after the merge, the merge commit on `main`).
-- The previous release notes (`docs/releases/v0.2.0.md` is the model), the [roadmap](../../../docs/planning/roadmap.md), the open actions in [supervisor-feedback.md](../../../docs/planning/supervisor-feedback.md) and the results in `docs/evaluation/results/`.
+- The milestone (M2, M3, M4) and the stage: **package** (everything ready for review, no tag yet; M2's preliminary package of Nov 27) or **release** (the author merged, the tag is set; M2's close on Dec 4, M3, M4).
+- The milestone file in `docs/planning/milestones/`, the previous tag (`git tag`), the open pull requests (`gh pr list`), the supervisor's open actions in `docs/planning/supervisor-feedback.md`, and for M4 the M3 feedback.
 
 ## Output
 
-1. The milestone file with every acceptance criterion and checklist line either ticked with its evidence (link, test name, result file, date) or left open with what is missing in brackets.
-2. `docs/releases/vX.Y.Z.md` in English, in the order of v0.2.0: what works, how to verify (commands with the test counts they print), measurements (numbers copied from the result files, with links), known limitations, what changed in the plan, decisions recorded (ADRs). A row in `docs/releases/README.md`.
-3. Updated API reference, security status and getting-started guide where the milestone changed them (the closing schedule names them).
-4. A report in the reply: the gate results with counts, the criteria table (criterion, ticked or open, evidence), the commands the author runs to tag after the merge, and the handover to the supervisor-status-email skill.
+1. `docs/releases/vX.Y.Z.md` from the template in [releases/README.md](../../../docs/releases/README.md), a row in its index, and for M4 `docs/releases/fix-log.md`.
+2. The milestone file with every acceptance criterion and checklist line either ticked with its evidence or annotated with what is open and where it moved; `Status:` updated.
+3. A short report in the reply: the gate table (command, result line, commit), the criterion–evidence table, what is open, the tag command for the author, and what the status e-mail needs.
 
 ## Prohibitions
 
-- **Never set or push a tag.** The tag is set by the author on `main` after the merge; the skill only writes the command. Never push to `main` and never merge.
-- Never call a criterion done without evidence that a reader can open: a test that runs, a result file, a screenshot kept outside the repository and described, or a merged pull request. A criterion met only in part stays unticked, with what is done in brackets (as the [session-wrap-up](../session-wrap-up/SKILL.md) rule says).
-- Never copy a number into the release notes from memory or from an earlier e-mail: every count comes from a command run in this session, every measurement from its result file.
-- Never describe the package from a dirty tree: `git status --short` is empty before the gates, so the counts belong to a commit.
-- Never put a model identifier, an e-mail address, a token or real financial data in the release notes; the measured model is named only in the result files, as before.
-- Never change the plan's dates or scope to make a criterion look met; a criterion that moves is a plan change with its own roadmap change-log row and the author's decision.
+- **Never create, push, move or delete a tag** without the author's explicit go in the same session. The author tags the merged `main` commit; an existing tag is never moved (a fix gets the next patch version).
+- Never claim in the notes what the commit does not hold: "works" only for merged, tested work with a test, a result file or a screen behind it. Planned work goes to "Known limitations" or the next milestone, never to "What works".
+- Never tick a criterion that is partly met (the session-wrap-up rule); write what is done in brackets with the date.
+- Never copy a number into the notes that was not produced by a command on this commit or read from a committed result file; never edit a committed result file or the notes of an earlier tag (a correction goes into the next notes or the fix log).
+- Never hide a failed or skipped gate. A gate that cannot run here (PostgreSQL, Android, the browser) is reported as not run, with the last commit on which it passed.
+- Synthetic data only in commands and examples; no e-mail address, token or account number; no model identifier except the measured product setting already named in a result file.
+- Never send the e-mail; the [supervisor-status-email](../supervisor-status-email/SKILL.md) skill drafts it and the author sends it.
 
 ## Steps
 
-1. **Clean tree and the commit.** `git status --short` empty; `git log -1 --format='%H %ad'` gives the commit the package describes.
-2. **Gates, on both databases.** Copy each result line into the report; a gate that cannot run is reported as not run.
+### 1. Scope
 
-   ```bash
-   python -m unittest discover -s tests                                  # SQLite, all OK
-   python tests/run_on_postgres.py "$FINSYNC_TEST_DATABASE_URL"          # PostgreSQL, all OK (skips named)
-   python .claude/skills/docs-and-comments/check_docs.py                 # OK
-   python .claude/skills/session-wrap-up/check_time_log.py               # OK
-   python -m finsync.api --openapi | diff - web/openapi.json             # empty
-   cd web && npm run lint && npm test && npm run build                   # no errors
-   ```
+1. Read the milestone file and list each acceptance criterion and checklist line with its current state.
+2. Collect the changes since the previous tag: `git log <previous tag>..origin/main --merges --format='%s'` and the open pull requests that the package depends on. A package built on unmerged work names those pull requests; the author merges them first, in order.
+3. List the supervisor's open actions that this milestone was asked to answer.
 
-   Re-run each evaluation the release notes quote from its cache or dataset (for example `python -m finsync.evaluation` and `python -m finsync.evaluation.hybrid` without `--call-llm`) and check that the numbers equal the committed result file; a difference stops the package.
-3. **Criteria.** Go through the milestone file line by line. For each: the evidence, or what is missing. Ask the author about a criterion whose evidence is their own step (a demo dry run, a real-phone test, reading a report) instead of assuming it.
-4. **Release notes.** Write `docs/releases/vX.Y.Z.md` from the ticked criteria, the commits since the previous tag (`git log vPREV..HEAD --oneline`) and the result files; known limitations come from the open lines and the docs' "not built" notes, never left out to make the release look complete.
-5. **Guides.** Update the API reference, the security status and the getting-started guide where the milestone changed them; run the docs checker again.
-6. **Tag command.** In the report, the commands for the author after the merge:
+### 2. Gates on the commit to be submitted
 
-   ```bash
-   git checkout main && git pull
-   git tag -a vX.Y.Z -m "MN: <milestone title>" <merge commit>
-   git push origin vX.Y.Z
-   ```
+Run on a clean tree (`git status --short` empty apart from untracked IDE folders) and write the commit id (`git rev-parse HEAD`) next to every result.
 
-7. **Handover.** The release notes and the merge commit are the input of the supervisor-status-email skill; the e-mail is drafted after the author has merged, so it can name the tag and the commit.
+```bash
+python -m unittest discover -s tests                        # count and OK
+python tests/run_on_postgres.py <url>                       # when a PostgreSQL 16 is reachable; otherwise "not run"
+cd web && npm ci && npm run lint && npm test && npm run build && cd ..
+python .claude/skills/docs-and-comments/check_docs.py       # OK
+python -m finsync.api --openapi | diff - web/openapi.json   # empty
+python -m finsync.evaluation --out <tmp>/matching.md        # the same numbers as the result file the notes quote (non-LLM runners)
+```
+
+Every result file the notes quote is reproduced this way, or from its LLM answer cache with no new calls, and the diff is reported. The Android unit tests and the emulator run happen only on the author's computer ([android-emulator-e2e](../android-emulator-e2e/SKILL.md)); report the date and commit of the last run if this session cannot run them.
+
+### 3. Fresh clone (M3 and M4; optional for M2)
+
+Clone the commit into an empty temporary folder and follow [getting-started.md](../../../docs/guides/getting-started.md) word for word: virtual environment, install, tests, API, web app. Every step that needed something the guide does not say is a fix to the guide in this session. M3's first criterion asks for this on a clean machine; a fresh clone in this environment is the evidence until the author tries it on another computer.
+
+### 4. Acceptance criteria with evidence
+
+For each criterion: the evidence (test name, result file, doc section, PR) or what is missing. A missing item is either finished in this session (if small and in scope) or moved: the author decides (checkpoint 1), the roadmap gets a change-log row, the next milestone file gets the item. Also check that the docs the milestone names describe the code: the endpoint table of `docs/guides/api.md` against the paths in `web/openapi.json`, the status list of `docs/overview.md`, `docs/architecture/security-and-privacy.md`, `docs/guides/getting-started.md`, every ADR's status, and the [thesis map](../../../docs/thesis-map.md).
+
+### 5. Release notes
+
+Write `docs/releases/vX.Y.Z.md` from the template:
+
+- **Title and header:** `# vX.Y.Z — Mn: <milestone name>`, `- Date:` (the day the package goes out), `- Commit:` "the `main` commit tagged `vX.Y.Z` (the merge of #N); the full id is in the e-mail and on the tag". The full id cannot be written into the file it identifies; [v0.2.0.md](../../../docs/releases/v0.2.0.md) set the pattern. In the package stage write "the `main` commit after #N is merged; the tag is set at the close".
+- **What works:** one bullet per capability, each with the endpoint, screen or command and a link to its test or doc. Lead with what the milestone's expected result asks for.
+- **How to verify:** the commands of step 2 with the counts just measured, the demo ([demo guide](../../../docs/guides/demo.md)) and where the sign-in comes from (the demo seed prints it; no password in the notes).
+- **Measurements:** link every result file and copy its headline table with the baseline row, unchanged.
+- **Known limitations:** honest and specific: open criteria, gates not run, ADR consequences not yet done, known bugs with their files. A reviewer should not find a limitation the notes do not name.
+- **Changes since the previous milestone:** the merged pull requests from step 1, `#N Title`, oldest first.
+
+Add the index row in `docs/releases/README.md`. For M4, write `docs/releases/fix-log.md` from its template: one row per point of the M3 feedback, with the change and the commit or PR; a point not acted on says why.
+
+Run the checker; it must print `OK` (in the release stage with `--release`):
+
+```bash
+python .claude/skills/milestone-package/check_release.py vX.Y.Z            # package stage
+python .claude/skills/milestone-package/check_release.py vX.Y.Z --release  # after the author set the tag
+```
+
+### 6. Tag (release stage, the author)
+
+After the author merged the session's pull request, give the commands, run on `main` at the merge commit:
+
+```bash
+git switch main && git pull
+git tag -a vX.Y.Z -m "Mn: <milestone name>"
+git push origin vX.Y.Z
+git rev-parse vX.Y.Z^{commit}     # the full id for the e-mail
+```
+
+Then confirm `git rev-parse vX.Y.Z^{commit}` equals the merge commit, re-run the Python tests on the tag (`git worktree add <tmp> vX.Y.Z`), and set the milestone file's `Status:` to done in the next session's pull request.
+
+### 7. Hand over to the e-mail
+
+Start the [supervisor-status-email](../supervisor-status-email/SKILL.md) skill with the notes, the tag (or, in the package stage, the merge commit), the gate table and the criterion–evidence table. The e-mail's claims are the notes' claims.
 
 ## Self-check
 
-- Every ticked line in the milestone file has a link or a test name.
-- Every number in the release notes appears in a command output of this session or in a linked result file.
-- The release notes list the known limitations and the open criteria.
-- `git diff --stat` shows only the milestone file, the release notes and their README, the guides and the logs.
+- Every bullet in "What works" has a link, and every number in the notes appears in a gate output or a committed result file.
+- `check_release.py` prints `OK`; `check_docs.py` prints `OK`.
+- The milestone file has no unexplained open box: each is ticked, annotated, or moved with a roadmap change-log row.
+- The leak search of the [session-wrap-up](../session-wrap-up/SKILL.md) skill finds nothing new in the notes.
 
 ## Human checkpoints
 
-1. **Before** ticking a criterion that rests on the author's own step: ask the author.
-2. **Before** the release notes go into the pull request: the author reads the criteria table.
-3. **After** the merge: the author sets and pushes the tag, then the status e-mail is drafted.
+1. **Before** moving a criterion to a later milestone or dropping it: the author decides; the reason goes into the roadmap change log.
+2. **Before** the tag: the author reads the notes and merges; only the author tags (or gives an explicit go).
+3. **After** the supervisor's reply to the package: its points go through the [supervisor-feedback-intake](../supervisor-feedback-intake/SKILL.md) skill; for M3 they become the M4 fix log.
 
 ## Change log
 
 | Version | Date | Change |
 | --- | --- | --- |
-| 1.0 | 2026-11-24 | First version, from the M1 package (v0.2.0, 2026-11-02) and the Friday step of the [M2 closing schedule](../../../docs/planning/m2-closing-schedule.md), before the M2 package of 2026-11-27. |
+| 1.0 | 2026-11-24 | First version, before the M2 preliminary package of 2026-11-27, from the M1 release (v0.2.0), the delivery steps in the milestones README and the M2 closing schedule. |
