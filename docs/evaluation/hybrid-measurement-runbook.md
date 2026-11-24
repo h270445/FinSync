@@ -8,7 +8,7 @@ Approved by the author on 2026-11-19: model `claude-haiku-5-5`, the 200-item dat
 
 Either:
 
-- **Cloud environment:** the project settings in Claude Code → Cloud environment → gear → environment variable `ANTHROPIC_API_KEY`. Everyone who uses the environment, and commands in its sessions, can read it. Only a session started after the change sees it.
+- **Cloud environment:** the project settings in Claude Code → Cloud environment → gear → environment variable `FINSYNC_ANTHROPIC_API_KEY`. Not `ANTHROPIC_API_KEY`: a cloud session does not pass that name on to its commands (found on 2026-11-24), and it points `ANTHROPIC_BASE_URL` at its own proxy, so the runner sends the FinSync-specific key to `https://api.anthropic.com` explicitly. Everyone who uses the environment, and commands in its sessions, can read it. Only a session started after the change sees it.
 - **Own computer:** set `ANTHROPIC_API_KEY` in the shell (PowerShell: `$env:ANTHROPIC_API_KEY = "..."`) and run the steps below there.
 
 Never commit the key or paste it into a chat.
