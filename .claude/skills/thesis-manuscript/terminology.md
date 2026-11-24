@@ -22,8 +22,8 @@ The Hungarian word the manuscript uses for each FinSync concept, the same as the
 | uncertain | bizonytalan | UI: "Csak bizonytalan kategóriák" |
 | mixed purchase | vegyes vásárlás | UI: "Vegyes vásárlás" |
 | category lines | kategóriasorok, felosztás | UI: "Felosztás kategóriákra" |
-| merchant rule | kereskedői szabály | the group's merchant memory |
-| own-account transfer | saját számlák közötti átutalás | left out of the totals |
+| merchant rule | csoportszabály | the group's merchant memory; UI source label "csoportszabály"; "kereskedői szabály" only as an explanation at first use |
+| own-account transfer | átvezetés (saját számlák között) | UI: "Átvezetés"; left out of the totals |
 | income | bevétel | never an uncertain category |
 | group, member, admin | csoport, tag, adminisztrátor | |
 | API token | API-token | the phone's long-lived credential |
