@@ -18,6 +18,7 @@ Each significant, hard-to-reverse decision gets one short record: the context, t
 | [0010](0010-web-sign-in.md) | Web sign-in: e-mail or member id, scrypt password hash, HttpOnly session cookie | Accepted |
 | [0011](0011-llm-categorization-layer.md) | LLM categorization layer: one provider behind an interface, confidence from five samples | Accepted |
 | [0012](0012-no-multi-factor-authentication.md) | No multi-factor authentication in the thesis scope; step-up re-authentication as the next step | Accepted |
+| [0013](0013-llm-in-the-live-flow.md) | LLM in the live flow: off by default, members first, a monthly budget, only the record text leaves | Proposed |
 
 ## Template
 
