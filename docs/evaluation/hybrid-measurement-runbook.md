@@ -1,6 +1,6 @@
 # Runbook: the paid hybrid categorizer measurement
 
-Everything the measurement needs is in place (2026-11-19). The only missing piece is the API key, which the author gives in the week of Nov 23. Decisions behind it: [ADR 0011](../architecture/decisions/0011-llm-categorization-layer.md). Protocol: [dev-test-evaluation skill](../../.claude/skills/dev-test-evaluation/SKILL.md).
+Run on 2026-11-24 from a cloud session with `FINSYNC_ANTHROPIC_API_KEY`: [report](results/2026-11-24-categorization-hybrid.md). The steps stay here for a re-run or a self-hosted model. Decisions behind it: [ADR 0011](../architecture/decisions/0011-llm-categorization-layer.md). Protocol: [dev-test-evaluation skill](../../.claude/skills/dev-test-evaluation/SKILL.md).
 
 Approved by the author on 2026-11-19: model `claude-haiku-5-5`, the 200-item dataset with five samples per record that needs the LLM (390 calls, estimated USD 0.04), a budget of USD 2, and the threshold rule (highest dev coverage with at most 5 % wrong settled answers, ties to the higher threshold).
 

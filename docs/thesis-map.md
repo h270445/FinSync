@@ -32,7 +32,7 @@ Questions the committee is likely to ask, and where the answer is backed. A ques
 | How is sensitive financial data protected? | [Security and privacy](architecture/security-and-privacy.md), ADRs [0009](architecture/decisions/0009-api-tokens.md), [0010](architecture/decisions/0010-web-sign-in.md); *open*: the December security evaluation |
 | Why scrypt and not Argon2? | [ADR 0010](architecture/decisions/0010-web-sign-in.md) |
 | Why no multi-factor authentication? | [ADR 0012](architecture/decisions/0012-no-multi-factor-authentication.md) |
-| Rules or LLM for categorization? | [Categorization design](design/categorization.md), [baseline result](evaluation/results/2026-11-08-categorization-rules.md); *open*: the hybrid categorizer measurement (coverage–accuracy curve, latency, cost; Nov 23–27) |
+| Rules or LLM for categorization? | [Categorization design](design/categorization.md), [baseline result](evaluation/results/2026-11-08-categorization-rules.md), [hybrid categorizer measurement](evaluation/results/2026-11-24-categorization-hybrid.md) (coverage–accuracy curve, latency, cost; Nov 24, to be read by the author before it is quoted) |
 | Do the totals count a purchase twice? | *open*: W2 overview built on deduplicated events, transfers within the group excluded, items waiting for review flagged (M2) |
 | Is the work balanced (volume, UI, algorithmic depth)? | [Supervisor feedback, 2026-11-16](planning/supervisor-feedback.md#2026-11-16--reply-to-the-weekly-report-of-nov-915): volume outstanding, L3–L4 complexity, G3 UI closed by W2 and W8 |
 | How was AI used, and how was its output checked? | [AI usage](ai-usage.md), [agent skills](../.claude/skills/README.md) |
