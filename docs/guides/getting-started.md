@@ -67,6 +67,8 @@ python -m finsync.api.passwords set --user demo-user --email demo@example.com
 
 With the API running, see [web/README.md](../../web/README.md): `npm install` and `npm run dev` in `web/`, then sign in with `demo@example.com` or `demo-user` and the password.
 
+For a ready-made group with synthetic data, `python -m finsync.api.demo --db demo.db` seeds one and prints the sign-in; the [demo guide](demo.md) walks through it.
+
 ## Run the tests
 
 ```bash

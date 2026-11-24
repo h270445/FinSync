@@ -4,3 +4,6 @@ __pycache__/
 
 # Python virtual environment
 .venv/
+
+# Written by python -m finsync.api.demo
+demo-bank-export.csv
