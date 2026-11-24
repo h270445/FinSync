@@ -142,6 +142,8 @@ class RequestLimitTest(unittest.TestCase):
             "lines not a list": ("/v1/events/1/category-lines", {"lines": "groceries"}),
             "line without amount": ("/v1/events/1/category-lines", {"lines": [{"category": "groceries"}]}),
             "transfer missing": ("/v1/events/1/transfer", {}),
+            "llm setting without mode": ("/v1/llm-settings", {"hours_after": 24}),
+            "llm hours not a number": ("/v1/llm-settings", {"mode": "after_arrival", "hours_after": "sok"}),
         }
         for name, (path, body) in cases.items():
             with self.subTest(name):

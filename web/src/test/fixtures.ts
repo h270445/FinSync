@@ -36,6 +36,8 @@ export const event = (overrides: Partial<FinSyncEvent> = {}): FinSyncEvent => ({
   lines: [],
   lines_match_amount: null,
   remember_merchant: null,
+  category_agreement: null,
+  llm_due_at: null,
   primary_transaction_id: 1,
   review_state: 'clear',
   transactions: [record()],

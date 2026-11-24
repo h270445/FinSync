@@ -101,6 +101,24 @@ describe('EventDetailPage category card', () => {
     })
   })
 
+  it('asks the model for a suggestion and shows its agreement', async () => {
+    const fetchMock = serve(event({ llm_due_at: '2026-11-25T19:00:00+00:00' }))
+    renderPage()
+
+    expect(await screen.findByText(/11\. 25\. 20:00 után javasol/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Kérj javaslatot a modelltől' }))
+    const asked = fetchMock.mock.calls.map(([call]) => call).find((call) => call.method === 'POST')
+    expect(new URL(asked!.url).pathname).toBe('/v1/events/1/llm-suggestion')
+  })
+
+  it('says how many model answers agreed', async () => {
+    serve(event({ category: 'clothing', category_source: 'llm', category_confidence: 'high', uncertain: false, category_agreement: 0.8 }))
+    renderPage()
+
+    expect(await screen.findByText('Forrás: nyelvi modell (4/5 modellválasz egyezett) · biztos')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Kérj javaslatot a modelltől' })).not.toBeInTheDocument()
+  })
+
   it('marks the purchase as mixed', async () => {
     const fetchMock = serve(event())
     renderPage()

@@ -28,7 +28,9 @@ from finsync.categorization import (
     validate_rule,
 )
 from finsync.categorization.dictionary import find_merchant
-from finsync.categorization.hybrid import HIGH
+from finsync.categorization.hybrid import HIGH, CategoryDecision
+from finsync.categorization.llm import LlmCategorizer, combine, cost_usd
+from finsync.core.llm_schedule import LLM_THRESHOLD, month_start, next_due, validate_settings
 from finsync.core.overview import Overview, build_overview, is_uncertain, lines_add_up, parse_month
 from finsync.ingestion import ColumnMapping, ImportRow, RowError, parse_export, parse_notification, parse_xlsx
 from finsync.ingestion.csv_import import normalize_content
@@ -51,6 +53,7 @@ from finsync.storage import (
     ROLES,
     EventRecord,
     FinSyncStorage,
+    LlmSettingsRecord,
     MerchantCategoryRecord,
     OwnAccountRecord,
     StorageSession,
@@ -127,6 +130,21 @@ class CategoryCorrection:
 
 
 @dataclass(frozen=True)
+class LlmStatus:
+    """A group's LLM setting with what the month has cost so far and whether the server has a model."""
+
+    settings: LlmSettingsRecord
+    spent_this_month_usd: Decimal
+    budget_exhausted: bool
+    available: bool
+    model: str | None
+
+
+class LlmUnavailable(ConflictError):
+    """No model is configured on this server, or the group's monthly budget is used up."""
+
+
+@dataclass(frozen=True)
 class ImportResult:
     """A file import or its preview. `results` is empty for a preview or a file that was already imported."""
 
@@ -138,8 +156,11 @@ class ImportResult:
 
 
 class FinSyncService:
-    def __init__(self, storage: FinSyncStorage) -> None:
+    def __init__(self, storage: FinSyncStorage, llm: LlmCategorizer | None = None) -> None:
+        """`llm` is the LLM layer the server was started with (finsync/api/server.py builds it when an API
+        key is configured); without it the scheduled runs and "ask for a suggestion now" are unavailable."""
         self._storage = storage
+        self._llm = llm
 
     def ensure_authorized(self, user_id: str, group_id: str) -> None:
         if not self._storage.is_user_in_group(user_id, group_id):
@@ -370,6 +391,14 @@ class FinSyncService:
 
     @staticmethod
     def _store_and_match(session: StorageSession, record: dict[str, Any]) -> StoreResult:
+        """Store one record and link it to an event, then give the event its LLM due time if the group's
+        setting asks for one."""
+        result = FinSyncService._match_and_store(session, record)
+        _schedule_llm(session, record["group_id"], result.event_id)
+        return result
+
+    @staticmethod
+    def _match_and_store(session: StorageSession, record: dict[str, Any]) -> StoreResult:
         """Store one record and link it to an event, writing the decision that explains the link."""
         group_id = record["group_id"]
         _classify(session, record)
@@ -582,6 +611,7 @@ class FinSyncService:
                 )
                 new["merchant_rule"] = {"outcome": outcome, "merchant_key": key}
             session.insert_category_change(group_id, event_id, "category", old, new, user_id)
+            _schedule_llm(session, group_id, event_id)  # decided: no longer due
             updated = _event_in_group(session, group_id, event_id)
         rule = self._storage.get_merchant_category(group_id, rule_id) if rule_id is not None else None
         return CategoryCorrection(updated, outcome, rule)
@@ -619,6 +649,7 @@ class FinSyncService:
                 main = max(parsed, key=lambda line: abs(line[1]))[0]  # the first of equal lines
                 session.set_event_category(group_id, event_id, main, SOURCE_USER, HIGH)
             session.insert_category_change(group_id, event_id, "lines", old, _lines_state(parsed), user_id)
+            _schedule_llm(session, group_id, event_id)
             return _event_in_group(session, group_id, event_id)
 
     def set_event_transfer(self, user_id: str, group_id: str, event_id: int, transfer: bool) -> EventRecord:
@@ -650,10 +681,115 @@ class FinSyncService:
                 )
                 session.set_event_category(group_id, event_id, decision.category, decision.source, decision.confidence)
             session.refresh_event(event_id)
+            _schedule_llm(session, group_id, event_id)
             updated = _event_in_group(session, group_id, event_id)
             new = {"direction": updated.direction, **_category_state(updated), "mixed": updated.mixed}
             session.insert_category_change(group_id, event_id, "transfer", old, new, user_id)
             return updated
+
+    # The LLM layer in the live flow (finsync/core/llm_schedule.py): never by default, an admin sets the
+    # schedule, a member may ask for one event at any time, and a monthly budget stops the calls.
+
+    def llm_status(self, user_id: str, group_id: str, now: datetime | None = None) -> LlmStatus:
+        """Every member reads the group's LLM setting and the month's spending."""
+        self.ensure_authorized(user_id, group_id)
+        return self._llm_status(group_id, now or datetime.now(timezone.utc))
+
+    def set_llm_settings(
+        self, user_id: str, group_id: str, *, mode: str, hours_after: int = 24, run_time: str = "20:00",
+        weekday: int = 6, monthly_budget_usd: str = "1.00", now: datetime | None = None,
+    ) -> LlmStatus:
+        """An admin sets when the model is asked. Every uncertain event of the group gets its due time from
+        the new setting (`never` clears them); events a member already decided are never due."""
+        self.ensure_admin(user_id, group_id)
+        settings = validate_settings(group_id, mode, hours_after, run_time, weekday, monthly_budget_usd)
+        with self._storage.transaction() as session:
+            session.save_llm_settings(settings, user_id)
+            session.clear_llm_due(group_id)
+            for event_id, arrived in session.uncertain_event_ids(group_id):
+                session.set_llm_due(group_id, event_id, next_due(settings, arrived))
+        return self._llm_status(group_id, now or datetime.now(timezone.utc))
+
+    def suggest_category_now(
+        self, user_id: str, group_id: str, event_id: int, now: datetime | None = None
+    ) -> EventRecord:
+        """"Ask for a suggestion now": the model is asked about one uncertain event, whatever the schedule."""
+        self.ensure_authorized(user_id, group_id)
+        return self._ask_llm(group_id, event_id, user_id, now or datetime.now(timezone.utc), refuse=True)
+
+    def run_due_llm(self, now: datetime | None = None, limit: int = 100) -> int:
+        """The server's scheduled run: asks the model about every event whose due time has come, group by
+        group, while the group's budget lasts. Returns how many events were asked about."""
+        if self._llm is None:
+            return 0
+        now = now or datetime.now(timezone.utc)
+        asked = 0
+        stopped: set[str] = set()
+        for group_id, event_id in self._storage.due_llm_events(now, limit):
+            if group_id in stopped:
+                continue
+            try:
+                if self._ask_llm(group_id, event_id, "schedule", now, refuse=False) is not None:
+                    asked += 1
+            except LlmUnavailable:
+                stopped.add(group_id)  # budget used up: the due times stay for next month or a higher budget
+        return asked
+
+    def _llm_status(self, group_id: str, now: datetime) -> LlmStatus:
+        settings = self._storage.get_llm_settings(group_id)
+        spent = self._storage.llm_cost_since(group_id, month_start(now))
+        return LlmStatus(
+            settings=settings,
+            spent_this_month_usd=spent,
+            budget_exhausted=spent >= settings.monthly_budget_usd,
+            available=self._llm is not None,
+            model=self._llm.model if self._llm is not None else None,
+        )
+
+    def _ask_llm(
+        self, group_id: str, event_id: int, requested_by: str, now: datetime, *, refuse: bool
+    ) -> EventRecord | None:
+        """Ask the model about one event and store its answer, unless a member has decided meanwhile.
+
+        The call runs outside any database transaction; the answer is written in a new one that reads the
+        event again, so a member's decision made during the call wins. Only the primary record's merchant,
+        description and amount are sent (design, LLM rules). Every call is logged in llm_calls."""
+        with self._storage.transaction() as session:
+            event = _event_in_group(session, group_id, event_id)
+        if self._llm is None:
+            raise LlmUnavailable("No language model is configured on this server")
+        if not is_uncertain(event) or event.direction == TRANSFER:
+            with self._storage.transaction() as session:
+                session.set_llm_due(group_id, event_id, None)
+            if refuse:
+                raise ConflictError("The category is already settled; there is nothing to ask")
+            return None
+        status = self._llm_status(group_id, now)
+        if status.budget_exhausted:
+            raise LlmUnavailable(
+                f"The group's monthly LLM budget (USD {status.settings.monthly_budget_usd}) is used up"
+            )
+        primary = next((tx for tx in event.transactions if tx.id == event.primary_transaction_id), event.transactions[0])
+        vote = self._llm.vote(primary.merchant, primary.description, str(abs(primary.amount)), primary.currency)
+        share_new = vote.new_calls / len(vote.replies) if vote.replies else 0
+        tokens_in = round(sum(r.input_tokens for r in vote.replies) * share_new)
+        tokens_out = round(sum(r.output_tokens for r in vote.replies) * share_new)
+        cost = Decimal(str(round((cost_usd(self._llm.model, vote.replies) or 0.0) * share_new, 6)))
+        current = CategoryDecision(event.category, event.category_source, event.category_confidence)
+        decision = combine(current, vote, LLM_THRESHOLD)
+        agreement = round(vote.share, 4) if decision.source == "llm" else None
+        with self._storage.transaction() as session:
+            session.insert_llm_call(
+                group_id=group_id, event_id=event_id, requested_by=requested_by, model=self._llm.model,
+                new_calls=vote.new_calls, input_tokens=tokens_in, output_tokens=tokens_out, cost_usd=cost,
+            )
+            latest = session.get_event(group_id, event_id)
+            if latest is None or not is_uncertain(latest):
+                return latest  # a member decided during the call: their decision stays
+            session.set_llm_category(
+                group_id, event_id, decision.category, decision.source, decision.confidence, agreement
+            )
+            return session.get_event(group_id, event_id)
 
     def list_category_changes(self, user_id: str, group_id: str, event_id: int) -> list[dict[str, Any]]:
         """The event's category change log (category, mixed, lines, transfer), oldest first."""
@@ -964,6 +1100,22 @@ def _validate_lines(event: EventRecord, lines: Any) -> list[tuple[str, Decimal]]
     return parsed
 
 
+def _schedule_llm(session: StorageSession, group_id: str, event_id: int) -> None:
+    """Give an uncertain event its LLM due time from the group's setting, once; clear it when the event is
+    settled, decided by a member, a transfer, or the group's setting is `never`."""
+    settings = session.llm_settings(group_id)
+    event = session.get_event(group_id, event_id)
+    if event is None:
+        return
+    if settings.mode == "never" or event.direction == TRANSFER or not is_uncertain(event):
+        if event.llm_due_at is not None:
+            session.set_llm_due(group_id, event_id, None)
+        return
+    if event.llm_due_at is None:
+        arrived = min(tx.created_at for tx in event.transactions)
+        session.set_llm_due(group_id, event_id, next_due(settings, arrived))
+
+
 def _event_in_group(session: StorageSession, group_id: str, event_id: int) -> EventRecord:
     event = session.get_event(group_id, event_id)
     if event is None:
@@ -1074,7 +1226,9 @@ def _store_identical_row(session: StorageSession, record: dict[str, Any], first:
     )
     # Classified like every other record, so a repeated transfer row is a transfer here too.
     _classify(session, record)
-    return _store_new_event(session, record, "needs_review", first.event_id, {"identical_row_of_id": original.id})
+    result = _store_new_event(session, record, "needs_review", first.event_id, {"identical_row_of_id": original.id})
+    _schedule_llm(session, record["group_id"], result.event_id)
+    return result
 
 
 def _store_new_event(

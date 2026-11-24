@@ -152,6 +152,26 @@ class EventRecord:
     mixed: bool = False
     # The event's amount split into categories by a member; empty when it is not split.
     lines: tuple[CategoryLineRecord, ...] = ()
+    # For an `llm` category: the share of the model's samples that agreed (revision 0007).
+    category_agreement: float | None = None
+    # When the scheduled LLM run may ask about this uncertain event; None when not scheduled.
+    llm_due_at: datetime | None = None
+
+
+# The group's LLM schedule (revision 0007). `never` is the default: nothing leaves the system.
+LLM_MODES = ("never", "after_arrival", "daily", "weekly")
+
+
+@dataclass(frozen=True)
+class LlmSettingsRecord:
+    group_id: str
+    mode: str = "never"
+    hours_after: int = 24
+    run_time: str = "20:00"
+    weekday: int = 6
+    monthly_budget_usd: Decimal = Decimal("1.00")
+    updated_by: str | None = None
+    updated_at: datetime | None = None
 
 
 # A needs_review decision nobody has answered yet (no later decision supersedes it).
@@ -804,6 +824,34 @@ class FinSyncStorage:
             for row in rows
         ]
 
+    # The LLM schedule (revision 0007).
+
+    def get_llm_settings(self, group_id: str) -> LlmSettingsRecord:
+        with self._session() as connection:
+            return _llm_settings(connection, group_id)
+
+    def llm_cost_since(self, group_id: str, since: datetime) -> Decimal:
+        """The group's LLM spending since an instant (the start of the Budapest month)."""
+        with self._session() as connection:
+            rows = connection.execute(
+                "SELECT cost_usd FROM llm_calls WHERE group_id = ? AND created_at >= ?", (group_id, since.isoformat())
+            ).fetchall()
+        return sum((Decimal(str(row["cost_usd"])) for row in rows), Decimal("0"))
+
+    def due_llm_events(self, now: datetime, limit: int = 100) -> list[tuple[str, int]]:
+        """(group, event) pairs whose scheduled LLM time has come, oldest first. Read across groups by the
+        server's own runner only; each event is then handled within its own group."""
+        with self._session() as connection:
+            rows = connection.execute(
+                """
+                SELECT group_id, id FROM events
+                WHERE llm_due_at IS NOT NULL AND llm_due_at <= ? AND review_state != 'empty'
+                ORDER BY llm_due_at, id LIMIT ?
+                """,
+                (now.isoformat(), limit),
+            ).fetchall()
+        return [(str(row["group_id"]), int(row["id"])) for row in rows]
+
     def list_category_changes(self, group_id: str, event_id: int) -> list[dict[str, Any]] | None:
         """The event's logged category changes, oldest first; None if the group has no such event."""
         with self._session() as connection:
@@ -1024,10 +1072,11 @@ class StorageSession:
         )
         self._connection.execute(
             """
-            UPDATE events SET category = ?, category_source = ?, category_confidence = ?
+            UPDATE events SET category = ?, category_source = ?, category_confidence = ?,
+                category_agreement = CASE WHEN ? = 'llm' THEN category_agreement ELSE NULL END
             WHERE id = ? AND category_source != 'user'
             """,
-            (primary.category, primary.category_source, primary.category_confidence, event_id),
+            (primary.category, primary.category_source, primary.category_confidence, primary.category_source, event_id),
         )
 
     # Category correction (revision 0006). Every write here is a member's action, logged by the core
@@ -1115,6 +1164,92 @@ class StorageSession:
             VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
             (group_id, event_id, kind, json.dumps(old), json.dumps(new), changed_by, _now()),
+        )
+
+    def llm_settings(self, group_id: str) -> LlmSettingsRecord:
+        return _llm_settings(self._connection, group_id)
+
+    def save_llm_settings(self, settings: LlmSettingsRecord, updated_by: str) -> None:
+        params = (
+            settings.mode, settings.hours_after, settings.run_time, settings.weekday,
+            str(settings.monthly_budget_usd), updated_by, _now(),
+        )
+        exists = self._connection.execute(
+            "SELECT 1 FROM group_llm_settings WHERE group_id = ?", (settings.group_id,)
+        ).fetchone()
+        if exists:
+            self._connection.execute(
+                """
+                UPDATE group_llm_settings SET mode = ?, hours_after = ?, run_time = ?, weekday = ?,
+                    monthly_budget_usd = ?, updated_by = ?, updated_at = ?
+                WHERE group_id = ?
+                """,
+                (*params, settings.group_id),
+            )
+        else:
+            self._connection.execute(
+                """
+                INSERT INTO group_llm_settings (
+                    mode, hours_after, run_time, weekday, monthly_budget_usd, updated_by, updated_at, group_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (*params, settings.group_id),
+            )
+
+    def uncertain_event_ids(self, group_id: str) -> list[tuple[int, datetime]]:
+        """(event, arrival of its first record) for the group's events with a suggested category nobody
+        settled, which the LLM schedule may cover. Transfers are never sent."""
+        rows = self._connection.execute(
+            """
+            SELECT e.id, MIN(t.created_at) AS arrived FROM events e JOIN transactions t ON t.event_id = e.id
+            WHERE e.group_id = ? AND e.review_state != 'empty' AND e.direction != 'transfer'
+              AND e.category_source != 'user' AND e.category_confidence != 'high'
+            GROUP BY e.id ORDER BY e.id
+            """,
+            (group_id,),
+        ).fetchall()
+        return [(int(row["id"]), datetime.fromisoformat(str(row["arrived"]))) for row in rows]
+
+    def set_llm_due(self, group_id: str, event_id: int, due: datetime | None) -> None:
+        self._connection.execute(
+            "UPDATE events SET llm_due_at = ? WHERE group_id = ? AND id = ?",
+            (due.isoformat() if due else None, group_id, event_id),
+        )
+
+    def clear_llm_due(self, group_id: str) -> None:
+        self._connection.execute("UPDATE events SET llm_due_at = NULL WHERE group_id = ?", (group_id,))
+
+    def set_llm_category(
+        self, group_id: str, event_id: int, category: str, source: str, confidence: str, agreement: float | None
+    ) -> None:
+        """The LLM layer's answer for the event and its records (never over a member's decision)."""
+        self._connection.execute(
+            """
+            UPDATE events SET category = ?, category_source = ?, category_confidence = ?, category_agreement = ?,
+                llm_due_at = NULL, updated_at = ?
+            WHERE group_id = ? AND id = ? AND category_source != 'user'
+            """,
+            (category, source, confidence, agreement, _now(), group_id, event_id),
+        )
+        self._connection.execute(
+            """
+            UPDATE transactions SET category = ?, category_source = ?, category_confidence = ?
+            WHERE group_id = ? AND event_id = ? AND category_source != 'user'
+            """,
+            (category, source, confidence, group_id, event_id),
+        )
+
+    def insert_llm_call(
+        self, *, group_id: str, event_id: int, requested_by: str, model: str, new_calls: int,
+        input_tokens: int, output_tokens: int, cost_usd: Decimal,
+    ) -> int:
+        return self._connection.insert(
+            """
+            INSERT INTO llm_calls (
+                group_id, event_id, requested_by, model, new_calls, input_tokens, output_tokens, cost_usd, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (group_id, event_id, requested_by, model, new_calls, input_tokens, output_tokens, str(cost_usd), _now()),
         )
 
     def remember_merchant_category(
@@ -1356,6 +1491,22 @@ def _row_to_api_token(row: Mapping[str, Any]) -> ApiTokenRecord:
     )
 
 
+def _llm_settings(connection: _Connection, group_id: str) -> LlmSettingsRecord:
+    row = connection.execute("SELECT * FROM group_llm_settings WHERE group_id = ?", (group_id,)).fetchone()
+    if row is None:
+        return LlmSettingsRecord(group_id)
+    return LlmSettingsRecord(
+        group_id=group_id,
+        mode=str(row["mode"]),
+        hours_after=int(row["hours_after"]),
+        run_time=str(row["run_time"]),
+        weekday=int(row["weekday"]),
+        monthly_budget_usd=Decimal(str(row["monthly_budget_usd"])),
+        updated_by=str(row["updated_by"]),
+        updated_at=datetime.fromisoformat(str(row["updated_at"])),
+    )
+
+
 def _lines_by_event(
     connection: _Connection, group_id: str, event_id: int | None = None
 ) -> dict[int, tuple[CategoryLineRecord, ...]]:
@@ -1396,6 +1547,8 @@ def _row_to_event(
         category_confidence=str(row["category_confidence"]),
         mixed=bool(row["mixed"]),
         lines=lines,
+        category_agreement=float(row["category_agreement"]) if row["category_agreement"] is not None else None,
+        llm_due_at=_optional_time(row["llm_due_at"]),
     )
 
 

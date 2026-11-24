@@ -7,7 +7,14 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 
 import type { CategoryChange, CategoryLineInput, FinSyncEvent } from '@/api/client'
-import { useCategoryChanges, useSetCategory, useSetCategoryLines, useSetMixed, useSetTransfer } from '@/api/queries'
+import {
+  useCategoryChanges,
+  useSetCategory,
+  useSetCategoryLines,
+  useSetMixed,
+  useSetTransfer,
+  useSuggestCategory,
+} from '@/api/queries'
 import { CategoryBadge } from '@/components/category'
 import { NativeSelect } from '@/components/NativeSelect'
 import { ErrorState, LoadingRows } from '@/components/states'
@@ -17,7 +24,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { type DraftLine, initialLines, linesToSave, remainder } from '@/lib/categoryLines'
-import { categoryCertainty, refusal, ruleMessage } from '@/lib/categoryText'
+import { categoryCertainty, llmDueText, refusal, ruleMessage } from '@/lib/categoryText'
 import { CATEGORY_CHOICES, categoryLabel, formatAmount, formatDateTime } from '@/lib/format'
 
 export function CategoryPanel({ event }: { event: FinSyncEvent }) {
@@ -40,8 +47,10 @@ export function CategoryPanel({ event }: { event: FinSyncEvent }) {
         ) : (
           <>
             {event.lines.length === 0 ? <CategoryChooser key={event.category} event={event} /> : <SavedLines event={event} />}
+            {llmDueText(event) && <p className="text-muted-foreground">{llmDueText(event)}</p>}
             <div className="flex flex-wrap items-center gap-2">
               <MixedToggle event={event} />
+              <SuggestButton event={event} />
               <Button variant="outline" size="sm" onClick={() => setEditingLines(true)}>
                 {event.lines.length > 0 ? 'Felosztás módosítása' : 'Felosztás kategóriákra'}
               </Button>
@@ -246,6 +255,34 @@ function LineEditor({ event, onDone }: { event: FinSyncEvent; onDone: () => void
         </Button>
       </div>
     </div>
+  )
+}
+
+/**
+ * "Kérj javaslatot most": only for a suggestion nobody settled. The server answers 409 with the reason when
+ * it has no model or the group's monthly budget is used up; the toast shows it.
+ */
+function SuggestButton({ event }: { event: FinSyncEvent }) {
+  const suggest = useSuggestCategory()
+  if (!event.uncertain || event.lines.length > 0) return null
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      disabled={suggest.isPending}
+      title="Csak a kereskedő, a leírás és az összeg kerül a modellhez."
+      onClick={() =>
+        suggest.mutate(event.id, {
+          onSuccess: (answer) =>
+            answer.uncertain
+              ? toast.info('A modell sem biztos benne; a javaslat maradt.')
+              : toast.success(`A modell javaslata: ${categoryLabel(answer.category)}`),
+          onError: (error) => toast.error(refusal(error, 'A modell most nem érhető el.')),
+        })
+      }
+    >
+      {suggest.isPending ? 'A modell gondolkodik…' : 'Kérj javaslatot a modelltől'}
+    </Button>
   )
 }
 

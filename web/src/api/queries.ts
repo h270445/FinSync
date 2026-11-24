@@ -119,6 +119,24 @@ export function useSetCategoryLines() {
   })
 }
 
+/** "Ask for a suggestion now": the language model is asked about one uncertain event. */
+export function useSuggestCategory() {
+  const onSuccess = useInvalidateAll()
+  return useMutation({
+    mutationFn: async (eventId: number) =>
+      unwrap(await api.POST('/v1/events/{event_id}/llm-suggestion', { params: { path: { event_id: eventId } } })),
+    onSuccess,
+  })
+}
+
+/** When the group's scheduled LLM run asks the model, and what it has cost this month. */
+export function useLlmSettings() {
+  return useQuery({
+    queryKey: ['llm-settings'],
+    queryFn: async () => unwrap(await api.GET('/v1/llm-settings')),
+  })
+}
+
 export function useSetTransfer() {
   const onSuccess = useInvalidateAll()
   return useMutation({

@@ -7,6 +7,7 @@ Errors are 400/403/404/409/413 with `{"error": ...}`, never 422 ([API guide](../
 
 import base64
 import binascii
+import threading
 from decimal import Decimal
 from typing import Annotated, Any, Literal
 
@@ -25,6 +26,7 @@ from finsync.core import (
     ConflictError,
     FinSyncService,
     ImportResult,
+    LlmStatus,
     NotFoundError,
     Principal,
     ReviewItem,
@@ -37,6 +39,7 @@ from finsync.core import (
     require_web_session,
 )
 from finsync.categorization import CATEGORIES
+from finsync.categorization.llm import LlmCategorizer
 from finsync.core.overview import Bucket, lines_add_up
 from finsync.core.sessions import SESSION_LIFETIME, csrf_token
 from finsync.ingestion import ColumnMapping
@@ -152,6 +155,19 @@ class CategoryLinesIn(BaseModel):
 class TransferIn(BaseModel):
     # True marks the event as a transfer within the group (left out of the totals); false undoes it.
     transfer: bool
+
+
+class LlmSettingsIn(BaseModel):
+    # "never" (default: nothing is sent to a model), "after_arrival", "daily" or "weekly".
+    mode: str
+    # after_arrival: hours after the record arrived (1 to 336).
+    hours_after: StrictInt = 24
+    # daily and weekly: Budapest time, "HH:MM".
+    run_time: str = "20:00"
+    # weekly: 0 = Monday ... 6 = Sunday.
+    weekday: StrictInt = 6
+    # The month's calls stop at this amount (0 to 100).
+    monthly_budget_usd: Decimal | str = "1.00"
 
 
 class MerchantRuleIn(BaseModel):
@@ -272,6 +288,10 @@ class EventOut(BaseModel):
     # The merchant name to offer "always use this for …" with; None when no rule may be learned (a
     # merchant selling many kinds of goods, a mixed or split event, a transfer).
     remember_merchant: str | None
+    # For an "llm" category: the share of the model's five answers that agreed (0..1).
+    category_agreement: float | None
+    # When the group's scheduled LLM run will ask about this uncertain event; None when not scheduled.
+    llm_due_at: str | None
     primary_transaction_id: int | None
     review_state: str
     transactions: list[TransactionOut]
@@ -304,6 +324,22 @@ class CategoryChangeOut(BaseModel):
 
 class CategoryChangesOut(BaseModel):
     changes: list[CategoryChangeOut]
+
+
+class LlmSettingsOut(BaseModel):
+    mode: str
+    hours_after: int
+    run_time: str
+    weekday: int
+    monthly_budget_usd: str
+    spent_this_month_usd: str
+    # True when this month's calls reached the budget: no more calls until next month or a higher budget.
+    budget_exhausted: bool
+    # False when the server has no model configured: the setting is kept but nothing runs.
+    available: bool
+    model: str | None
+    updated_by: str | None
+    updated_at: str | None
 
 
 class EventsOut(BaseModel):
@@ -514,9 +550,9 @@ def _validation_message(error: RequestValidationError) -> str:
     return "; ".join(parts) or "Invalid request"
 
 
-def create_app(storage: FinSyncStorage) -> FastAPI:
-    """The /v1 API bound to one database."""
-    service = FinSyncService(storage)
+def create_app(storage: FinSyncStorage, llm: LlmCategorizer | None = None) -> FastAPI:
+    """The /v1 API bound to one database; `llm` is the LLM layer when the server has a model configured."""
+    service = FinSyncService(storage, llm)
     tokens = TokenService(storage)
     sessions = SessionService(storage)
     app = FastAPI(title="FinSync API", version="0.3.0-dev", responses=_ERRORS)
@@ -792,6 +828,35 @@ def create_app(storage: FinSyncStorage) -> FastAPI:
         """Mark the event as a transfer within the group, or undo it."""
         return _event(service.set_event_transfer(caller.user_id, caller.group_id, event_id, body.transfer))
 
+    @app.post("/v1/events/{event_id}/llm-suggestion")
+    def suggest_category(event_id: int, caller: Caller) -> EventOut:
+        """Ask the language model about one uncertain event now, whatever the group's schedule. Only the
+        merchant, description and amount are sent. 409 when the category is settled, no model is configured
+        or the group's monthly budget is used up."""
+        return _event(service.suggest_category_now(caller.user_id, caller.group_id, event_id))
+
+    # When the model is asked (W8): every member reads the setting; only an admin changes it, and only from
+    # the web session, because it decides whether the group's data leaves the system (ADR 0012, point 6).
+    @app.get("/v1/llm-settings")
+    def get_llm_settings(caller: Caller) -> LlmSettingsOut:
+        return _llm_settings(service.llm_status(caller.user_id, caller.group_id))
+
+    @app.put("/v1/llm-settings")
+    def set_llm_settings(body: LlmSettingsIn, caller: Caller) -> LlmSettingsOut:
+        """An admin sets when the model is asked. Web session cookie only; an API token gets 403."""
+        require_web_session(caller)
+        return _llm_settings(
+            service.set_llm_settings(
+                caller.user_id,
+                caller.group_id,
+                mode=body.mode,
+                hours_after=body.hours_after,
+                run_time=body.run_time,
+                weekday=body.weekday,
+                monthly_budget_usd=str(body.monthly_budget_usd),
+            )
+        )
+
     @app.get("/v1/events/{event_id}/category-changes")
     def list_category_changes(event_id: int, caller: Caller) -> CategoryChangesOut:
         """The event's category change log, oldest first."""
@@ -979,9 +1044,28 @@ def _event(event: EventRecord) -> EventOut:
         ],
         lines_match_amount=lines_add_up(event) if event.lines else None,
         remember_merchant=merchant_rule_offer(event),
+        category_agreement=event.category_agreement,
+        llm_due_at=event.llm_due_at.isoformat() if event.llm_due_at else None,
         primary_transaction_id=event.primary_transaction_id,
         review_state=event.review_state,
         transactions=[_transaction(tx) for tx in event.transactions],
+    )
+
+
+def _llm_settings(status: LlmStatus) -> LlmSettingsOut:
+    settings = status.settings
+    return LlmSettingsOut(
+        mode=settings.mode,
+        hours_after=settings.hours_after,
+        run_time=settings.run_time,
+        weekday=settings.weekday,
+        monthly_budget_usd=str(settings.monthly_budget_usd),
+        spent_this_month_usd=str(status.spent_this_month_usd),
+        budget_exhausted=status.budget_exhausted,
+        available=status.available,
+        model=status.model,
+        updated_by=settings.updated_by,
+        updated_at=settings.updated_at.isoformat() if settings.updated_at else None,
     )
 
 
@@ -993,10 +1077,48 @@ def _correction(result: CategoryCorrection) -> CategoryCorrectionOut:
     )
 
 
+def live_llm() -> LlmCategorizer | None:
+    """The LLM layer for the live flow, only when `FINSYNC_ANTHROPIC_API_KEY` is set: a key meant for another
+    program (`ANTHROPIC_API_KEY`) never makes FinSync send data. Answers are cached in memory, so identical
+    texts are sent once per server run."""
+    import os
+
+    from finsync.categorization.llm import FINSYNC_KEY_VARIABLE, AnswerCache, AnthropicClient
+
+    if not os.environ.get(FINSYNC_KEY_VARIABLE):
+        return None
+    return LlmCategorizer(AnthropicClient(), AnswerCache())
+
+
+def start_llm_runner(service: FinSyncService, interval_seconds: float) -> threading.Event:
+    """Run the scheduled LLM calls every `interval_seconds` in a daemon thread; set the returned event to stop."""
+    stop = threading.Event()
+
+    def loop() -> None:
+        while not stop.wait(interval_seconds):
+            try:
+                asked = service.run_due_llm()
+                if asked:
+                    print(f"LLM run: asked about {asked} uncertain event(s)")
+            except Exception as error:  # a failed run is retried at the next interval, the server stays up
+                print(f"LLM run failed: {type(error).__name__}: {error}")
+
+    threading.Thread(target=loop, name="finsync-llm-runner", daemon=True).start()
+    return stop
+
+
 def run_server(host: str = "127.0.0.1", port: int = 8080, db: str = "finsync.db") -> None:
     import uvicorn
 
+    from finsync.core.llm_schedule import RUN_INTERVAL_SECONDS
+
     storage = FinSyncStorage(db)
+    llm = live_llm()
     # The URL may carry a database password; print it masked.
     print(f"FinSync API running on http://{host}:{port} (database: {storage.display_url}, docs: /docs)")
-    uvicorn.run(create_app(storage), host=host, port=port)
+    if llm is None:
+        print("LLM layer off: FINSYNC_ANTHROPIC_API_KEY is not set, so no data is sent to a model")
+    else:
+        print(f"LLM layer on ({llm.model}): scheduled runs every {RUN_INTERVAL_SECONDS} s, per each group's setting")
+        start_llm_runner(FinSyncService(storage, llm), RUN_INTERVAL_SECONDS)
+    uvicorn.run(create_app(storage, llm), host=host, port=port)

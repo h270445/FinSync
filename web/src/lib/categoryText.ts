@@ -9,7 +9,9 @@ export const refusal = (error: unknown, fallback: string) => (error instanceof A
 export function categoryCertainty(event: FinSyncEvent): string {
   const source = categorySourceLabel(event.category_source)
   if (event.category_source === 'user') return `Forrás: ${source}`
-  return `Forrás: ${source} · ${event.uncertain ? 'bizonytalan, csak javaslat' : 'biztos'}`
+  const agreement =
+    event.category_agreement !== null ? ` (${Math.round(event.category_agreement * 5)}/5 modellválasz egyezett)` : ''
+  return `Forrás: ${source}${agreement} · ${event.uncertain ? 'bizonytalan, csak javaslat' : 'biztos'}`
 }
 
 /** What happened to the merchant rule after "always use this", in Hungarian. */
@@ -28,4 +30,18 @@ export function ruleMessage(result: CategoryCorrection): string | null {
     default:
       return null
   }
+}
+
+const budapestDateTime = new Intl.DateTimeFormat('hu-HU', {
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  timeZone: 'Europe/Budapest',
+})
+
+/** "A csoport beállítása szerint a modell 11. 25. 20:00 után javasol." for a scheduled event. */
+export function llmDueText(event: FinSyncEvent): string | null {
+  if (event.llm_due_at === null) return null
+  return `A csoport beállítása szerint a nyelvi modell ${budapestDateTime.format(new Date(event.llm_due_at))} után javasol, ha addig senki nem dönt.`
 }

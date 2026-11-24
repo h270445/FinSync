@@ -50,6 +50,8 @@ const review = (overrides: Partial<Review>): Review => {
       lines: [],
       lines_match_amount: null,
       remember_merchant: null,
+      category_agreement: null,
+      llm_due_at: null,
       primary_transaction_id: 1,
       review_state: 'needs_review',
       transactions: [existing],
