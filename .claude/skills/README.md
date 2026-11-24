@@ -4,13 +4,15 @@ Versioned instructions for the coding agent (Claude Code), one folder per skill 
 
 | Skill | Version | Use when | Helper |
 | --- | --- | --- | --- |
-| [endpoint-and-screen-checklist](endpoint-and-screen-checklist/SKILL.md) | 1.1 | Adding or changing an API route or a web screen | – |
-| [session-wrap-up](session-wrap-up/SKILL.md) | 1.1 | Closing a working session: time log, plan, AI usage, one pull request | `check_time_log.py` |
-| [dev-test-evaluation](dev-test-evaluation/SKILL.md) | 1.0 | Any measurement: tuning, comparing methods, LLM runs | – |
+| [endpoint-and-screen-checklist](endpoint-and-screen-checklist/SKILL.md) | 1.2 | Adding or changing an API route or a web screen | – |
+| [session-wrap-up](session-wrap-up/SKILL.md) | 1.2 | Closing a working session: time log, plan, AI usage, one pull request | `check_time_log.py` |
+| [dev-test-evaluation](dev-test-evaluation/SKILL.md) | 1.1 | Any measurement: tuning, comparing methods, LLM runs | – |
 | [bank-notification-privacy](bank-notification-privacy/SKILL.md) | 1.0 | Real bank notification formats, parser patterns and fixtures | `mask_captures.py` |
 | [supervisor-status-email](supervisor-status-email/SKILL.md) | 1.1 | Drafting a status e-mail to the supervisor | [example-sent-email.md](supervisor-status-email/example-sent-email.md) |
-| [docs-and-comments](docs-and-comments/SKILL.md) | 1.0 | Writing code or docs, and before the pull request: why-comments, module docstrings, which doc changes with what, the thesis map | `check_docs.py` |
-| [android-emulator-e2e](android-emulator-e2e/SKILL.md) | 1.1 | After an Android app or ingest change: build and test on an emulator, on the author's computer | – |
+| [docs-and-comments](docs-and-comments/SKILL.md) | 1.1 | Writing code or docs, and before the pull request: why-comments, module docstrings, which doc changes with what, the thesis map | `check_docs.py` |
+| [android-emulator-e2e](android-emulator-e2e/SKILL.md) | 1.2 | After an Android app or ingest change: build and test on an emulator, on the author's computer; demo mode for the M2 demo | – |
+| [milestone-package](milestone-package/SKILL.md) | 1.0 | Closing a milestone: full checks on both databases, criteria with evidence, release notes, tag command for the author | – |
+| [supervisor-feedback-intake](supervisor-feedback-intake/SKILL.md) | 1.0 | A supervisor reply arrives: letter kept out of the repository, English summary with actions, actions carried into the plan | – |
 
 ## Rules
 

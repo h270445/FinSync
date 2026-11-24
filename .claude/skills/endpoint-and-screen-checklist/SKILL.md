@@ -5,7 +5,7 @@ description: Use when adding or changing a FinSync API route (finsync/api/server
 
 # Endpoint and screen checklist
 
-- Version: 1.1 (2026-11-12)
+- Version: 1.2 (2026-11-24)
 - Owner: Bence Varga
 - Why it exists: every new route has to pass the same isolation, error and schema checks, and every new screen has to stay in step with the generated API types. Done by hand, one of them was easy to forget. The supervisor named "a group-isolation and OpenAPI-sync check for new endpoints" as a skill candidate (2026-11-11, action D1).
 
@@ -38,8 +38,13 @@ If the request does not say who may call the route, what a member of another gro
 ### Backend
 
 - [ ] Service method in `finsync/core/service.py` that starts with `self.ensure_authorized(user_id, group_id)`; writes go through one transaction so a failure leaves the database unchanged.
-- [ ] Storage method in `finsync/storage/sqlite.py` that filters by `group_id`; returns `None` (mapped to `NotFoundError`) for an id outside the group.
-- [ ] A schema change bumps `SCHEMA_VERSION` with a `_migrate_to_N` step and a test that an older database is upgraded (see `test_a_version_2_database_gets_the_token_table`). This needs checkpoint 1.
+- [ ] Storage method in `finsync/storage/database.py` (SQLAlchemy Core, `?` placeholders) that filters by `group_id`; returns `None` (mapped to `NotFoundError`) for an id outside the group. A service method that looks up an event or record does so **before** any other check that could refuse (for example "no model configured"), so a foreign id answers `404`, not `409` (seen on 2026-11-24 with `llm-suggestion`).
+- [ ] A schema change is a hand-written Alembic revision in `finsync/storage/migrations/versions/NNNN_<name>.py` with `upgrade()` and a `downgrade()` that works on SQLite (`batch_alter_table`), and a docstring that says what each new column means. This needs checkpoint 1. Then:
+  - the record dataclasses and `_TRANSACTION_COLUMNS` (or the matching list) in `database.py` know the new columns;
+  - the pre-Alembic upgrade (`_migrate_to_2`) never calls storage methods that read new columns: it uses plain SQL (seen on 2026-11-24);
+  - the legacy-database tests that strip later revisions by hand (`tests/test_auth.py`, `tests/test_sessions.py`) drop the new tables, indexes (before their columns) and columns;
+  - the whole suite runs on PostgreSQL too (`python tests/run_on_postgres.py <url>`);
+  - the schema table in `finsync/storage/README.md` names the revision.
 - [ ] Route in `finsync/api/server.py` with `caller: Caller`, a Pydantic `...In` model for the body and a `...Out` model as the return type, so the OpenAPI schema is complete. Errors are raised as the core exceptions (`ValueError` → 400, `NotFoundError` → 404, `ConflictError` → 409, `AuthorizationError` → 403), not as `HTTPException`.
 - [ ] A route that must work without an API token (for example signing in) is an authentication change: checkpoint 1. It is kept out of `ENDPOINTS`, gets its own tests (including that it never reveals whether a member exists), and the OpenAPI test is extended to name it as the exception to bearer security.
 - [ ] A body that can exceed 64 KiB in normal use is a design question (only `/v1/transactions/bulk` has the 1 MiB limit). Ask instead of raising the limit.
@@ -61,7 +66,8 @@ If the request does not say who may call the route, what a member of another gro
 
 - [ ] Query or mutation hook in `web/src/api/queries.ts`; a mutation that changes events, reviews or totals invalidates the affected queries (review actions use `useInvalidateAll`).
 - [ ] Page in `web/src/pages/`, wired in `web/src/App.tsx` in place of its `PlaceholderPage` route.
-- [ ] Loading, error and empty states with `LoadingRows`, `ErrorState` and `EmptyState` from `web/src/components/states.tsx`; a refused action shows the backend's error message.
+- [ ] Loading, error and empty states with `LoadingRows`, `ErrorState` and `EmptyState` from `web/src/components/states.tsx`; a refused action says why in Hungarian: known answers (`400`, `403`, `409`) get their own Hungarian text, the backend's English message is only the fallback for the unexpected.
+- [ ] No state set synchronously in an effect to copy query data into a form (oxlint `react(set-state-in-effect)`): start the form from the data in a child component keyed by the saved version (seen on 2026-11-24 on the W8 LLM card).
 - [ ] Hungarian labels, Hungarian number and date formatting through `web/src/lib/format.ts`.
 - [ ] Vitest test next to the page (`*.test.tsx`, see `ReviewPage.test.tsx`) for the behaviour that matters: the main action, a refusal, the empty state.
 - [ ] Usable at 360 px wide and at 1280 px (screenshots when a browser is available).
@@ -99,3 +105,4 @@ Then read the diff once more against the prohibitions, specifically: every new S
 | --- | --- | --- |
 | 1.0 | 2026-11-12 | First version, derived from the W4 decision history change (PR #25) and the token and size-limit tests. |
 | 1.1 | 2026-11-12 | After the first use (web sign-in): a line for routes without a token, and how to regenerate the OpenAPI snapshot with its Pydantic version. |
+| 1.2 | 2026-11-24 | After the category correction, the live LLM flow and the W8 LLM card: storage lines follow the SQLAlchemy and Alembic switch (`database.py`, revisions, legacy-strip tests, PostgreSQL run) instead of `sqlite.py` and `SCHEMA_VERSION`; lookup before other refusals so a foreign id stays `404`; Hungarian refusal texts; the effect-state lint rule. |

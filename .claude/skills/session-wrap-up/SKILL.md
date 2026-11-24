@@ -5,7 +5,7 @@ description: Use at the end of every FinSync working session, before the pull re
 
 # Session wrap-up
 
-- Version: 1.1 (2026-11-12)
+- Version: 1.2 (2026-11-24)
 - Owner: Bence Varga
 - Why it exists: every session ends with the same bookkeeping (time log, roadmap, milestone checklist, AI-usage log, one pull request). Done from memory, totals drifted and decisions were missed. This skill makes the closing steps the same every time and checks the arithmetic.
 
@@ -32,6 +32,19 @@ description: Use at the end of every FinSync working session, before the pull re
 - Never put a model name or model identifier in commit messages, the pull request or the docs; "Claude Code" is the tool name to use.
 
 ## Steps
+
+### 0. After merging another branch
+
+Session branches often merge `main` or a sibling branch, and the logs (`time-log.md`, `ai-usage.md`, `roadmap.md`, `thesis-map.md`) conflict almost every time. A conflict in a log table is resolved by keeping **both** sides' rows in date order, never one side. Before committing the merge, check that no log lost rows (on 2026-11-24 a merge emptied `ai-usage.md` and only the docs checker noticed, hours later):
+
+```bash
+for f in docs/ai-usage.md docs/planning/time-log.md docs/planning/roadmap.md docs/thesis-map.md; do
+  echo "$f ours=$(git show HEAD:$f | wc -l) theirs=$(git show MERGE_HEAD:$f | wc -l) merged=$(wc -l < $f)"
+done
+python .claude/skills/session-wrap-up/check_time_log.py && python .claude/skills/docs-and-comments/check_docs.py
+```
+
+The merged count is at least the larger of the two; otherwise rebuild the file from both sides (`git merge-file` with the merge base) before committing.
 
 ### 1. Time log
 
@@ -96,3 +109,4 @@ A hit is checked by hand; synthetic test tokens and `noreply@anthropic.com` in a
 | --- | --- | --- |
 | 1.0 | 2026-11-12 | First version, from the closing steps of the sessions between 2026-10-17 and 2026-11-12, with a checker for the weekly totals. |
 | 1.1 | 2026-11-12 | The documentation checker of the docs-and-comments skill joins the self-check. |
+| 1.2 | 2026-11-24 | Step 0: after a merge, both sides' log rows are kept and the line counts and checkers are run before the merge commit, after a merge emptied `ai-usage.md` on 2026-11-24. |

@@ -5,7 +5,7 @@ description: Use after any change to the FinSync Android app (clients/android) o
 
 # Android emulator end-to-end test
 
-- Version: 1.1 (2026-11-12)
+- Version: 1.2 (2026-11-24)
 - Owner: Bence Varga
 - Why it exists: the Android app can only be built and run on the author's computer (Android SDK, emulator). The first M2 test on 2026-11-12 showed that a fixed sequence (build, emulator, local API, simulated notifications, checks through the API, the outbox and the screen) catches real bugs, including two that no unit test saw. Doing it by hand took several manual steps and one environment trap (a stale `JAVA_HOME`).
 
@@ -56,6 +56,16 @@ description: Use after any change to the FinSync Android app (clients/android) o
 9. **Evidence.** Read the status lines from `adb shell uiautomator dump /sdcard/ui.xml` and `adb shell cat /sdcard/ui.xml` (`text="..."`), more reliable than reading a screenshot. Take the screenshot with `adb shell screencap -p /sdcard/shot.png`, `adb pull /sdcard/shot.png clients\android\m2-emulator-test.png`, `adb shell rm /sdcard/shot.png` (`adb exec-out ... >` in Windows PowerShell 5.1 writes a broken PNG). If a "System UI isn't responding" dialog appears, tap its "Wait" button (found in the UI dump) and take the screenshot again.
 10. **Clean up.** Stop the API, delete the temporary database and the token file, clear the notification shade, then stop the emulator with `adb emu kill` (it frees about 1.3 GB of RAM on this 7.7 GB computer; the emulator saves a Quick Boot snapshot, so the next start takes seconds instead of a cold boot, and step 6 clears the old state anyway; clearing the shade first keeps the snapshot clean). Then `adb devices` must list no emulator. Never end it with `taskkill`: that saves no snapshot and can damage the AVD. Leave it running only if the author says another run follows soon. Nothing committed.
 
+## Demo mode
+
+For a demonstration (the [demo guide](../../../docs/guides/demo.md)) instead of a test, the same prerequisites, build, emulator, clean state and app set-up apply, with these differences (from the run of 2026-11-24):
+
+- **Data:** in step 5, instead of a token on an empty database, seed a new database in the temporary folder: `python -m finsync.api.demo --db <tmp>\demo.db --export-dir <tmp>`, and capture the printed `fs_...` token into a file there without echoing it (the seed prints it once).
+- **Memory after boot:** read the free memory again after the emulator has booted, not only before (on 2026-11-24 it fell from 2.40 GB to 0.74 GB). Below about 0.5 GB, warn the author before starting the web app.
+- **Cases:** only case A, with the guide's text (`-4 990 Ft erteken vasarolt a PELDABOLT KFT 12. uzleteben.`); then the guide's steps 1b–3 through the API with the token (import, the two coffees, confirm the one review) and the overview totals before and after, which must equal the guide's numbers. The category steps are left for the author in the browser.
+- **Web app:** start `npm run dev` in `web\` in the background (`http://localhost:5173`, sign-in from the seed's output).
+- **End:** do not run step 10. Leave the emulator, the API and the web app running and give the author the commands to stop them later: `adb emu kill`; `Stop-Process -Id (Get-NetTCPConnection -LocalPort 8080 -State Listen).OwningProcess` and the same for 5173; `Remove-Item -Recurse -Force <tmp>`.
+
 ## Self-check
 
 Before reporting PASS, each case has its evidence in the report: the event list JSON for A, B and E, the outbox content for E, the dropped count before and after C and D, and the UI dump lines for F. A case without evidence is reported as not checked.
@@ -71,3 +81,4 @@ Before reporting PASS, each case has its evidence in the report: the event list 
 | --- | --- | --- |
 | 1.0 | 2026-11-12 | First version, from the first M2 emulator run (all cases passed; found the status screen not refreshing and dropped notifications counted again on reconnect). |
 | 1.1 | 2026-11-12 | After its first use: clean state before installing, counters read from the app's preferences, fixed waits for C and D, a real check of the refresh in F, screenshot through `adb pull`, paths from the repository root, token never echoed, no `cmd /c`, reconnect proof without touching `captures.jsonl`; free memory checked and reported, and the author asked to close memory-heavy programs; the emulator is stopped at the end. |
+| 1.2 | 2026-11-24 | Demo mode, from the first demo run: seeded database instead of an empty one, memory read again after boot, only case A plus the guide's API steps, web app started, everything left running with the stop commands. |
