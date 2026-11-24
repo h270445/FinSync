@@ -61,8 +61,7 @@ Utalásnál a banki értesítés tartalmazhatja a **partner nevét**, aki nem fe
 | --- | --- | --- |
 | A **csoport többi tagja** | A csoport összes tételéhez, a tagok listájához és szerepköréhez, a csoportbeállításokhoz. API-kulcsokat mindenki csak a sajátját látja. | A közös kiadáskövetés ezt jelenti |
 | Az **Üzemeltető** | Üzemeltetőként technikailag minden tárolt adathoz | Üzemeltetés, hibaelhárítás, a 9. pont szerinti kérések teljesítése. Az Üzemeltető az adatokat a szakdolgozatban, mérésekben, nyilvános tárolóban vagy MI-alapú fejlesztőeszközökben **nem használja fel**; ott kizárólag kitalált (szintetikus) adatok szerepelnek. |
-| **Tárhelyszolgáltató** (adatfeldolgozó) | A szerveren tárolt adatokhoz, technikailag | A szerver futtatása. [KITÖLTENDŐ: az Üzemeltető saját otthoni számítógépe (ekkor nincs ilyen címzett) **vagy** a szolgáltató neve, székhelye, az adatközpont országa (EU)] |
-| **Cloudflare, Inc.** (adatfeldolgozó, csak ha a szerver alagúton érhető el) | Az átmenő, titkosított forgalomhoz | Biztonságos HTTPS-elérés [KITÖLTENDŐ / ELLENŐRIZENDŐ: a B1 döntéstől függ] |
+| **Tárhelyszolgáltató** (adatfeldolgozó) | A szerveren tárolt adatokhoz, technikailag | A szerver futtatása. Az Európai Unióban bérelt virtuális szerver (VPS). [KITÖLTENDŐ: a szolgáltató neve, székhelye, az adatközpont országa (EU-tagállam)]. Az adatok az EU-ban maradnak. |
 | **Anthropic PBC**, San Francisco, USA [ELLENŐRIZENDŐ: pontos cím] (adatfeldolgozó, **csak hozzájárulás esetén**) | Tételenként: kereskedőnév, leírás, összeg, pénznem | Kategóriajavaslat. Lásd 6. pont. |
 
 Az adatokat **nem adjuk el**, reklámcélra nem használjuk, és hatóságnak csak jogszabályban előírt kötelezés alapján adjuk ki.

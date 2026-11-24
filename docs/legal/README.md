@@ -22,7 +22,7 @@ The EULA is a contract about using the software. A privacy notice is a separate 
 Both documents mark missing facts as **[KITÖLTENDŐ: …]** (to be filled) and statements to verify as **[ELLENŐRIZENDŐ: …]** (to be checked). Before anyone accepts them:
 
 1. Contact details of the author (e-mail, postal address) — never committed to this repository; fill them in the copy handed to the family.
-2. Hosting: where the server runs (home computer or a named EU provider), from blocker B1.
+2. Hosting: the name, seat and data-centre country of the EU VPS provider (decided 2026-11-24: an EU VPS, blocker B1).
 3. Anthropic's current commercial terms, data-processing addendum, retention period and transfer mechanism, checked on Anthropic's website on the day of acceptance.
 4. The retention periods, once blocker B4 sets them.
 5. Effective date and version number.
