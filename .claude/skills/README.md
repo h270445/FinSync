@@ -13,6 +13,7 @@ Versioned instructions for the coding agent (Claude Code), one folder per skill 
 | [android-emulator-e2e](android-emulator-e2e/SKILL.md) | 1.2 | After an Android app or ingest change: build and test on an emulator, on the author's computer; also the M2 demo on the emulator and the real-phone variant | – |
 | [milestone-package](milestone-package/SKILL.md) | 1.0 | Putting a milestone package together (M2, M3, M4): gates on the submitted commit, criteria with evidence, release notes, fix log, the tag prepared for the author | `check_release.py` |
 | [supervisor-feedback-intake](supervisor-feedback-intake/SKILL.md) | 1.0 | The supervisor's reply arrives: English summary with actions, every point carried into the plan, milestone, ADRs, designs and thesis map | – |
+| [thesis-manuscript](thesis-manuscript/SKILL.md) | 1.0 | The Hungarian thesis in Word: drafts from the repository's evidence for the author to rewrite, SZTE format, no number or source without evidence | [terminology.md](thesis-manuscript/terminology.md) |
 
 ## Rules
 
