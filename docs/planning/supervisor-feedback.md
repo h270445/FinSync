@@ -4,6 +4,29 @@ Summary of each letter from the thesis supervisor (Dr. Bilicki Vilmos) and what 
 
 Each entry lists the points as actions; ticked actions link to where they were done.
 
+## 2026-11-23 — Reply to the weekly report of Nov 16–22
+
+**Assessment**
+
+- The supervisor reviewed `main` at `19f25c17`: W2, W8, the hybrid categorizer's structure and run plan, the real-phone Android test, ADRs 0011 and 0012, and design views 1–2. The supervisor singled out the privacy discipline of the real-device test, the quick fix of the background retry issue found on the phone, and that the matching engine stayed untouched as agreed.
+- The three layers of the hybrid categorizer (group rules → Hungarian dictionary → LLM layer behind an interface), the five-sample self-consistency uncertainty, the strict dev/test split and the data minimization are judged very clean. The planned live wiring (asynchronous, off by default for privacy, with a cost cap and the manual decision always winning) is supported, because the model stays a support and not a black-box override.
+- With W2 and W8 all eight planned web screens exist; W2 saying openly how much is still waiting for review is judged a particularly good UX choice.
+- Views 1–2 are clear and consistent. Choosing the skill(s) after next week's measurement and starting the Hungarian manuscript skeleton (chapters 1–3) in December fit the schedule.
+- Next report: the hybrid categorizer's measurement results and the preparation of the Dec 4 package.
+
+**Decisions**
+
+- **ADR 0012 accepted:** for a spending tracker without money movement or bank credentials, full TOTP/WebAuthn MFA would be a disproportionate scope increase this semester; a failed sign-in limit and step-up re-authentication for sensitive actions are a proportionate, defensible answer. Status set to Accepted.
+- **Least privilege added:** every admin action that widens access, not only issuing tokens but also changing a member's role, is allowed only from a web session, never with a long-lived phone API token, so the reach of a compromised phone token is closed at the architecture level.
+
+**Actions**
+
+- [x] **ADR 0012 to Accepted, with the least-privilege rule.** (Done 2026-11-23: [ADR 0012](../architecture/decisions/0012-no-multi-factor-authentication.md) point 6; `PUT /v1/members/{member_id}/role` now answers `403` to an API token, even an admin's, like `/v1/tokens`; tests in `tests/test_tokens_api.py`; [security and privacy](../architecture/security-and-privacy.md#current-state), [API guide](../guides/api.md#put-v1membersmember_idrole), view 6.)
+- [ ] **Local model comparison after the paid baseline:** a small local OpenAI-compatible model on the same evaluation runner, for a privacy–accuracy–cost comparison; in the December refinement or at the start of Szakdolgozat II. (2026-11-23: planned in [ADR 0011](../architecture/decisions/0011-llm-categorization-layer.md#consequences) and the [roadmap](roadmap.md), Dec 7–13 if time allows.)
+- [ ] **UX of the category correction, the "mixed" flag and category lines (week of Nov 23):** the member always sees the source and uncertainty of a suggestion, corrects or splits with few clicks, and the group's merchant memory learns a final rule only for non-mixed merchants. (2026-11-23: recorded as principles in the [categorization design](../design/categorization.md#review-in-the-web-app) and the M2 checklist.)
+- [ ] **Android A1/A2 split later:** the setup/status split is the right direction for a later cleanup, but for Dec 4 the hybrid measurement, the category correction and the unified demo come first. (2026-11-23: noted in the roadmap, the M2 checklist and view 2.)
+- [ ] **Views 5 and 6 in step with the LLM wiring:** once the LLM layer is in the live flow, view 5 (architecture) and view 6 (security) show the optional outbound model call's boundary and the data-minimization rule. (2026-11-23: noted as a to-do in [design-views.md](../architecture/design-views.md) and [security and privacy](../architecture/security-and-privacy.md#rules).)
+
 ## 2026-11-16 — Reply to the weekly report of Nov 9–15
 
 **Assessment**

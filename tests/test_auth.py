@@ -35,7 +35,6 @@ ENDPOINTS = (
     ("POST", "/v1/merchant-rules"),
     ("PUT", "/v1/merchant-rules/{rule}"),
     ("DELETE", "/v1/merchant-rules/{rule}"),
-    ("PUT", "/v1/members/{member}/role"),
     ("GET", "/v1/own-accounts"),
     ("POST", "/v1/own-accounts"),
     ("DELETE", "/v1/own-accounts/{account}"),
@@ -44,11 +43,13 @@ ENDPOINTS = (
     ("POST", "/v1/matches/{decision}/reject"),
     ("POST", "/v1/events/{event}/split"),
 )
-# Token management works only with the web session cookie (an API token gets 403); tests/test_tokens_api.py.
+# Actions that widen access (token management, role changes) work only with the web session cookie;
+# an API token gets 403 (least privilege, ADR 0012). tests/test_tokens_api.py covers them.
 WEB_SESSION_ENDPOINTS = (
     ("GET", "/v1/tokens"),
     ("POST", "/v1/tokens"),
     ("POST", "/v1/tokens/{token}/revoke"),
+    ("PUT", "/v1/members/{member}/role"),
 )
 # The web sign-in routes work with the session cookie, not a token; tests/test_sessions.py covers them.
 SESSION_ENDPOINTS = (
@@ -231,8 +232,6 @@ class AuthApiTest(unittest.TestCase):
     def _body(self, path: str, method: str = "POST") -> dict:
         if path.startswith("/v1/own-accounts"):
             return {"label": "KISS ANNA"}
-        if path.endswith("/role"):
-            return {"role": "member"}
         if path.startswith("/v1/merchant-rules"):
             # Different keys for create and update, so neither collides with the other or the setUp rule.
             merchant = "Aldi" if method == "POST" else "Lidl Budapest"
@@ -300,10 +299,9 @@ class AuthApiTest(unittest.TestCase):
                     (method == "POST" and path.startswith("/v1/matches/"))
                     or path.startswith("/v1/events/")
                     or path.startswith("/v1/merchant-rules/")
-                    or path.startswith("/v1/members/")
                     or path.startswith("/v1/own-accounts/")
                 ):
-                    # Group 1's decisions, events, rules and members do not exist in group 2.
+                    # Group 1's decisions, events, rules and accounts do not exist in group 2.
                     self.assertEqual(status, 404)
                 elif path in ("/v1/merchant-rules", "/v1/own-accounts") and method == "POST":
                     # A rule goes into the token's group.

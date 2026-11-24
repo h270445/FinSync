@@ -165,9 +165,8 @@ class MerchantRulesServiceTest(unittest.TestCase):
             member = {"Authorization": f"Bearer {member_token}"}
             refused = client.post("/v1/merchant-rules", json={"merchant": "DM", "category": "household"}, headers=member)
             self.assertEqual(refused.status_code, 403)
-            promoted = client.put("/v1/members/balint/role", json={"role": "admin"}, headers=headers)
-            self.assertEqual(promoted.status_code, 200)
-            self.assertEqual({m["user_id"]: m["role"] for m in promoted.json()["members"]}, {"anna": "admin", "balint": "admin"})
+            # Roles change only from the web session (tests/test_tokens_api.py); here through the service.
+            self.service.set_member_role("anna", "group-1", "balint", "admin")
             allowed = client.post("/v1/merchant-rules", json={"merchant": "DM", "category": "household"}, headers=member)
             self.assertEqual(allowed.status_code, 201)
 

@@ -291,6 +291,7 @@ export interface paths {
         /**
          * Set Member Role
          * @description An admin changes a member's role; the group must keep at least one admin (else 409).
+         *     Web session cookie only; an API token gets 403.
          */
         put: operations["set_member_role_v1_members__member_id__role_put"];
         post?: never;

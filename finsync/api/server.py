@@ -31,6 +31,7 @@ from finsync.core import (
     StoreResult,
     TokenService,
     WebSessionRequired,
+    require_web_session,
 )
 from finsync.categorization import CATEGORIES
 from finsync.core.overview import Bucket
@@ -632,9 +633,13 @@ def create_app(storage: FinSyncStorage) -> FastAPI:
             for user_id, email, role in members
         ])
 
+    # Changing a role widens access (a new admin), so like token management it works only from the web
+    # session; an API token gets 403 even for an admin (least privilege, ADR 0012).
     @app.put("/v1/members/{member_id}/role")
     def set_member_role(member_id: str, body: MemberRoleIn, caller: Caller) -> MembersOut:
-        """An admin changes a member's role; the group must keep at least one admin (else 409)."""
+        """An admin changes a member's role; the group must keep at least one admin (else 409).
+        Web session cookie only; an API token gets 403."""
+        require_web_session(caller)
         service.set_member_role(caller.user_id, caller.group_id, member_id, body.role)
         return list_members(caller)
 
