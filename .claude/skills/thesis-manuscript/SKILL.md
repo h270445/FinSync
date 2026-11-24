@@ -20,7 +20,8 @@ description: Use when working on the Hungarian FinSync thesis manuscript (Word),
 1. A Hungarian draft as a separate Word file in `/mnt/project-files/thesis/` (`fejezet-<n>-tervezet-v<k>.docx`, or `FinSync-szakdolgozat-vaz-v<k>.docx` for the skeleton), built with the generator in `/mnt/project-files/thesis/tools/` (docx-js, available in the agent's environment; not a repository dependency). Each drafted part starts with a grey note "MI-tervezet, a szerző átírja", which the author deletes when the part is rewritten.
 2. Next to each paragraph group, a grey "Repó:" note naming the evidence (file, test, result file, commit), so the author can check and cite it.
 3. In the repository: the thesis map row of the chapter updated ("draft v<k> delivered on ..."), an `ai-usage.md` log row (what was drafted, how it was checked) and, when the author states one, the author decision.
-4. A short report: what was drafted, the open `[KITÖLTENDŐ]` and `[ELLENŐRIZENDŐ]` points, and questions for the author.
+4. `python .claude/skills/thesis-manuscript/check_manuscript.py <file.docx>` prints OK on every delivered file (layout, part order, summary labels, captions, reference format and citations, avoided words of the terminology); before submission the author runs it with `--final`, which also refuses placeholders, AI-draft markers, "Repó:" notes, tracked changes and a missing commit id.
+5. A short report: what was drafted, the open `[KITÖLTENDŐ]` and `[ELLENŐRIZENDŐ]` points, and questions for the author.
 
 ## Format (SZTE practice, from the sample the author provided)
 
@@ -49,7 +50,7 @@ description: Use when working on the Hungarian FinSync thesis manuscript (Word),
 1. **Scope.** Which part, which version of the manuscript, which evidence (thesis map row). Read the evidence files, not summaries of them.
 2. **Outline first.** For a new chapter: section headings with one line each and the evidence per section. The author confirms the outline before the prose (checkpoint 1).
 3. **Draft.** Hungarian, plain academic register, first person plural avoided where the sample's practice is impersonal; short paragraphs; terms from the terminology; each claim with its "Repó:" note; figures from the design views rendered to PNG (Mermaid, the render step of the [docs-and-comments](../docs-and-comments/SKILL.md) skill) and numbered per chapter.
-4. **Build and look.** Run the generator, convert the file to PDF and look at the pages (headers, page numbers, headings, captions); fix and rebuild.
+4. **Build, check and look.** Run the generator, then `check_manuscript.py` on the file (OK required), convert the file to PDF and look at the pages (headers, page numbers, headings, captions); fix and rebuild.
 5. **Log.** Thesis map row, `ai-usage.md` log row ("Hungarian draft of chapter N, checked against ..."), time log through the [session-wrap-up](../session-wrap-up/SKILL.md) skill.
 
 ## Self-check
@@ -58,7 +59,7 @@ description: Use when working on the Hungarian FinSync thesis manuscript (Word),
 - Every reference has a URL or bibliographic data and a "last opened" date from this session.
 - No paragraph without a "Repó:" note in a chapter about the system.
 - `grep` of the repository diff finds no Hungarian sentence of the Word draft (the drafts stay in the project files).
-- The terms of the draft are in the terminology.
+- The terms of the draft are in the terminology, and `check_manuscript.py` prints OK.
 
 ## Human checkpoints
 
@@ -70,4 +71,4 @@ description: Use when working on the Hungarian FinSync thesis manuscript (Word),
 
 | Version | Date | Change |
 | --- | --- | --- |
-| 1.0 | 2026-11-24 | First version, from the sample SZTE thesis the author provided (format only) and the author's decisions of 2026-11-24: Word, AI drafts that the author rewrites, the December skeleton of the Bevezetés and chapters 1–3. |
+| 1.0 | 2026-11-24 | First version, from the sample SZTE thesis the author provided (format only) and the author's decisions of 2026-11-24: Word, AI drafts that the author rewrites, the December skeleton of the Bevezetés and chapters 1–3. The checker `check_manuscript.py` (standard library only) taken from the parallel Remote Control draft at the author's choice, reading the Avoid column of the terminology. |

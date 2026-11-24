@@ -97,6 +97,7 @@ Decisions made by the author, as opposed to suggested by an AI tool. Filled in b
 | 2026-11-24 | Claude Code writes Hungarian draft text of the manuscript; the author rewrites and checks it, and the methods chapter says so openly | Two options offered: outline and evidence only, or Hungarian drafts rewritten by the author | Chosen from the options offered |
 | 2026-11-24 | The December skeleton covers the Bevezetés and chapters 1–3; the Feladatkiírás is drafted from the README and the author's motivation | Proposed by Claude | Accepted by the author |
 | 2026-11-24 | endpoint-and-screen-checklist and dev-test-evaluation are the two skills presented in the methods chapter | Recommended by Claude, the two candidates the supervisor named on 2026-11-16 | Accepted by the author |
+| 2026-11-24 | The thesis-manuscript skill of this branch stays, with the manuscript checker of the parallel draft (PR #42) added | Two parallel versions offered: this branch's skill with the checker (recommended), without it, or the other version's tracked-change workflow | Chosen from the options offered |
 
 ## Skill usage
 

@@ -7,3 +7,6 @@ __pycache__/
 
 # Written by python -m finsync.api.demo
 demo-bank-export.csv
+# A local copy of the Hungarian thesis manuscript (Word) stays out of this public repository: it holds
+# personal details (thesis-manuscript skill).
+thesis/
