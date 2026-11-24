@@ -17,9 +17,9 @@ Status: describes the endpoints **implemented** in `finsync/api/server.py`.
 | `200` | Read succeeded |
 | `400` | Invalid JSON, validation error (`{"error": "..."}`) |
 | `401` | No token, or a malformed, unknown or revoked one (`WWW-Authenticate: Bearer`); no valid session; a failed sign-in |
-| `403` | The member is no longer in the group, a member who is not an admin changes a group setting (merchant rules, own accounts, roles), the member is not in the named group at sign-in, a cookie request without a valid CSRF token, or an API token used on `/v1/tokens` or `PUT /v1/members/{member_id}/role` (web session only, least privilege, ADR 0012) |
+| `403` | The member is no longer in the group, a member who is not an admin changes a group setting (merchant rules, own accounts, roles, the LLM schedule), the member is not in the named group at sign-in, a cookie request without a valid CSRF token, or an API token used on `/v1/tokens`, `PUT /v1/members/{member_id}/role` or `PUT /v1/llm-settings` (web session only, least privilege, ADR 0012) |
 | `404` | Unknown path, or an id that does not exist in the requested group |
-| `409` | A review action that no longer fits, such as answering a decision twice; a file that was already imported; a second merchant rule for the same merchant or a second entry for the same own account; demoting the group's last admin |
+| `409` | A review action that no longer fits, such as answering a decision twice; a file that was already imported; a second merchant rule for the same merchant or a second entry for the same own account; demoting the group's last admin; a category change on a transfer or on an event split into lines; asking the model about a settled category, without a model on the server or over the group's monthly budget |
 | `413` | A body over the size limit |
 
 ## Endpoints
@@ -40,6 +40,14 @@ Status: describes the endpoints **implemented** in `finsync/api/server.py`.
 | `POST` | `/v1/matches/{decision_id}/confirm` | Confirm: the record joins the candidate event |
 | `POST` | `/v1/matches/{decision_id}/reject` | Reject: the record stays separate and the pair is not proposed again |
 | `POST` | `/v1/events/{event_id}/split` | Move one record out of an event (undo a wrong link) |
+| `PUT` | `/v1/events/{event_id}/category` | Confirm or change the event's category; optionally teach the group's merchant memory |
+| `PUT` | `/v1/events/{event_id}/mixed` | Mark the event as a purchase of several kinds (no amounts), or unmark it |
+| `PUT` | `/v1/events/{event_id}/category-lines` | Split the amount into category lines, or remove the split |
+| `PUT` | `/v1/events/{event_id}/transfer` | Mark the event as a transfer within the group, or undo it |
+| `GET` | `/v1/events/{event_id}/category-changes` | The event's category change log |
+| `POST` | `/v1/events/{event_id}/llm-suggestion` | Ask the language model about one uncertain event now |
+| `GET` | `/v1/llm-settings` | W8: when the group's LLM run asks the model, and the month's spending |
+| `PUT` | `/v1/llm-settings` | W8: an admin sets the LLM schedule and budget (web session only) |
 | `GET` | `/v1/overview` | W2: a month's totals per currency, category and member over deduplicated events |
 | `GET` | `/v1/members` | W8: the group's members and their roles |
 | `PUT` | `/v1/members/{member_id}/role` | W8: an admin makes a member `admin` or `member` (web session only) |
@@ -147,7 +155,55 @@ Response `200`:
 
 ### `GET /v1/events`
 
-Response `200`: `{"events": [{"id": 1, "amount": "-1234.56", "currency": "HUF", "direction": "expense", "happened_at": "...", "merchant": "Tesco", "category": "groceries", "primary_transaction_id": 1, "review_state": "clear", "transactions": [ ... ]}]}`. Display values come from the primary record (a notification first, then the earliest). `review_state` is `needs_review` while an uncertain match waits for a member.
+Response `200`: `{"events": [{"id": 1, "amount": "-1234.56", "currency": "HUF", "direction": "expense", "happened_at": "...", "merchant": "Tesco", "category": "groceries", "category_source": "dictionary", "category_confidence": "low", "uncertain": true, "mixed": false, "lines": [], "lines_match_amount": null, "remember_merchant": null, "category_agreement": null, "llm_due_at": null, "primary_transaction_id": 1, "review_state": "clear", "transactions": [ ... ]}]}`. Display values come from the primary record (a notification first, then the earliest). `review_state` is `needs_review` while an uncertain match waits for a member.
+
+The category fields ([categorization design](../design/categorization.md#review-in-the-web-app)):
+
+- `category_source`: who decided: `user` (a member; never overwritten by automation, also when records are linked or split later), `merchant_rule` (the group's rule), `dictionary` or `keyword` (the built-in Hungarian dictionary), `llm`, `own_account` (a transfer by the own-accounts list), `none`. `category_confidence` is `high` or `low`; `uncertain` is true for a `low` category no member settled, the web app's "suggestion".
+- `mixed`, `lines`: see the correction routes below. `lines_match_amount` is `false` when the lines no longer add up to the amount (a record was split off after they were saved): the overview then counts the whole amount under `category` until a member fixes them.
+- `remember_merchant`: the merchant name to offer "always use this for …" with; `null` when no rule may be learned (a merchant on the mixed-assortment list, a mixed or split event, a transfer).
+- `category_agreement`: for an `llm` category, the share of the model's five answers that agreed. `llm_due_at`: when the group's scheduled run will ask the model, `null` when it will not.
+- Every record in `transactions` has its own `category_source` and `category_confidence`.
+
+### `PUT /v1/events/{event_id}/category`
+
+```json
+{"category": "clothing", "remember": false}
+```
+
+Confirms (same category) or changes the category; it becomes the member's decision (`user`, `high`). With `"remember": true`, the group's merchant memory learns it, only when the event's `remember_merchant` is set (otherwise `400` and nothing changes). Response `200`: `{"event": { ... }, "merchant_rule_outcome": null, "merchant_rule": null}`. With `remember`, `merchant_rule_outcome` is `created`, `confirmed` (the rule already said so; `times_confirmed` grows), `updated` (an admin changed the rule) or `kept` (the group's rule names another category; only an admin changes it, so the correction stays on the event). `409` for a transfer or an event split into lines.
+
+### `PUT /v1/events/{event_id}/mixed`
+
+`{"mixed": true}` marks the purchase as several kinds without amounts; the whole amount stays under `category` and the overview reports it in `mixed_amount`. Response `200`: the event. `409` for a transfer.
+
+### `PUT /v1/events/{event_id}/category-lines`
+
+```json
+{"lines": [{"category": "groceries", "amount": "-9000"}, {"category": "clothing", "amount": "-3000"}]}
+```
+
+Two to 20 lines, each an allowed category once, each amount non-zero with the event's sign, adding up to the event's amount exactly (`400` with the reason otherwise). They replace the previous set as one logged change; `{"lines": []}` removes the split. The event's `category` becomes the category of the largest line, as the member's decision. The lines stay on the event when a record is split off. Response `200`: the event. `409` for a transfer.
+
+### `PUT /v1/events/{event_id}/transfer`
+
+`{"transfer": true}` gives the event and its records the direction and category `transfer` (left out of every total, never matched to a purchase); `false` gives the records the direction of their amount's sign again and the category the categorizer gives them, without the own-accounts list. Response `200`: the event. `409` when the event is split into lines.
+
+### `GET /v1/events/{event_id}/category-changes`
+
+Response `200`: `{"changes": [{"id": 1, "kind": "category", "old_value": {"category": "groceries", "source": "dictionary", "confidence": "low"}, "new_value": {"category": "clothing", "source": "user", "confidence": "high"}, "changed_by": "balint", "created_at": "..."}]}`, oldest first. `kind` is `category`, `mixed`, `lines` or `transfer`; a change that changes nothing is not logged.
+
+### `POST /v1/events/{event_id}/llm-suggestion`
+
+No body. Asks the language model about one uncertain event now, in every schedule mode. Only the primary record's merchant, description and amount are sent; the call is logged. At or above the measured threshold (0.40 share of five answers) the answer is settled (`llm`, `high`); below it the event keeps its suggestion, or gets the model's top answer as one, or becomes `uncategorized` ("Bizonytalan"). A member's decision made during the call wins. Response `200`: the event. `409` when the category is settled, the server has no model (`FINSYNC_ANTHROPIC_API_KEY` not set), or the group's monthly budget is used up.
+
+### `GET /v1/llm-settings`, `PUT /v1/llm-settings`
+
+```json
+{"mode": "daily", "hours_after": 24, "run_time": "20:00", "weekday": 6, "monthly_budget_usd": "1.00"}
+```
+
+`mode` is `never` (default: nothing is sent), `after_arrival` (`hours_after` hours after the record arrived, 1 to 336), `daily` (at `run_time`, Budapest time) or `weekly` (on `weekday`, 0 = Monday, at `run_time`). Saving gives every uncertain event of the group its due time (`never` clears them); the server checks for due events every 5 minutes, group by group, while the month's spending stays below `monthly_budget_usd` (0 to 100). Every member reads the setting; only an admin changes it, and only from the web session. Response `200`: the setting with `spent_this_month_usd`, `budget_exhausted`, `available` (the server has a model), `model`, `updated_by`, `updated_at`. Design: [when the LLM is called](../design/categorization.md#when-the-llm-is-called-proposed-by-the-author-2026-11-19).
 
 ### `GET /v1/events/{event_id}/decisions`
 
@@ -180,7 +236,8 @@ Query: `month=YYYY-MM` (optional; without it, the current month in Budapest time
   "month": "2026-11",
   "months": ["2026-11", "2026-10"],
   "totals": [{"key": "all", "currency": "HUF", "expense": "241370", "income": "420000",
-              "event_count": 9, "review_count": 1, "review_amount": "8200"}],
+              "event_count": 9, "review_count": 1, "review_amount": "8200",
+              "uncertain_count": 2, "uncertain_amount": "16200", "mixed_count": 1, "mixed_amount": "12000"}],
   "categories": [{"key": "housing_utilities", "currency": "HUF", "expense": "185000", "income": "0",
                   "event_count": 1, "review_count": 0, "review_amount": "0"}],
   "members": [{"key": "anna", "currency": "HUF", "expense": "31680", "income": "420000",
@@ -196,6 +253,8 @@ The rules ([`finsync/core/overview.py`](../../finsync/core/overview.py)):
 - `expense` and `income` are positive sums, never netted; every currency has its own rows.
 - Events with the direction `transfer` are left out of every sum and only counted in `transfer_count`.
 - Events waiting for review are **in** the sums and also counted in `review_count`, with their amount in `review_amount`: if the flagged record turns out to be the same purchase as another, the total is that much lower.
+- An event split into category lines counts each line under its category in `categories`; any other event counts its whole amount under its category. Lines that no longer add up to the amount are ignored until fixed.
+- On the month totals, `uncertain_count`/`uncertain_amount` are the events whose category is only a suggestion and `mixed_count`/`mixed_amount` the events marked mixed without lines: how much of the category split may be inaccurate. They are `0` on category and member rows.
 - `months` lists the months that have events, newest first. A month in the wrong format returns `400`.
 
 ### `GET /v1/members`
