@@ -7,3 +7,7 @@ __pycache__/
 
 # Written by python -m finsync.api.demo
 demo-bank-export.csv
+
+# The Hungarian thesis manuscript (Word) stays with the author: it holds personal details and this
+# repository is public (thesis-manuscript skill).
+thesis/
