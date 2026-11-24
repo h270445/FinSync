@@ -82,6 +82,7 @@ Decisions made by the author, as opposed to suggested by an AI tool. Filled in b
 | 2026-11-19 | LLM layer: Anthropic `claude-haiku-5-5`, API key in the cloud environment, USD 2 budget, confidence from five samples, threshold rule (highest dev coverage with at most 5 % wrong settled answers, ties to the higher threshold) | Recommended by Claude | Chosen from the options offered |
 | 2026-11-19 | Before the LLM is called, members can set an uncertain category themselves; when the LLM runs is a setting (X hours after the purchase, daily or weekly at a set time, or never) | Claude refined it: group-level admin setting, "never" by default, an "ask now" button, monthly budget, batch interface for scheduled runs | The author's own proposal |
 | 2026-11-23 | Finish the M2 closing package by Nov 27 and send it to the supervisor then, so his feedback arrives before the Dec 4 close | Day-by-day schedule drafted by Claude ([M2 closing schedule](planning/m2-closing-schedule.md)) | Time to fix the supervisor's feedback before the deadline |
+| 2026-11-24 | The LLM scheduling settings confirmed as proposed (*never* by default; *X hours after the purchase*, *daily* or *weekly* set by an admin; "ask for a suggestion now"; the member's decision always wins; monthly cost cap) | Proposal of 2026-11-19 in the [categorization design](design/categorization.md#when-the-llm-is-called-proposed-by-the-author-2026-11-19) | – |
 
 ## Skill usage
 

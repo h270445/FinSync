@@ -61,7 +61,7 @@ When events are linked by matching, the event takes the highest-precedence categ
 
 ## When the LLM is called (proposed by the author, 2026-11-19)
 
-Before the LLM is asked, the members get the chance to set an uncertain category themselves; when the LLM runs is a setting. Details proposed on 2026-11-19, awaiting the author's confirmation, scheduled for Nov 23–27 with the category correction:
+Before the LLM is asked, the members get the chance to set an uncertain category themselves; when the LLM runs is a setting. Details proposed on 2026-11-19 and confirmed by the author on 2026-11-24, scheduled for Nov 23–27 with the category correction:
 
 - **Group setting, admins only (W8):** *never* (default, because data leaves the system), *X hours after the purchase* (24 by default), *daily at a set time*, *weekly on a set day and time*. A member only chooses whether to be notified about uncertain items.
 - **"Ask for a suggestion now"** on selected uncertain items works in every mode.
