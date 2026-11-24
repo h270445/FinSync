@@ -23,7 +23,7 @@ The [technology stack](../technology-stack.md) planned one provider's official S
 
 ## Measured result (2026-11-24)
 
-The paid run of 2026-11-24 ([report](../../evaluation/results/2026-11-24-categorization-hybrid.md)) followed points 5–8 without changes. The rule of point 7 chose the threshold **0.40** on dev (77.2 % coverage, 96.2 % of settled answers right). On the test split, categorized once afterwards, the hybrid settles 79.8 % of the records with 93.7 % of them right, against 63.6 % coverage (100 % right) for the dictionary alone and 13.1 % accuracy for the rule-based baseline. All five wrong settled test answers are mixed-assortment supermarkets answered `groceries`; cryptic payment texts stay uncertain. Cost: USD 0.034 for 390 answers, about USD 0.0004 per record sent; median latency 0.98 s per call. The report is to be read by the author before it is quoted.
+The paid run of 2026-11-24 ([report](../../evaluation/results/2026-11-24-categorization-hybrid.md)) followed points 5–8 without changes. The rule of point 7 chose the threshold **0.40** on dev (77.2 % coverage, 96.2 % of settled answers right). On the test split, categorized once afterwards, the hybrid settles 79.8 % of the records with 93.7 % of them right, against 63.6 % coverage (100 % right) for the dictionary alone and 13.1 % accuracy for the rule-based baseline. All five wrong settled test answers are mixed-assortment supermarkets answered `groceries`; cryptic payment texts stay uncertain. Cost: USD 0.034 for 390 answers, about USD 0.0004 per record sent; median latency 0.98 s per call. The author read the report on 2026-11-24.
 
 ## Consequences
 

@@ -44,7 +44,7 @@ Time spent on the project, for the weekly-effort figure the supervisor asked for
 | 2026-11-24 | 10:36–11:00 | 24 | Paid hybrid categorizer measurement: the runner reads `FINSYNC_ANTHROPIC_API_KEY` in cloud sessions, preflight, the run (365 calls, USD 0.034), cache-only re-run identical, report and docs, PR | Project messages and commits (end time estimated at the pull request; to be corrected by the author) |
 | 2026-11-24 | 10:54–11:35 | 35 | Category correction API (source and certainty, confirm or change, merchant memory, mixed flag, category lines, transfer marking, change log, overview), web correction on W2, W3, W4, the LLM in the live flow (group schedule, due times, runner, ask now, monthly budget), one synthetic live call, docs; schedule branches merged; PR | Project messages and commits (10:54–11:00 overlaps the measurement session above and is counted there; end time estimated at the pull request; to be corrected by the author) |
 | 2026-11-24 | 14:05–14:25 | 20 | Thursday's items brought forward: W8 LLM setting with the monthly budget and its messages, ADR 0013 (LLM in the live flow), ADR 0011 with the measured result, the six design views checked against the code and updated (views 5–6 with the outbound model call), demo seed command and demo guide checked through the service and in the browser; docs; PR #40 updated | Project messages and commits (end time estimated at the pull request update; to be corrected by the author) |
-| 2026-11-24 | 14:41–14:50, 14:59–15:05 | 15 | Demo run on the Android emulator on the author's computer through Remote Control (memory freed by the author, all guide steps as expected); income made never uncertain after the author's choice, with tests | Project messages and commits (end time estimated at the pull request update; to be corrected by the author) |
+| 2026-11-24 | 14:41–14:50, 14:59–15:15 | 25 | Demo run on the Android emulator on the author's computer through Remote Control (memory freed by the author, all guide steps as expected); income made never uncertain after the author's choice, with tests; ADR 0013 accepted, demo, measurement report and the five defaults recorded as reviewed; skill recommendation for the methods chapter | Project messages and commits (end time estimated at the pull request update; to be corrected by the author) |
 
 ## Weekly totals
 
@@ -58,5 +58,5 @@ Time spent on the project, for the weekly-effort figure the supervisor asked for
 | 2026-11-02 – 11-08 | 149 | 2.5 |
 | 2026-11-09 – 11-15 | 380 | 6.3 |
 | 2026-11-16 – 11-22 | 166 | 2.8 |
-| 2026-11-23 – 11-29 | 117 | 2.0 |
-| **Total** | **1517** | **25.3** |
+| 2026-11-23 – 11-29 | 127 | 2.1 |
+| **Total** | **1527** | **25.5** |

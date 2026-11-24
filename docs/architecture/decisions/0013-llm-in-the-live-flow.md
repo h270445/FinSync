@@ -1,6 +1,6 @@
 # 0013. LLM in the live flow: off by default, members first, a monthly budget, only the record text leaves
 
-- Status: Proposed (the scheduling rules were set by the author on 2026-11-19 and confirmed on 2026-11-24; built on 2026-11-24; to be accepted by the author)
+- Status: Accepted (2026-11-24, by the author; the scheduling rules were set by the author on 2026-11-19 and confirmed on 2026-11-24; built on 2026-11-24)
 - Date: 2026-11-24
 
 ## Context
