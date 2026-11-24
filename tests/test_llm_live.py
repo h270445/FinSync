@@ -15,7 +15,7 @@ import unittest
 from fastapi.testclient import TestClient
 
 from finsync.api import create_app
-from finsync.core import AuthorizationError, ConflictError, FinSyncService, LlmUnavailable, TokenService
+from finsync.core import AuthorizationError, ConflictError, FinSyncService, LlmUnavailable, TokenService, is_uncertain
 from finsync.core.llm_schedule import month_start, next_due, validate_settings
 from finsync.storage import FinSyncStorage, LlmSettingsRecord
 
@@ -194,6 +194,20 @@ class LiveLlmTest(unittest.TestCase):
         other = self._manual("Spar")
         self.service.set_llm_settings("anna", "group-1", mode="never")
         self.assertIsNone(self._event(other).llm_due_at)
+
+    def test_income_is_never_uncertain_and_never_sent(self) -> None:
+        salary = self.service.create_manual_transaction("anna", "group-1", {
+            "amount": "450000", "currency": "HUF", "description": "MUNKABER", "happened_at": "2026-11-20",
+            "direction": "income",
+        }).event_id
+        self.assertFalse(is_uncertain(self._event(salary)))
+        self.service.set_llm_settings("anna", "group-1", mode="daily")
+        self.assertIsNone(self._event(salary).llm_due_at)
+        with self.assertRaisesRegex(ConflictError, "settled"):
+            self.service.suggest_category_now("anna", "group-1", salary)
+        self.assertEqual(self.service.run_due_llm(self._later()), 0)
+        self.assertEqual(self.client.calls, 0)
+        self.assertEqual(self.service.overview("anna", "group-1").totals[0].uncertain_count, 0)
 
     def test_over_http(self) -> None:
         event_id = self._manual()

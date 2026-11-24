@@ -87,6 +87,7 @@ Decisions made by the author, as opposed to suggested by an AI tool. Filled in b
 | 2026-11-23 | Finish the M2 closing package by Nov 27 and send it to the supervisor then, so his feedback arrives before the Dec 4 close | Day-by-day schedule drafted by Claude ([M2 closing schedule](planning/m2-closing-schedule.md)) | Time to fix the supervisor's feedback before the deadline |
 | 2026-11-24 | The LLM scheduling settings confirmed as proposed (*never* by default; *X hours after the purchase*, *daily* or *weekly* set by an admin; "ask for a suggestion now"; the member's decision always wins; monthly cost cap) | Proposal of 2026-11-19 in the [categorization design](design/categorization.md#when-the-llm-is-called-proposed-by-the-author-2026-11-19) | – |
 | 2026-11-24 | The LLM call settings proposed for the paid run (model, five samples, 390 calls, about USD 0.04) are approved; the key is given in the cloud environment as `FINSYNC_ANTHROPIC_API_KEY` | Runner change that reads the FinSync-specific key name | Stated by the author in the project (approval of the proposed call settings, the environment variable renamed) |
+| 2026-11-24 | Income is never an uncertain category: not counted or listed as uncertain, not sent to the model, shown as "Bevétel" | Three options offered after the demo showed a salary as an uncertain "Egyéb": no uncertainty for income (recommended), a tenth "income" category, or no change | Chosen from the options offered |
 
 ## Skill usage
 

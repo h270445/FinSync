@@ -15,6 +15,9 @@ import { CATEGORY_CHOICES, categoryLabel, categorySourceLabel } from '@/lib/form
 
 /** "Élelmiszer · javaslat": a suggested category is lighter and marked, with its source on hover. */
 export function CategoryBadge({ event }: { event: FinSyncEvent }) {
+  // Income needs no spending category (author's decision, 2026-11-24); one a member gave is still shown.
+  if (event.direction === 'income' && event.category_source !== 'user')
+    return <span className="text-muted-foreground">Bevétel</span>
   return (
     <span className="inline-flex flex-wrap items-center gap-1" title={`Forrás: ${categorySourceLabel(event.category_source)}`}>
       <span className={event.uncertain ? 'text-muted-foreground italic' : undefined}>{categoryLabel(event.category)}</span>
@@ -39,11 +42,11 @@ export function CategoryBadge({ event }: { event: FinSyncEvent }) {
 
 /**
  * One-tap correction for a list row: a category select (changing it saves at once) and, for a
- * suggestion, a confirm button. Split events and transfers are corrected on the detail page.
+ * suggestion, a confirm button. Split events, transfers and income are corrected on the detail page.
  */
 export function QuickCategory({ event }: { event: FinSyncEvent }) {
   const setCategory = useSetCategory()
-  if (event.direction === 'transfer' || event.lines.length > 0) return <CategoryBadge event={event} />
+  if (event.direction !== 'expense' || event.lines.length > 0) return <CategoryBadge event={event} />
 
   function save(category: string) {
     setCategory.mutate(

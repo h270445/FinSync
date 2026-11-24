@@ -1198,11 +1198,11 @@ class StorageSession:
 
     def uncertain_event_ids(self, group_id: str) -> list[tuple[int, datetime]]:
         """(event, arrival of its first record) for the group's events with a suggested category nobody
-        settled, which the LLM schedule may cover. Transfers are never sent."""
+        settled, which the LLM schedule may cover: spending only, so transfers and income are never sent."""
         rows = self._connection.execute(
             """
             SELECT e.id, MIN(t.created_at) AS arrived FROM events e JOIN transactions t ON t.event_id = e.id
-            WHERE e.group_id = ? AND e.review_state != 'empty' AND e.direction != 'transfer'
+            WHERE e.group_id = ? AND e.review_state != 'empty' AND e.direction = 'expense'
               AND e.category_source != 'user' AND e.category_confidence != 'high'
             GROUP BY e.id ORDER BY e.id
             """,

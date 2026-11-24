@@ -78,6 +78,26 @@ describe('EventsPage category correction', () => {
     expect(screen.getByText('1 esemény')).toBeInTheDocument()
   })
 
+  it('shows income as income, without a category to confirm', async () => {
+    const salary = event({
+      id: 3,
+      amount: '450000',
+      direction: 'income',
+      merchant: 'MINTA MUNKAADO',
+      category: 'other',
+      category_source: 'none',
+      uncertain: false,
+      transactions: [record({ id: 3, event_id: 3, amount: '450000', merchant: 'MINTA MUNKAADO' })],
+    })
+    serve([salary])
+    renderPage()
+
+    const table = await screen.findByRole('table')
+    expect(within(table).getAllByText('Bevétel')).not.toHaveLength(0)
+    expect(within(table).queryByRole('combobox', { name: /MINTA MUNKAADO/ })).not.toBeInTheDocument()
+    expect(within(table).queryByText('javaslat')).not.toBeInTheDocument()
+  })
+
   it('shows the refusal of the server', async () => {
     serve([event()], () => Response.json({ error: 'The event is a transfer; unmark it as a transfer first' }, { status: 409 }))
     renderPage()

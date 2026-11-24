@@ -125,8 +125,14 @@ def category_parts(event: EventRecord) -> list[tuple[str, Decimal]]:
 
 
 def is_uncertain(event: EventRecord) -> bool:
-    """A suggested category nobody settled: shown as "javaslat" and listed by the uncertain filter."""
-    return event.category_source != "user" and event.category_confidence != "high"
+    """A suggested category nobody settled: shown as "javaslat" and listed by the uncertain filter.
+
+    Only spending is uncertain: the categories describe what money was spent on, so income (salary, a
+    refund) is never counted as uncertain, never listed by the filter and never sent to the model
+    (author's decision, 2026-11-24). A member may still give it a category."""
+    return (
+        event.direction == "expense" and event.category_source != "user" and event.category_confidence != "high"
+    )
 
 
 def _add(bucket: Bucket, event: EventRecord, signed_amount: Decimal) -> None:
