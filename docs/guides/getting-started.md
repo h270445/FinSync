@@ -75,7 +75,17 @@ For a ready-made group with synthetic data, `python -m finsync.api.demo --db dem
 python -m unittest discover -s tests
 ```
 
+On PostgreSQL 16 (each test gets its own schema, dropped at the end):
+
+```bash
+python tests/run_on_postgres.py postgresql+psycopg://user:password@localhost/finsync_test
+```
+
 Web app: `npm test` in `web/`.
+
+## Optional: the LLM categorizer
+
+Without a key, categorization uses the group's merchant rules and the built-in dictionary only. With `FINSYNC_ANTHROPIC_API_KEY` set before the API starts, a group admin can turn the model on in the web app's settings (W8), with a monthly budget; it is off by default ([ADR 0013](../architecture/decisions/0013-llm-in-the-live-flow.md)). Tests never call a paid model.
 
 ## Reset local data
 
