@@ -20,6 +20,7 @@ The text of every progress e-mail sent to the thesis supervisor, one file per e-
 | 2026-11-02 | [M1 — működő mag](2026-11-02-m1.md) | `v0.2.0` | Sent on 2026-11-07, after the deadline |
 | 2026-11-14 | [Heti jelentés (november 9–15.)](2026-11-14-heti-jelentes.md) | – | Sent |
 | 2026-11-21 | [Heti jelentés (november 16–22.)](2026-11-21-heti-jelentes.md) | – | Draft |
+| 2026-11-25 | [M2 zárócsomag, előzetes](2026-11-25-m2-zarocsomag-elozetes.md) | `v0.3.0` on 2026-12-04 | Draft |
 
 ## Template
 

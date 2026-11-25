@@ -26,7 +26,7 @@ Privacy requirements will be considered during design, with GDPR principles such
 | Multi-factor authentication | Not in the thesis scope ([ADR 0012](decisions/0012-no-multi-factor-authentication.md), Accepted 2026-11-23): the data is spending information without a payment function. Step-up re-authentication for issuing tokens and changing roles is proposed as the next step; TOTP or passkeys are future work |
 | Personal data | Member ids, group ids and, for sign-in, an e-mail address per member; the group's own account numbers and counterparty names for transfer detection (entered by an admin, visible to the group's members); passwords only as salted hashes, tokens and sessions only as SHA-256 hashes |
 | Request size limits | Implemented: 64 KiB per `POST` or `PUT` request, 1 MiB for bulk import, 413 above it; the bytes that arrive are counted, so chunked bodies cannot bypass it |
-| Audit trail | Planned through `match_decisions` |
+| Audit trail | Implemented: append-only `match_decisions` for every link, review answer and split (who decided, score, the decision it supersedes); `category_changes` for every category, mixed, line and transfer change with the member; `llm_calls` for every model call (who asked, which event, tokens, cost) |
 
 ## Rules
 
