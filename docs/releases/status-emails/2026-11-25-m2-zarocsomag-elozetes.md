@@ -1,8 +1,8 @@
 # 2026-11-25 — M2 zárócsomag, előzetes (v0.3.0)
 
 - Címzett: Dr. Bilicki Vilmos (válasz a 2026-11-23-i levélre)
-- Tag: még nincs; a `v0.3.0` tag december 4-én kerül a `main` ágra (commit: `<a #43 beolvasztása utáni main commit teljes azonosítója>`)
-- Státusz: vázlat
+- Tag: még nincs; a `v0.3.0` tag december 4-én kerül a `main` ágra (commit, a #43 beolvasztása: `1c27c6e132fd879843ea26701740201b9e40bb02`)
+- Státusz: elküldve (2026-11-25)
 
 ---
 
@@ -37,7 +37,7 @@ Köszönöm a november 23-i visszajelzését és az ADR 0012 elfogadását. A te
 - November 26. és december 2. között az Ön észrevételeinek javítása, december 3-án fagyasztás, december 4-én a `v0.3.0` tag és a záró levél.
 - Decemberben a magyar kézirat 1–3. fejezetének váza.
 - Ezen a héten (november 23–25.) eddig kb. 3,5 órát dolgoztam a projekten; a részletes időnapló: docs/planning/time-log.md.
-- A repository: https://github.com/h270445/FinSync (commit: https://github.com/h270445/FinSync/commit/<teljes commit azonosító>)
+- A repository: https://github.com/h270445/FinSync (commit: https://github.com/h270445/FinSync/commit/1c27c6e132fd879843ea26701740201b9e40bb02)
 
 **Üdvözlettel:**  
 **Varga Bence Tamás**  
